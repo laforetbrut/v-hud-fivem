@@ -128,6 +128,13 @@ All notable changes to v-hud are documented here.
   engine is running, so a switched-off car in good condition sat there green. Green now means
   running and healthy, red means damaged, dark means off.
 
+- **Seatbelt lamp stuck on after unfastening** — The belt state was mirrored into a local copy
+  rather than read from the seatbelt script, and both mirroring routes have one-way holes:
+  qb-smallresources fires nothing when a harness is removed, and a state bag written true and
+  never written false was re-read every tick and won. The lamp now asks
+  `qb-smallresources:HasSeatbeltOn` / `HasHarness` first, which cannot drift; events and the
+  state bag remain as fallbacks, and `/hudinfo` prints which source answered.
+
 ### Ajouts
 
 - **Thème par défaut Clear Glass** — Panneaux translucides composés d'un dégradé en couches,
@@ -259,5 +266,12 @@ All notable changes to v-hud are documented here.
 - **Témoin moteur allumé moteur coupé** — Il était piloté par la SANTÉ du moteur, pas par son
   état de marche : une voiture éteinte en bon état restait au vert. Vert signifie désormais en
   marche et en bon état, rouge endommagé, éteint coupé.
+- **Témoin de ceinture bloqué au vert après débouclage** — L'état de la ceinture était recopié
+  dans une variable locale au lieu d'être lu depuis le script de ceinture, et les deux voies de
+  recopie ont des trous à sens unique : qb-smallresources ne déclenche rien quand on retire un
+  harnais, et un state bag écrit à `true` sans jamais être remis à `false` était relu à chaque
+  tick et l'emportait. Le témoin interroge désormais d'abord
+  `qb-smallresources:HasSeatbeltOn` / `HasHarness`, qui ne peut pas dériver ; les événements et
+  le state bag restent en secours, et `/hudinfo` indique quelle source a répondu.
 
 ---

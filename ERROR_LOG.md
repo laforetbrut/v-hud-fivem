@@ -441,3 +441,29 @@ check that the value behind it actually measures that state and not a neighbouri
 healthy, red when damaged either way, and dark when the engine is off.
 
 ---
+
+## [2026-07-31 23:55] — Seatbelt lamp updated on fastening but not on unfastening
+
+**Context:** Buckling and unbuckling the seatbelt in a vehicle.
+**Error:** The lamp went green when the belt was fastened and stayed green after taking it off
+- a HUD that reports the opposite of the truth, which is worse than one that reports nothing.
+**Root cause:** The belt state was MIRRORED rather than read. Two mechanisms fed a local copy
+and both have one-way holes:
+
+  * The event latch is only as good as the other script's discipline about firing in both
+    directions. qb-smallresources' own harness path is the counter-example - `toggleHarness()`
+    calls `toggleSeatbelt()` when a harness goes ON and returns early when it comes OFF, so
+    nothing is fired and any mirror is stuck showing a belt that was removed.
+  * The state bag was re-read every tick and won unconditionally, so a script that writes it
+    true on buckling and never writes it false pinned the lamp on forever, one frame after the
+    unbuckle event had correctly cleared it.
+
+**Fix:** Ask, do not mirror. `qb-smallresources` publishes `HasSeatbeltOn` and `HasHarness`;
+those are tried first and cannot drift. The event latch and the state bag remain as fallbacks
+for scripts that publish neither, and the bag is now only consulted when no event has ever
+arrived. `/hudinfo` prints which source answered, so a wrong indicator says why.
+**Prevention:** When another resource owns a piece of state, read it from that resource if it
+offers a way. A local copy kept in sync by events inherits every gap in the other script's
+event discipline, and those gaps are invisible until someone reports the symptom.
+
+---

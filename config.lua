@@ -791,6 +791,27 @@ Config.Compat = {
     -- events above; whichever answers first wins.
     seatbeltStateBag = 'seatbelt',
 
+    -- Scripts that answer "is the belt on" directly. THIS IS THE BEST SOURCE and it is tried
+    -- first, because it cannot drift: the HUD asks the seatbelt script what it thinks instead
+    -- of trying to mirror it from events.
+    --
+    -- Mirroring is fragile in a way that is easy to miss. qb-smallresources' own harness path
+    -- is the example: putting a harness ON fires the seatbelt event, taking it OFF returns
+    -- early and fires nothing, so anything keeping its own copy is stuck showing a belt that
+    -- was taken off. Asking the export gives the right answer with no such holes.
+    --
+    -- Each entry is a resource and a boolean export on it. Missing resources and missing
+    -- exports are skipped, and the events and the state bag remain as fallbacks.
+    seatbeltExports = {
+        { resource = 'qb-smallresources', method = 'HasSeatbeltOn' },
+        { resource = 'seatbelt', method = 'HasSeatbeltOn' },
+        { resource = 'qb-seatbelt', method = 'HasSeatbeltOn' },
+    },
+
+    harnessExports = {
+        { resource = 'qb-smallresources', method = 'HasHarness' },
+    },
+
     -- Nitrous. Three sources, all optional, first answer wins:
     --
     --   * Events. qb-mechanicjob, qb-tunerjob and jim-mechanic all fire the qb-hud event

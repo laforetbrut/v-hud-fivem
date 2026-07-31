@@ -106,6 +106,10 @@ RegisterCommand('hudinfo', function()
         local odo = Odometer and Odometer.metres(vehicle) or nil
         line('odometer', odo and ('%.0f m'):format(odo) or 'nothing recorded yet')
         line('plate', GetVehicleNumberPlateText(vehicle))
+        -- The belt, proved by reading it. Says WHERE the answer came from, because a belt
+        -- indicator showing the wrong state is almost always a mirroring problem.
+        line('seatbelt', ('%s -> %s'):format(report.seatbelt,
+            tostring(Compat.vehicleState(vehicle).on)))
     else
         line('fuel', report.fuel .. ' (get in a vehicle to test it)')
     end

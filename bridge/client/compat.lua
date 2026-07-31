@@ -21,6 +21,7 @@ Compat = {}
 -- which is the fastest way to answer "why is my fuel gauge stuck at 100".
 Compat.provider = {
     fuel = nil,
+    seatbelt = nil,
     voice = nil,
     notify = nil,
     sounds = nil,
@@ -460,13 +461,19 @@ end
 -- These are latched here rather than in client/vehicle.lua so that adding a resource's event
 -- name to Config.Compat is genuinely the only change needed to support it.
 
-local belt = { on = false, cruise = false, nitro = 0, nitroActive = false, harnessHp = 20 }
+local belt = {
+    on = false, cruise = false, nitro = 0, nitroActive = false, harnessHp = 20,
+    -- Whether any script has ever told us about the belt by EVENT. Once one has, the state
+    -- bag below is never read again - see the note there.
+    beltEvent = false,
+}
 
 for _, event in ipairs(Config.Compat.seatbeltEvents or {}) do
     AddEventHandler(event, function(value)
         -- Some scripts pass the new state, others toggle. A boolean argument is taken as the
         -- state; anything else means toggle.
         if type(value) == 'boolean' then belt.on = value else belt.on = not belt.on end
+        belt.beltEvent = true
     end)
     RegisterNetEvent(event)
 end
@@ -497,8 +504,55 @@ end)
 --- The latched vehicle state. `vehicle` is used to read the state bags some scripts publish
 --- instead of firing an event: the seatbelt state, and jim-mechanic's per-vehicle NOS.
 function Compat.vehicleState(vehicle)
+    --[[
+        Ask, do not mirror.
+
+        A script that publishes "is the belt on" as an export is the authority on it, and
+        asking costs one local call. Everything below this is guesswork by comparison: an event
+        latch is only as good as the other script's discipline about firing in BOTH directions,
+        and a state bag is only as good as its discipline about clearing it.
+
+        This is first for a reason. Two of the shipped fallbacks have known holes -
+        qb-smallresources fires nothing when a harness is removed, and a bag written true and
+        never written false pins the belt on forever - and both produce the same symptom: the
+        lamp updates when you fasten the belt and not when you take it off.
+    ]]
+    local answered = false
+    for _, entry in ipairs(Config.Compat.seatbeltExports or {}) do
+        local value = callExport(entry.resource, entry.method)
+        if type(value) == 'boolean' then
+            belt.on = value
+            Compat.provider.seatbelt = entry.resource
+            answered = true
+            break
+        end
+    end
+
+    for _, entry in ipairs(Config.Compat.harnessExports or {}) do
+        local value = callExport(entry.resource, entry.method)
+        if type(value) == 'boolean' then
+            -- A harness IS a belt as far as the tell-tale is concerned.
+            if value then belt.on = true end
+            break
+        end
+    end
+
+    --[[
+        The state bag is a FALLBACK, not an override.
+
+        It used to be read on every tick and to win unconditionally, which is a one-way trap:
+        a script that writes the bag true on buckling and never writes it false again - or
+        never writes it at all after the first time - had its stale `true` reinstated on the
+        very next tick, one frame after the unbuckle event had correctly set it false. The belt
+        lamp went green when you fastened it and stayed green when you took it off, which is
+        worse than no lamp: it is a lamp that lies.
+
+        So once any script has proved it fires events, the events are the source of truth and
+        the bag is never consulted again. The bag still covers the scripts that publish only a
+        bag and no event.
+    ]]
     local bagName = Config.Compat.seatbeltStateBag
-    if bagName and vehicle and vehicle ~= 0 then
+    if bagName and not answered and not belt.beltEvent and vehicle and vehicle ~= 0 then
         local state = LocalPlayer.state and LocalPlayer.state[bagName]
         if type(state) == 'boolean' then belt.on = state end
     end
@@ -546,6 +600,8 @@ function Compat.resetVehicleState()
     belt.cruise = false
     belt.nitro = 0
     belt.nitroActive = false
+    -- `beltEvent` is deliberately NOT cleared: which mechanism a server's seatbelt script uses
+    -- is a property of the server, not of the last car you were in.
 end
 
 -- ---------------------------------------------------------------------------------------
@@ -753,6 +809,10 @@ function Compat.report()
     return {
         framework = Compat.provider.framework or 'none',
         fuel = Compat.provider.fuel or 'none',
+        -- 'none' here means the belt state is being MIRRORED from events or a state bag rather
+        -- than read from the seatbelt script, which is the fragile arrangement. Worth knowing
+        -- when a belt indicator is showing the wrong thing.
+        seatbelt = Compat.provider.seatbelt or 'none (mirrored from events)',
         voice = Compat.provider.voice or 'none',
         notify = Compat.provider.notify or 'none',
         sounds = Compat.provider.sounds or 'none',
