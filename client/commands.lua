@@ -102,17 +102,35 @@ end, false)
 -- that: qb-multicharacter lost its cursor twice a second and the HUD announced "layout
 -- saved" each time.
 CreateThread(function()
+    -- The watchdog needs the fault to PERSIST before it acts. Its check runs after a Wait,
+    -- and the world moves during a Wait: opening the menu one tick into that pause made the
+    -- stale "nothing is open" reading true and the fresh "we hold focus" reading true at the
+    -- same moment, so the watchdog closed the menu the instant it was opened. Requiring two
+    -- consecutive confirmations removes every such race, at the cost of a second of delay in
+    -- the case that actually needs it.
+    local strikes = 0
+
     while true do
         if State.menuOpen or State.layoutMode then
+            strikes = 0
             Wait(0)
             if Config.Menu.closeOnEscape and IsControlJustReleased(0, 322) then
                 State.closeMenu()
             end
         else
             Wait(500)
-            if State.focusHeld then
-                HUD.debug('releasing focus this resource took and did not give back')
-                State.closeMenu()
+
+            -- Re-read EVERYTHING after the wait. The condition that sent this thread down
+            -- the else branch is half a second old and may no longer be true.
+            if State.focusHeld and not State.menuOpen and not State.layoutMode then
+                strikes = strikes + 1
+                if strikes >= 2 then
+                    strikes = 0
+                    HUD.debug('releasing focus this resource took and did not give back')
+                    State.closeMenu()
+                end
+            else
+                strikes = 0
             end
         end
     end

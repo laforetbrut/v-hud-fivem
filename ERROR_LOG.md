@@ -233,4 +233,20 @@ path that reaches them. Plus a release on `OnPlayerUnload` and on `onResourceSto
 resource. Read it to decide whether to take focus; never to decide whether to release it.
 Track what you took, release only that.
 
+## [2026-07-31 — in game] — The watchdog closed the menu the instant it opened
+
+**Context:** Pressing `I` after the focus fix above.
+**Error:** The menu appeared and shut itself immediately.
+**Root cause:** A stale read across a `Wait`. The watchdog's loop chose its branch while
+nothing was open, then slept 500ms, then acted on `State.focusHeld` — which by then was true
+because the player had opened the menu DURING the sleep. The branch condition was half a
+second old and the flag it acted on was current, so the two disagreed and the watchdog
+"rescued" a menu that was working perfectly.
+**Fix:** Re-read every part of the condition AFTER the wait, and require two consecutive
+confirmations before acting. A genuine stuck cursor is still released within a second; a
+transient can no longer trigger it.
+**Prevention:** In any FiveM loop, a value read before a `Wait` is history. Anything the
+branch depends on must be re-read after it — and a watchdog that takes a destructive action
+should require the fault to persist rather than firing on a single sample.
+
 ---
