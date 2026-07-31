@@ -150,8 +150,46 @@
 }
 
 .spd-centre--between { flex-direction: row; align-items: baseline; gap: 12px; }
-.spd-centre--low     { margin-top: 46%; }
-.spd-centre--muscle  { margin-top: 8%; }
+
+/*
+    Round faces put their digital readout BELOW the hub, not on it.
+
+    A needle pivots at the centre of a dial, so the centre is the one place a number must not
+    go: the hub covers it, the needle sweeps through it, and the inner fuel arc crosses it.
+    That is what made the luxury and JDM faces unreadable - the speed sat on the hub with the
+    unit printed across the fuel gauge.
+
+    Real clusters solve it the same way: the digital panel lives in the lower third of the
+    face, on its own darker plate. Absolute positioning per face, because a margin measured in
+    percent resolves against the WIDTH and drifts on any face that is not square.
+*/
+.spd-body[data-style="classic"] .spd-centre,
+.spd-body[data-style="luxury"] .spd-centre,
+.spd-body[data-style="jdm"] .spd-centre,
+.spd-body[data-style="supercar"] .spd-centre,
+.spd-body[data-style="dial"] .spd-centre {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 3px 10px;
+    border-radius: 4px;
+    /* The plate. Enough to lift the numbers off the graduations without becoming a box. */
+    background: rgba(0, 0, 0, 0.42);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.spd-body[data-style="classic"]  .spd-centre { top: 60%; }
+.spd-body[data-style="luxury"]   .spd-centre { top: 58%; }
+.spd-body[data-style="jdm"]      .spd-centre { top: 60%; }
+.spd-body[data-style="supercar"] .spd-centre { top: 58%; }
+.spd-body[data-style="dial"]     .spd-centre { top: 60%; }
+
+/* The cream dials keep dark ink on a light face, so their plate is light too. */
+.spd-body[data-style="classic"] .spd-centre {
+    background: rgba(244, 239, 226, 0.82);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
 
 /*
     The readout.
@@ -404,7 +442,8 @@
 .spd-body[data-style="classic"] .spd-arc-track { stroke: rgba(0,0,0,0.12); }
 .spd-body[data-style="classic"] .spd-arc--fuel { stroke: #8a6a2f; }
 
-.spd-body[data-style="classic"] .spd-centre { margin-top: 52%; text-shadow: none; }
+/* Position comes from the round-face block near the top; only the ink changes here. */
+.spd-body[data-style="classic"] .spd-centre { text-shadow: none; }
 .spd-body[data-style="classic"] .spd-value { font-size: 19px; color: #1f1d1a; }
 .spd-body[data-style="classic"] .spd-unit  { color: #6b6257; }
 .spd-body[data-style="classic"] .spd-gear  { color: #b3261e; text-shadow: none; }
@@ -456,8 +495,9 @@
 .spd-body[data-style="luxury"] .spd-tick { stroke-width: 0.9; }
 .spd-body[data-style="luxury"] .spd-tick--major { stroke-width: 1.8; stroke: var(--c-accent); }
 .spd-body[data-style="luxury"] .spd-numeral { font-weight: 400; opacity: 0.75; }
-.spd-body[data-style="luxury"] .spd-centre { margin-top: 50%; }
-.spd-body[data-style="luxury"] .spd-value { font-size: 34px; font-weight: 300; }
+.spd-body[data-style="luxury"] .spd-value { font-size: 30px; font-weight: 300; }
+/* The inner fuel arc is pulled tighter so the readout plate can never sit on it. */
+.spd-body[data-style="luxury"] .spd-arc--fuel { stroke-width: 3; }
 
 /* =======================================================================================
    6. jdm - tachometer first, digital speed inset
@@ -499,7 +539,23 @@
 .spd-body[data-style="muscle"] .spd-bezel { stroke: url(#chromeGradient); stroke-width: 4; }
 .spd-body[data-style="muscle"] .spd-bezel--thin { stroke-width: 3; }
 .spd-body[data-style="muscle"] .spd-panel { fill: var(--c-bg-d88); }
-.spd-body[data-style="muscle"] .spd-value { font-size: 22px; }
+.spd-body[data-style="muscle"] .spd-value { font-size: 20px; }
+
+/* The muscle cluster's readout sits under the big centre dial, on the same light plate the
+   classic face uses - three chrome gauges with a glowing black panel between them looks like
+   two different cars. */
+.spd-body[data-style="muscle"] .spd-centre {
+    position: absolute;
+    left: 50%;
+    top: 62%;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 2px 9px;
+    border-radius: 3px;
+    background: rgba(244, 239, 226, 0.8);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+    text-shadow: none;
+}
 
 /* =======================================================================================
    8. supercar - shift lights over a central rev ring
@@ -515,7 +571,6 @@
 }
 
 .spd-body[data-style="supercar"] .spd-svg { inset: 22px 0 auto 0; height: 208px; }
-.spd-body[data-style="supercar"] .spd-centre { margin-top: 74px; }
 
 .spd-lights {
     display: flex;
@@ -626,17 +681,40 @@
    The menu preview reuses the same faces, scaled to fit a card
    ======================================================================================= */
 
+/*
+    The menu preview cards.
+
+    Each face has its own natural size, from 168px square to 298px wide, so one scale factor
+    either shrank the small ones to nothing or let the wide ones run under their own label.
+    The card is a fixed frame and each face is scaled to FIT it, per face, computed from the
+    sizes declared in shared/speedometers.lua.
+*/
 .spd-preview {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 132px;
+    height: 150px;
     overflow: hidden;
     pointer-events: none;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.28);
 }
 
 .spd-preview .spd-body {
-    transform: scale(var(--preview-scale, 0.62));
-    transform-origin: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(var(--preview-scale, 0.62));
+    transform-origin: center center;
     flex: none;
+}
+
+/* A preview is a still life: no blinking limiter, no flashing shift light, no pulsing alert.
+   Twelve cards animating at once is a menu that is hard to read and hard to look at. */
+.spd-preview *,
+.spd-preview *::before,
+.spd-preview *::after {
+    animation: none !important;
+    transition: none !important;
 }

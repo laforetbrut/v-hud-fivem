@@ -210,9 +210,17 @@
     color: var(--c-muted);
 }
 
+/*
+    `minmax(0, auto)` on the control column, not bare `auto`.
+
+    A grid track sized `auto` refuses to go below its content's minimum width, so a control
+    that COULD wrap - the twelve gauge shapes - instead pushed the row wider than the panel
+    and the last option was cut off at the edge. minmax(0, ...) lets the track shrink, and the
+    control wraps inside it.
+*/
 .row {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
     align-items: center;
     gap: 16px;
     padding: 11px 0;
@@ -247,7 +255,14 @@
     color: var(--c-muted);
 }
 
-.row__control { display: flex; align-items: center; gap: 10px; }
+.row__control {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-width: 0;
+}
 
 /* Switch -------------------------------------------------------------------------------- */
 
@@ -321,10 +336,15 @@
 
 /* Segmented choice ---------------------------------------------------------------------- */
 
+/* Twelve gauge shapes do not fit on one line beside their label. The group wraps instead of
+   running off the panel, which is what cut "Losange" in half at the right edge. */
 .segments {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 2px;
     padding: 2px;
+    max-width: 100%;
     background: rgba(255, 255, 255, 0.05);
     border-radius: var(--radius);
 }
@@ -406,14 +426,23 @@
     box-shadow: 0 0 0 1px var(--c-accent), var(--glow);
 }
 
+/* The swatch is the only thing that says what a theme looks like, so it carries its own
+   border and a minimum size. Without them the neon theme's near-black first colour was
+   invisible against the card and the row read as three colours, not four. */
 .theme-card__swatch {
     display: flex;
-    height: 34px;
+    height: 36px;
+    border: 1px solid var(--c-line-strong);
     border-radius: calc(var(--radius) - 1px);
     overflow: hidden;
 }
 
-.theme-card__swatch i { flex: 1; }
+.theme-card__swatch i {
+    flex: 1;
+    min-width: 8px;
+}
+
+.theme-card__swatch i + i { border-left: 1px solid rgba(0, 0, 0, 0.35); }
 
 .theme-card__label {
     font-size: 12.5px;

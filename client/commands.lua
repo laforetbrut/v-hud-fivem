@@ -70,22 +70,59 @@ RegisterCommand('hudreset', function()
     State.set(Settings.default(), true, true)
 end, false)
 
---- What was detected, printed to F8. The first thing to ask for when somebody reports that a
---- gauge is stuck: it names the fuel script, the voice script and the inventory actually in
---- use, which is usually the whole answer.
+--- What was detected AND whether it actually answers, printed to F8.
+---
+--- This is a probe, not a list of resource names. "rcore_fuel is started" and "rcore_fuel
+--- answers GetVehicleFuelPercentage" are different claims, and only the second one means the
+--- gauge will move. Each line below is the result of really calling the thing.
 RegisterCommand('hudinfo', function()
     local report = Compat.report()
     local version = GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or '0.0.0'
+    local ped = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(ped, false)
 
-    print(('[v-hud] version %s'):format(version))
-    print(('[v-hud] framework : %s'):format(report.framework))
-    print(('[v-hud] fuel      : %s'):format(report.fuel))
-    print(('[v-hud] voice     : %s'):format(report.voice))
-    print(('[v-hud] notify    : %s'):format(report.notify))
-    print(('[v-hud] sounds    : %s'):format(report.sounds))
-    print(('[v-hud] inventory : %s'):format(report.inventory))
-    print(('[v-hud] language  : %s'):format(CurrentLocale()))
-    print(('[v-hud] theme     : %s'):format(State.player and State.player.theme or 'not loaded'))
+    local function line(label, value)
+        print(('[v-hud] %-11s %s'):format(label, tostring(value)))
+    end
+
+    print(('[v-hud] ---- version %s ----'):format(version))
+    line('framework', report.framework)
+    line('language', CurrentLocale())
+    line('theme', State.player and State.player.theme or 'not loaded')
+
+    -- The framework, proved rather than assumed.
+    local data = Compat.playerData()
+    line('playerdata', (data and data.citizenid)
+        and ('ok, citizenid ' .. tostring(data.citizenid))
+        or 'NO DATA - is the character loaded?')
+    line('metadata', ('hunger %s, thirst %s, stress %s')
+        :format(Needs.hunger, Needs.thirst, Needs.stress))
+
+    -- Fuel, proved by reading the vehicle the player is in.
+    if vehicle ~= 0 then
+        line('fuel', ('%s -> %.1f%%'):format(report.fuel, Compat.fuel(vehicle)))
+        local range = Compat.fuelRange(vehicle)
+        line('range', range and (range .. ' (provider supports it)') or 'not published by this provider')
+        local odo = Odometer and Odometer.metres(vehicle) or nil
+        line('odometer', odo and ('%.0f m'):format(odo) or 'nothing recorded yet')
+        line('plate', GetVehicleNumberPlateText(vehicle))
+    else
+        line('fuel', report.fuel .. ' (get in a vehicle to test it)')
+    end
+
+    local voice = Compat.voice()
+    line('voice', ('%s, range %s, radio %s')
+        :format(report.voice, voice.range, voice.radio))
+    line('inventory', ('%s, harness: %s')
+        :format(report.inventory, tostring(Compat.hasItem(Config.Compat.harnessItem))))
+    line('notify', report.notify)
+    line('sounds', report.sounds)
+
+    -- What is currently hiding the HUD, if anything. The other half of "why can I not see it".
+    line('overlay', Compat.overlayOpen() and 'something is on screen, HUD hidden' or 'clear')
+    line('minimap', ('%s, masks %s'):format(
+        State.settings and State.settings.minimap.shape or '?',
+        HasStreamedTextureDictLoaded('squaremap') and 'streaming' or 'NOT streaming'))
 
     Compat.notify(('v-hud: %s / %s'):format(report.framework, report.fuel), 'primary', true)
 end, false)

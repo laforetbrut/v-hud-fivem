@@ -367,7 +367,9 @@ const Menu = (() => {
                 }, [preview, U.make('span', { class: 'speedo-card__label', text: S.t(entry.label) })]);
 
                 cards.appendChild(card);
-                Speedo.preview(preview, entry.key, sample);
+                // Measured after the card is in the document, so the scale is computed from
+                // the real card size rather than from zero.
+                requestAnimationFrame(() => Speedo.preview(preview, entry.key, sample, entry.size));
             }
 
             return [

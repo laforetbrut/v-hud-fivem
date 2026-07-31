@@ -730,6 +730,43 @@ Config.Compat = {
 }
 
 -- =======================================================================================
+-- 10b. When the HUD gets out of the way
+-- =======================================================================================
+
+-- A HUD drawn over somebody's phone, inventory or pause menu is a HUD in the way. None of
+-- this touches the other resource: it asks, or it watches a signal the other resource already
+-- publishes, and hides itself.
+Config.HideWhen = {
+    -- The GTA pause menu, the map screen and the loading screen. There is no reason to draw
+    -- a speedometer over a menu the game itself put up.
+    pauseMenu = true,
+
+    -- ANY other resource holding NUI focus. That is the general answer to "a menu is open":
+    -- the phone, the inventory, a shop, a job menu. They take focus, this steps aside.
+    --
+    -- Turn it off if a resource on your server takes focus without covering anything (some
+    -- radial menus do) and you would rather keep the HUD up underneath it.
+    nuiFocus = true,
+
+    -- Resources that publish their own "am I open" export. Checked in addition to the focus
+    -- rule, because a phone that keeps the game controls live does not always hold focus.
+    --
+    -- Each entry is a resource and a boolean export on it. A resource that is not started, or
+    -- that does not publish the export, is skipped - nothing here can error.
+    resources = {
+        { resource = 'v-phone', export = 'IsOpen' },
+        { resource = 'qb-phone', export = 'IsOpen' },
+        { resource = 'lb-phone', export = 'IsOpen' },
+        { resource = 'qb-inventory', export = 'IsInventoryOpen' },
+        { resource = 'ox_inventory', export = 'getInventoryOpen' },
+    },
+
+    -- How long the HUD stays hidden after the thing that hid it went away. A short tail stops
+    -- the HUD flashing back for one frame between two menus.
+    linger = 250,
+}
+
+-- =======================================================================================
 -- 11b. Odometer
 -- =======================================================================================
 

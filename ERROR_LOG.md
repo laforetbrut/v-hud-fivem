@@ -278,4 +278,35 @@ one is drawn in a different colour, because dragging it releases it from the map
 **Prevention:** To draw something over an element, measure the element. Never rebuild its
 position from the inputs that were supposed to produce it.
 
+## [2026-07-31 — in game] — The minimap resized itself on every settings change
+
+**Context:** Moving any slider in the settings menu.
+**Error:** The minimap jumped to full size and snapped back. Reported as "on voit la minimap
+changer de taille avant de redevenir normal".
+**Root cause:** `Minimap.apply` ran the `SetBigmapActive(true) / Wait(50) / SetBigmapActive
+(false)` rebuild every time it was called, and it is called on every settings change. That
+toggle exists to make a new radar MASK take effect; it is a visible flicker and it is only
+needed when the SHAPE changed. Moving, resizing or recolouring the map needs none of it -
+`SetMinimapComponentPosition` takes effect immediately. Dragging a slider also started one
+thread per frame, each with its own 50ms wait, so the flickers overlapped.
+**Fix:** The rebuild only runs when the shape actually changed, and calls are coalesced
+behind a token so only the last change in a burst is applied.
+**Prevention:** Before putting an expensive or visible native call in a function that runs on
+every settings change, ask which SETTING it is actually for, and guard it on that one.
+
+## [2026-07-31 — in game] — The HUD drew over the phone and the pause menu
+
+**Context:** Opening v-phone, and opening the GTA pause menu.
+**Error:** The speedometer and the minimap sat on top of both.
+**Root cause:** Only `IsPauseMenuActive()` was checked, and only for the HUD elements - not
+the minimap - so anything that was not the pause menu was simply not considered.
+**Fix:** `Compat.overlayOpen()`, driven by `Config.HideWhen`: the pause menu and loading
+screen, NUI focus held by any other resource, and a list of resources asked through the "am I
+open" export they already publish (`exports['v-phone']:IsOpen()`). Both the HUD and the
+minimap read it. Nothing reaches into another resource - it asks a question that resource
+already answers, and a missing export is recorded once and never asked again.
+**Prevention:** "Is something else on screen" is not the same question as "is the pause menu
+open". When integrating with another resource's visibility, use the signal it publishes;
+never patch it, and never assume the export exists.
+
 ---

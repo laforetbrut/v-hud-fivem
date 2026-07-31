@@ -23,6 +23,12 @@ local applied
 local textureState = {}          -- dict name -> true (available) / false (checked, missing)
 local warnedMissing = false
 
+-- The last shape actually pushed to the engine. The bigmap toggle that makes a new mask take
+-- effect is a VISIBLE flicker - the map jumps to full size and back - so it is only worth
+-- paying when the shape really changed, not every time a colour slider moves.
+local appliedShape = nil
+local applyToken = 0
+
 -- The native geometry each shape starts from, before the player's offsets are applied. These
 -- are screen-fraction units: 1.0 is the full width or height.
 local SHAPES = {
@@ -82,10 +88,21 @@ function Minimap.apply(settings)
     if not settings then return end
     applied = settings.minimap
 
+    -- Coalesce. Dragging a slider fires a settings change per frame, and each one used to
+    -- start its own thread that resized the map and waited 50ms - which is exactly the
+    -- "minimap changes size then goes back" flicker. Only the last change in a burst is
+    -- applied.
+    applyToken = applyToken + 1
+    local token = applyToken
+
     CreateThread(function()
+        Wait(60)
+        if token ~= applyToken then return end
+
         local map = applied
         local shape = SHAPES[map.shape] or SHAPES.square
         local offset = aspectOffset()
+        local shapeChanged = appliedShape ~= map.shape
 
         SetMinimapClipType(shape.clip)
 
@@ -128,13 +145,21 @@ function Minimap.apply(settings)
 
         SetBlipAlpha(GetNorthRadarBlip(), 0)
 
-        -- The bigmap toggle forces the engine to rebuild the minimap with the new mask. Without
-        -- it the shape only changes the next time the player opens the pause map, which reads
-        -- as "the setting did nothing".
-        SetBigmapActive(true, false)
-        Wait(50)
-        SetBigmapActive(false, false)
-        SetMinimapClipType(shape.clip)
+        -- The bigmap toggle forces the engine to rebuild the minimap with the new MASK.
+        -- Without it a new shape only appears the next time the player opens the pause map,
+        -- which reads as "the setting did nothing".
+        --
+        -- It is also a visible flicker: the map jumps to full size for a frame. So it is only
+        -- paid when the shape actually changed. Moving, resizing or recolouring the map needs
+        -- none of it - SetMinimapComponentPosition takes effect immediately.
+        if shapeChanged then
+            appliedShape = map.shape
+            SetBigmapActive(true, false)
+            Wait(50)
+            if token ~= applyToken then return end
+            SetBigmapActive(false, false)
+            SetMinimapClipType(shape.clip)
+        end
 
         -- Tell the NUI which border to draw, and where. The border is CSS because the native
         -- one cannot be recoloured.
@@ -158,6 +183,10 @@ end
 local function shouldShow(settings, inVehicle)
     if not settings then return true end
     if State.manualHide then return false end
+    -- The game already hides the radar in its own pause menu, but not for another resource's
+    -- phone or inventory - and a minimap poking out from under a phone is the same complaint
+    -- as a speedometer over it.
+    if Compat.overlayOpen() then return false end
     if settings.cinematic and Config.Cinematic.hideMinimap then return false end
     if not settings.show.minimap then return false end
     if settings.minimap.hide then return false end

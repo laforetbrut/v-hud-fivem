@@ -582,12 +582,26 @@ const Speedo = (() => {
         U.fill(root, [refs.node, chips.node]);
     }
 
-    /** A face rendered into an arbitrary container, for the menu's preview cards. */
-    function preview(container, faceName, sample) {
+    /**
+     * A face rendered into an arbitrary container, for the menu's preview cards.
+     *
+     * The scale is computed per face rather than fixed. The ten range from 168px square to
+     * 298px wide, so one factor either shrank the small ones to a smudge or let the wide ones
+     * run out from under their own label - which is what the truck and muscle cards did.
+     */
+    function preview(container, faceName, sample, size) {
         const face = FACES[faceName] || FACES.minimal;
         const built = face();
+
         U.fill(container, [built.node]);
         applyTo(built, sample);
+
+        if (size && size.w && size.h) {
+            const box = container.getBoundingClientRect();
+            const room = { w: (box.width || 200) - 12, h: (box.height || 150) - 12 };
+            const scale = Math.min(room.w / size.w, room.h / size.h, 1);
+            U.cssVar(container, '--preview-scale', U.round(scale, 3));
+        }
     }
 
     /* ------------------------------------------------------------------------------------

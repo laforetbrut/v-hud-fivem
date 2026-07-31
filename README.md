@@ -51,6 +51,7 @@ Everything below is detected at runtime and optional. Nothing is required.
 | Capability | Detected |
 |---|---|
 | Framework | qb-core, qbx_core |
+| Gets out of the way of | the GTA pause menu, any resource holding NUI focus, and anything publishing an "am I open" export — v-phone, qb-phone, lb-phone, qb-inventory, ox_inventory (`Config.HideWhen`) |
 | Fuel | rcore_fuel (with range/litres), qb-fuel, LegacyFuel, ps-fuel, cdn-fuel, lc_fuel, x-fuel, okokGasStation, Renewed-Fuel, ox_fuel, native fallback |
 | Voice | pma-voice, saltychat, mumble-voip |
 | Notifications | qb-core, ox_lib, okokNotify, own themed toasts |

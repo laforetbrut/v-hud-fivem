@@ -134,7 +134,6 @@ CreateThread(function()
             local playerId = PlayerId()
             local vehicle = GetVehiclePedIsIn(ped, false)
             local inVehicle = vehicle ~= 0
-            local paused = IsPauseMenuActive()
 
             local oxygen, underwater = breath(ped, playerId)
             local voice = settings.show.voice and Compat.voice() or nil
@@ -143,7 +142,12 @@ CreateThread(function()
             -- ONE place decides whether the HUD is drawn, because the NUI writes the answer
             -- to one attribute per tick: a second writer (the cinematic handler used to be
             -- one) gets overruled twenty times a second and reads as "the setting flickers".
-            local visible = not paused
+            --
+            -- Compat.overlayOpen() covers the pause menu, the map screen, a loading screen,
+            -- another resource's NUI focus, and any resource that publishes an "am I open"
+            -- export - the phone above all. A speedometer over somebody's phone is the HUD
+            -- being in the way.
+            local visible = not Compat.overlayOpen()
                 and not State.manualHide
                 and not (settings.cinematic and Config.Cinematic.hideHud)
 

@@ -536,6 +536,58 @@ function Compat.resetVehicleState()
 end
 
 -- ---------------------------------------------------------------------------------------
+-- Getting out of the way
+-- ---------------------------------------------------------------------------------------
+
+-- Resources that answered their "am I open" export at least once. A resource that does not
+-- publish one is recorded as unusable and never asked again: this runs on the HUD tick, and
+-- a pcall that always fails is a pcall that always costs.
+local overlayChecked = {}
+local lastOverlay = 0
+
+--- Whether something is on screen that the HUD should get out from under: the pause menu, a
+--- loading screen, another resource's NUI, or a resource that says it is open.
+---
+--- None of this reaches into another resource. It reads the pause menu from the game, focus
+--- from the client, and asks each configured resource a question it already answers.
+function Compat.overlayOpen()
+    local hide = Config.HideWhen
+
+    if hide.pauseMenu and (IsPauseMenuActive() or GetIsLoadingScreenActive()) then
+        lastOverlay = GetGameTimer()
+        return true
+    end
+
+    -- Focus held by anything that is not this resource's own menu.
+    if hide.nuiFocus and IsNuiFocused() and not (State and (State.menuOpen or State.layoutMode)) then
+        lastOverlay = GetGameTimer()
+        return true
+    end
+
+    for _, entry in ipairs(hide.resources or {}) do
+        if overlayChecked[entry.resource] ~= false and started(entry.resource) then
+            local ok, open = pcall(function()
+                return exports[entry.resource][entry.export](exports[entry.resource])
+            end)
+
+            if not ok then
+                -- No such export on this build. Stop asking.
+                overlayChecked[entry.resource] = false
+            else
+                overlayChecked[entry.resource] = true
+                if open == true then
+                    lastOverlay = GetGameTimer()
+                    return true
+                end
+            end
+        end
+    end
+
+    -- A short tail, so the HUD does not flash back for one frame between two menus.
+    return (GetGameTimer() - lastOverlay) < (hide.linger or 0)
+end
+
+-- ---------------------------------------------------------------------------------------
 -- Diagnostics
 -- ---------------------------------------------------------------------------------------
 
