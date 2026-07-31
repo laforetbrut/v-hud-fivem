@@ -22,6 +22,7 @@ Locales.fr = {
     ['notify.layout_edit_off'] = 'Disposition enregistrée',
     ['notify.hud_hidden'] = 'HUD masqué - retapez la commande pour le faire revenir',
     ['notify.hud_shown'] = 'HUD de nouveau visible',
+    ['notify.hud_not_ready'] = 'Le HUD charge encore - réessayez dans un instant',
     ['notify.low_fuel'] = 'Carburant faible',
     ['notify.stress_gain'] = 'Votre stress a augmenté',
     ['notify.stress_relieved'] = 'Votre stress a diminué',

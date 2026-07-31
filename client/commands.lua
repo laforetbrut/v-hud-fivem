@@ -93,10 +93,14 @@ end, false)
 -- Escape closes the menu. NUI focus swallows the key, so the page reports it back through the
 -- close callback; this is only the native-side fallback for a page that stopped answering.
 --
--- The second half is the safety net that matters more. NUI focus is the one state that can
--- strand a player completely: a cursor on screen, no menu to dismiss, and no keybind that
--- works. If focus is held while neither surface is open, something went wrong upstream and
--- the only sane response is to take it back.
+-- The second half is the safety net. NUI focus is the one state that can strand a player: a
+-- cursor on screen, no menu to dismiss, and no keybind that works.
+--
+-- It is keyed on OUR OWN flag, never on IsNuiFocused(). That native is global - it is true
+-- whenever ANY resource holds focus - so a watchdog built on it tears the focus away from
+-- the multicharacter screen, the phone and the inventory every time it runs. It did exactly
+-- that: qb-multicharacter lost its cursor twice a second and the HUD announced "layout
+-- saved" each time.
 CreateThread(function()
     while true do
         if State.menuOpen or State.layoutMode then
@@ -106,14 +110,9 @@ CreateThread(function()
             end
         else
             Wait(500)
-            if IsNuiFocused() then
-                HUD.debug('releasing orphaned NUI focus')
-                SetNuiFocus(false, false)
-                SetNuiFocusKeepInput(false)
-                if Config.Menu.freezeWhileOpen then
-                    SetPlayerControl(PlayerId(), true, 0)
-                end
-                SendNUIMessage({ action = 'closeMenu' })
+            if State.focusHeld then
+                HUD.debug('releasing focus this resource took and did not give back')
+                State.closeMenu()
             end
         end
     end

@@ -19,6 +19,7 @@ Locales.en = {
     ['notify.layout_edit_off'] = 'Layout saved',
     ['notify.hud_hidden'] = 'HUD hidden - type the command again to bring it back',
     ['notify.hud_shown'] = 'HUD visible again',
+    ['notify.hud_not_ready'] = 'The HUD is still loading - try again in a moment',
     ['notify.low_fuel'] = 'Low fuel',
     ['notify.stress_gain'] = 'Your stress has increased',
     ['notify.stress_relieved'] = 'Your stress has gone down',

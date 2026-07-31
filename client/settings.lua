@@ -23,6 +23,10 @@ State = {
     -- so a relog or a restart always brings the HUD back - a player who forgot they hid it
     -- would otherwise report a broken resource.
     manualHide = false,
+    -- Whether THIS resource is currently holding NUI focus. Tracked rather than read back
+    -- with IsNuiFocused(), which is global: acting on that native takes the cursor away from
+    -- whichever other resource actually owns it.
+    focusHeld = false,
     boot = nil,
     player = nil,
     settings = nil,
@@ -206,7 +210,16 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
+
     State.flushSave()
+
+    -- Give the cursor back before the resource goes away. A stop with focus held leaves the
+    -- player pointing at nothing, with the code that would have released it now unloaded.
+    if State.focusHeld then
+        SetNuiFocus(false, false)
+        SetNuiFocusKeepInput(false)
+        SetPlayerControl(PlayerId(), true, 0)
+    end
 end)
 
 -- ---------------------------------------------------------------------------------------
@@ -287,7 +300,11 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
+    -- A character switch is a hard reset. Anything left open here would hold focus into the
+    -- multicharacter screen, which is the one place a stuck cursor cannot be escaped.
+    State.closeMenu()
     State.ready = false
+    State.manualHide = false
     SendNUIMessage({ action = 'hide' })
 end)
 
@@ -405,7 +422,13 @@ callback('resetSection', function(data)
 end)
 
 callback('layoutMode', function(data)
-    State.layoutMode = data.on == true
+    local wanted = data.on == true
+
+    -- Idempotent. The page posts this from more than one place - the Done button, the close
+    -- handler, the escape key - and firing the toast on every one of them is what filled the
+    -- screen with "Disposition enregistrée".
+    if wanted == State.layoutMode then return end
+    State.layoutMode = wanted
 
     -- Opening the editor from the menu closes the menu, and the page does that ITSELF without
     -- posting `close` - so without this line the Lua side still believed the menu was open,
@@ -415,6 +438,7 @@ callback('layoutMode', function(data)
     if State.layoutMode then State.menuOpen = false end
 
     local wantsFocus = State.layoutMode or State.menuOpen
+    State.focusHeld = wantsFocus
     SetNuiFocus(wantsFocus, wantsFocus)
     if Config.Menu.freezeWhileOpen then
         SetPlayerControl(PlayerId(), not wantsFocus, 0)
@@ -451,9 +475,28 @@ end)
 -- ---------------------------------------------------------------------------------------
 
 function State.openMenu()
-    if State.menuOpen or not State.ready then return end
+    if State.menuOpen or State.layoutMode then return end
+
+    -- Not ready means the boot payload has not arrived: the page has no themes, no strings
+    -- and no settings, so the menu would open empty AND hold focus.
+    --
+    -- The explanation is only worth showing to somebody already in the world. On the
+    -- multicharacter screen the key is being pressed at a HUD that is not supposed to exist
+    -- yet, and a toast over the character list is noise.
+    if not State.ready then
+        if LocalPlayer.state.isLoggedIn then
+            Compat.notify(L('notify.hud_not_ready'), 'error', true)
+        end
+        return
+    end
+
+    -- Another resource holding focus means a menu, the phone or the character screen is up.
+    -- Taking focus on top of it leaves two pages fighting for the cursor and the other one
+    -- unable to give it back.
+    if IsNuiFocused() then return end
 
     State.menuOpen = true
+    State.focusHeld = true
     SetNuiFocus(true, true)
     if Config.Menu.freezeWhileOpen then
         SetPlayerControl(PlayerId(), false, 0)
@@ -477,10 +520,17 @@ function State.closeMenu()
 
     State.menuOpen = false
     State.layoutMode = false
-    SetNuiFocus(false, false)
-    SetNuiFocusKeepInput(false)
-    if Config.Menu.freezeWhileOpen then
-        SetPlayerControl(PlayerId(), true, 0)
+
+    -- Only drop focus if it was OURS. Another resource may have taken it since - the
+    -- multicharacter screen, the phone - and releasing it on their behalf strands them
+    -- instead.
+    if State.focusHeld then
+        State.focusHeld = false
+        SetNuiFocus(false, false)
+        SetNuiFocusKeepInput(false)
+        if Config.Menu.freezeWhileOpen then
+            SetPlayerControl(PlayerId(), true, 0)
+        end
     end
 
     SendNUIMessage({ action = 'closeMenu' })

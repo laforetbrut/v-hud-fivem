@@ -252,6 +252,10 @@ const Layout = (() => {
         overlay = overlay || U.el('layout');
         if (!overlay) return;
 
+        // Idempotent, because the close path can reach here from three directions and each
+        // one used to post `layoutMode` and earn another "layout saved" toast.
+        if (!!on === open) return;
+
         open = !!on;
         overlay.hidden = !open;
         U.attr(overlay, 'data-snap', snap);

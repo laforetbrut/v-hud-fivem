@@ -190,4 +190,47 @@ was adding the offset with the wrong sign.
 **Prevention:** When a value crosses between CSS and a native, state both conventions in the
 comment at the crossing point. A bare sign flip reads like a typo and gets "fixed" back.
 
+## [2026-07-31 — in game] — `restart <resource>` serves the OLD stylesheet
+
+**Context:** Fixing the transparent, left-aligned settings panel, then `restart v-hud`.
+**Error:** The panel was still transparent and still left-aligned. The files on disk were
+correct and every check passed. Reported as "réglage hud encore transparent et pas centré,
+pourtant j'ai restart v-hud".
+**Root cause:** FiveM's CEF caches NUI assets by URL and does not drop them when the resource
+restarts. `restart` reloads the Lua and re-creates the page, and the page then re-uses the
+CACHED `menu.css`. The only thing that cleared it was a full client restart — so a CSS fix
+and a CSS fix that was never applied look identical, which is a miserable thing to debug.
+**Fix:** `html/index.html` writes its `<link>` and `<script>` tags from a loader that appends
+`?v=<timestamp>` per page load, so every resource restart fetches the current files.
+`document.write` is used on purpose: it runs during parsing, so script order is preserved.
+**Prevention:** Never diagnose a NUI change from a resource restart alone until this is in
+place. If a page's assets are ever listed as plain tags again, this comes straight back —
+`tools/make-preview.py` cross-checks its own asset list against the page for the same reason.
+
+## [2026-07-31 — in game] — A focus watchdog built on IsNuiFocused() robbed every other NUI
+
+**Context:** Connecting to the server; the qb-multicharacter screen.
+**Error:** "Disposition enregistrée" toasted four times a second over the character list, and
+pressing `I` there left the character stuck.
+**Root cause:** Two of mine, compounding.
+
+The watchdog added an hour earlier released focus whenever `IsNuiFocused()` was true while
+this resource's own menu was closed. `IsNuiFocused()` is GLOBAL — it is true whenever ANY
+resource holds focus. So on the multicharacter screen, which legitimately holds it, the
+watchdog fired twice a second: it stole the cursor from qb-multicharacter and posted
+`closeMenu`, which posted `layoutMode {on:false}`, which raised a toast. Every time.
+
+And `openMenu` had no guard against another resource owning the screen, so `I` on the
+character list took focus on top of qb-multicharacter's, leaving two pages fighting for the
+cursor and neither able to give it back.
+
+**Fix:** `State.focusHeld` — this resource tracks the focus it took, and the watchdog acts on
+that alone. `openMenu` refuses while `IsNuiFocused()` is true or the HUD has not booted.
+`closeMenu` only calls `SetNuiFocus(false)` if the focus was ours. `layoutMode` and
+`Layout.setOpen` are idempotent, so the toast fires on a real transition and not on every
+path that reaches them. Plus a release on `OnPlayerUnload` and on `onResourceStop`.
+**Prevention:** `IsNuiFocused()` answers a question about the WHOLE client, never about this
+resource. Read it to decide whether to take focus; never to decide whether to release it.
+Track what you took, release only that.
+
 ---

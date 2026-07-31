@@ -70,7 +70,13 @@ anything new.
   clock.
 - **NUI focus must always have a way out.** Every path that sets it clears it; there is a
   watchdog and `/hudunstuck`. Never early-return from a function that releases focus.
+- **`IsNuiFocused()` is GLOBAL.** Read it to decide whether to TAKE focus (do not, if
+  something else has it). Never to decide whether to RELEASE it — that steals the cursor
+  from the multicharacter screen, the phone and the inventory. Track `State.focusHeld` and
+  release only what this resource took.
 - **Never `window.confirm`/`alert`/`prompt`.** They block the page with focus held.
+- **NUI assets are cached by URL across a resource restart.** `html/index.html` writes its
+  tags with a per-load token. Never replace them with plain `<link>`/`<script>` tags.
 
 **Other gotchas already paid for.**
 - An empty Lua list arrives in JS as `{}` — pass every list through `U.asArray`.

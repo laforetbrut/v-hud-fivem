@@ -5,12 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>v-hud</title>
 
-    <link rel="stylesheet" href="css/reset.css">
-    <link rel="stylesheet" href="css/themes.css">
-    <link rel="stylesheet" href="css/hud.css">
-    <link rel="stylesheet" href="css/status.css">
-    <link rel="stylesheet" href="css/speedo.css">
-    <link rel="stylesheet" href="css/menu.css">
+    <!--
+        Stylesheets and scripts are written in with a per-load token rather than listed as
+        plain tags.
+
+        FiveM's CEF caches NUI assets by URL and does NOT drop them when the resource
+        restarts. `restart v-hud` after a CSS change therefore reloads the Lua and serves the
+        OLD stylesheet - the change is invisible until the whole game client is restarted,
+        which looks exactly like the change never happened. A token that differs per page load
+        makes every restart fetch the current file.
+
+        document.write is used deliberately: it runs during parsing, so the load order is
+        preserved, which matters because util.js and state.js define what everything else
+        reads. The files are local, so there is nothing to gain from caching them anyway.
+    -->
+    <script>
+        (function () {
+            var token = '?v=' + Date.now();
+            var styles = ['reset', 'themes', 'hud', 'status', 'speedo', 'menu'];
+
+            for (var i = 0; i < styles.length; i += 1) {
+                document.write('<link rel="stylesheet" href="css/' + styles[i] + '.css' + token + '">');
+            }
+
+            // Stashed for the body, so both lists use the same token.
+            window.__vhudToken = token;
+        })();
+    </script>
 </head>
 <body>
 
@@ -127,15 +148,17 @@
     </div>
 </div>
 
-<script src="js/util.js"></script>
-<script src="js/state.js"></script>
-<script src="js/status.js"></script>
-<script src="js/speedo.js"></script>
-<script src="js/compass.js"></script>
-<script src="js/toast.js"></script>
-<script src="js/layout.js"></script>
-<script src="js/menu.js"></script>
-<script src="js/app.js"></script>
+<!-- Same cache-busting token as the stylesheets. See the note in <head>. -->
+<script>
+    (function () {
+        var token = window.__vhudToken || '';
+        var scripts = ['util', 'state', 'status', 'speedo', 'compass', 'toast', 'layout', 'menu', 'app'];
+
+        for (var i = 0; i < scripts.length; i += 1) {
+            document.write('<script src="js/' + scripts[i] + '.js' + token + '"><\/script>');
+        }
+    })();
+</script>
 
 </body>
 </html>

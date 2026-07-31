@@ -359,13 +359,33 @@ def main():
         themes[key] = to_python(lua_themes[key].patch)
 
     # The markup, lifted straight out of the shipped page so the two cannot drift.
+    #
+    # The shipped page writes its <link> and <script> tags from a loader script, because
+    # FiveM's CEF caches NUI assets by URL and will not drop them on a resource restart. Here
+    # there is no such cache, so the loaders are replaced with plain tags pointing at the real
+    # files - the asset LISTS below must stay in step with the ones in html/index.html.
     page = read('html', 'index.html')
     body = re.search(r'<body>(.*)</body>', page, re.S).group(1)
-    body = body.replace('href="css/', 'href="../html/css/')
-    body = body.replace('src="js/', 'src="../html/js/')
 
-    head_links = re.findall(r'<link[^>]+>', page)
-    head = '\n    '.join(link.replace('href="css/', 'href="../html/css/') for link in head_links)
+    # Drop the script-tag loader; the plain tags are appended after the harness instead.
+    body = re.sub(r'<!-- Same cache-busting token.*?</script>', '', body, flags=re.S)
+
+    STYLES = ['reset', 'themes', 'hud', 'status', 'speedo', 'menu']
+    SCRIPTS = ['util', 'state', 'status', 'speedo', 'compass', 'toast', 'layout', 'menu', 'app']
+
+    # Cross-check against the shipped page so a file added there and forgotten here is caught
+    # rather than silently missing from the preview.
+    for name in STYLES:
+        if "'%s'" % name not in page:
+            sys.exit('preview: %s.css is not listed in html/index.html' % name)
+    for name in SCRIPTS:
+        if "'%s'" % name not in page:
+            sys.exit('preview: %s.js is not listed in html/index.html' % name)
+
+    head = '\n    '.join(
+        '<link rel="stylesheet" href="../html/css/%s.css">' % name for name in STYLES)
+    scripts = '\n'.join(
+        '<script src="../html/js/%s.js"></script>' % name for name in SCRIPTS)
 
     harness = (HARNESS
                .replace('__STATIC__', json.dumps(static, ensure_ascii=False))
@@ -376,8 +396,8 @@ def main():
         '<!DOCTYPE html>\n<html lang="%s">\n<head>\n'
         '    <meta charset="utf-8">\n'
         '    <title>v-hud preview</title>\n    %s\n'
-        '    <style>%s</style>\n</head>\n<body>\n%s\n%s\n</body>\n</html>\n'
-    ) % (args.lang, head, PREVIEW_CSS, body, harness)
+        '    <style>%s</style>\n</head>\n<body>\n%s\n%s\n%s\n</body>\n</html>\n'
+    ) % (args.lang, head, PREVIEW_CSS, body, scripts, harness)
 
     target = os.path.join(ROOT, 'preview')
     os.makedirs(target, exist_ok=True)
