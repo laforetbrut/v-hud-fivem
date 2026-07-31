@@ -455,18 +455,36 @@ callback('sound', function(data)
 end)
 
 callback('import', function(data)
-    if type(data.payload) ~= 'string' then
+    if Config.Policy.allowSharing == false then
+        Compat.notify(L('notify.setting_locked'), 'error')
+        return
+    end
+
+    -- The page has already decoded the share code; what arrives here is an untrusted table
+    -- like any other. State.set runs it through the full pipeline - merged into the schema so
+    -- unknown keys are dropped, every value coerced, then policed - so a code exported on a
+    -- server with different rules cannot carry a locked value onto this one.
+    local incoming = data.settings
+    if type(incoming) ~= 'table' then
+        -- v1.0.0 posted a JSON string. Read both shapes so an old code still imports.
+        if type(data.payload) == 'string' then
+            local ok, decoded = pcall(json.decode, data.payload)
+            incoming = (ok and type(decoded) == 'table') and decoded or nil
+        end
+    end
+
+    if type(incoming) ~= 'table' then
         Compat.notify(L('advanced.import_bad'), 'error')
         return
     end
 
-    local ok, decoded = pcall(json.decode, data.payload)
-    if not ok or type(decoded) ~= 'table' then
-        Compat.notify(L('advanced.import_bad'), 'error')
-        return
+    -- Positions are the player's own arrangement of their own screen. An imported look should
+    -- not pick their HUD up and move it, so the layout they built is kept.
+    if Config.Policy.importKeepsLayout ~= false and State.player then
+        incoming.positions = HUD.deepCopy(State.player.positions)
     end
 
-    State.set(decoded, false, true)
+    State.set(incoming, false, true)
     Compat.notify(L('advanced.import_ok'), 'success')
 end)
 
@@ -557,6 +575,16 @@ exports('SetSettings', function(patch)
     State.queueSave()
     return true
 end)
+
+--- Register a theme from another resource. See THEMES.md.
+--- The key still has to be in Config.Policy.themes: what is OFFERED is the server owner's
+--- decision, not the theme author's.
+exports('RegisterTheme', function(key, definition)
+    return Themes.register(key, definition)
+end)
+
+--- The themes this server currently offers, for a resource that wants to list them.
+exports('GetThemes', function() return Themes.list() end)
 
 exports('OpenMenu', function() State.openMenu() end)
 exports('CloseMenu', function() State.closeMenu() end)

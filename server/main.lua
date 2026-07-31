@@ -33,6 +33,11 @@ local function buildStaticBoot()
         refreshRates = Settings.refreshRates(),
         statuses = Config.Status,
         locked = Settings.lockedPaths(),
+        -- Every choice list the menu may render, already narrowed to what this server allows.
+        -- The NUI never builds a control from its own idea of what exists, so a shape or a
+        -- compass the operator removed is not merely refused on save - it is not offered.
+        choices = Settings.choices(),
+        sharing = Config.Policy.allowSharing ~= false,
         bounds = Config.Policy.bounds,
         money = Config.Money,
         notifications = Config.Notifications,

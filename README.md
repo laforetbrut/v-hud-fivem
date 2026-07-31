@@ -100,6 +100,52 @@ toasts (`Config.Notifications`). If you want *every* `QBCore:Notify` in the HUD'
 notifications per event. That edit is yours to make; this resource will not patch another
 one silently.
 
+## Documentation
+
+| File | What is in it |
+|---|---|
+| [CONFIG.md](CONFIG.md) | Server owner's guide. Restricting, forcing, locking, per-job overrides. |
+| [THEMES.md](THEMES.md) | Writing a theme, three ways, and what the validator will do to it. |
+| [API.md](API.md) | Every export, event and state bag another resource can use. |
+| [CHANGELOG.md](CHANGELOG.md) | What changed, English then French. |
+| [ERROR_LOG.md](ERROR_LOG.md) | Problems hit, root causes, and the rule that stops each recurring. |
+| [RULES.md](RULES.md) | Conventions for anyone working on the resource. |
+
+## For server owners, in one minute
+
+Everything is in `config.lua`, in fourteen commented sections. The shape of it:
+
+```lua
+-- Cut a list: the option leaves the menu AND is refused on save.
+Config.Policy.themes        = { 'glass', 'square' }
+Config.Policy.speedometers  = { 'digital', 'classic' }
+Config.Policy.gaugeShapes   = { 'square', 'rounded', 'circle' }
+Config.Policy.compassStyles = {}                 -- no compass on this server
+
+-- Force a look.
+Config.Policy.forcedTheme   = 'glass'
+Config.Policy.forcedStyle   = { surface = 'solid', glow = false }
+Config.Policy.forcedColours = { accent = '#ff0044' }
+
+-- Decide element by element: 'player', 'forced', or 'off' (removed entirely).
+Config.Policy.elements = { streets = 'forced', stress = 'off' }
+
+-- Anything else, by dotted path.
+Config.Policy.locked = { 'units', 'advanced.refresh' }
+```
+
+**Two things you cannot take away, enforced in code rather than by convention:** players can
+always move their elements, and always choose their minimap shape. A config that tries to lock
+either is ignored with a warning in the console. See [CONFIG.md](CONFIG.md).
+
+## Sharing a setup
+
+A player exports their whole HUD as a code, pastes it to somebody, and that person applies it.
+The code brings the look and leaves the layout alone — elements stay where each player put
+them. An imported code goes through the identical validation as any other save, so one
+exported on a server with different rules cannot carry a locked value onto yours.
+`Config.Policy.allowSharing = false` removes the panel.
+
 ## For developers
 
 Exports (client): `GetSettings`, `SetSettings(patch)`, `OpenMenu`, `CloseMenu`, `IsMenuOpen`,
@@ -111,6 +157,13 @@ Add a status gauge in `Config.Status` - it appears in the HUD, the element list 
 colour picker with no code change. Add a theme in `Config.ExtraThemes`. Every qb-hud event
 (`hud:client:UpdateNeeds`, `UpdateStress`, `UpdateNitrous`, `OnMoneyChange`,
 `hud:server:GainStress`, ...) is answered.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE) — do what you like with it, keep the copyright notice.
+
+The four files in `stream/` are the community-standard minimap masks as shipped with QBCore's
+qb-hud. They are not the author's work and are noted separately in the licence file.
 
 ## Credits
 
@@ -170,6 +223,51 @@ par défaut en verre dépoli.
 
 Pas d'étape de build. Le Lua et le JS sont livrés en source.
 
+## Pour les propriétaires de serveur
+
+Tout est dans `config.lua`, en quatorze sections commentées.
+
+```lua
+-- Retirer une entrée : l'option quitte le menu ET est refusée à la sauvegarde.
+Config.Policy.themes        = { 'glass', 'square' }
+Config.Policy.speedometers  = { 'digital', 'classic' }
+Config.Policy.gaugeShapes   = { 'square', 'rounded', 'circle' }
+Config.Policy.compassStyles = {}                 -- pas de boussole sur ce serveur
+
+-- Imposer une apparence.
+Config.Policy.forcedTheme   = 'glass'
+Config.Policy.forcedStyle   = { surface = 'solid', glow = false }
+Config.Policy.forcedColours = { accent = '#ff0044' }
+
+-- Décider élément par élément : 'player', 'forced', ou 'off' (supprimé entièrement).
+Config.Policy.elements = { streets = 'forced', stress = 'off' }
+
+-- Le reste, par chemin.
+Config.Policy.locked = { 'units', 'advanced.refresh' }
+```
+
+**Deux choses que vous ne pouvez pas retirer, garanties dans le code et non par convention :**
+les joueurs peuvent toujours déplacer leurs éléments, et toujours choisir la forme de leur
+minimap. Une config qui tente de verrouiller l'un ou l'autre est ignorée, avec un
+avertissement en console. Voir [CONFIG.md](CONFIG.md).
+
+## Documentation
+
+| Fichier | Contenu |
+|---|---|
+| [CONFIG.md](CONFIG.md) | Guide du propriétaire de serveur : restreindre, imposer, verrouiller. |
+| [THEMES.md](THEMES.md) | Écrire un thème, trois méthodes. |
+| [API.md](API.md) | Chaque export, événement et state bag utilisable par une autre ressource. |
+| [CHANGELOG.md](CHANGELOG.md) | Ce qui a changé. |
+| [ERROR_LOG.md](ERROR_LOG.md) | Problèmes rencontrés, causes, et la règle qui évite la récidive. |
+
+## Partager sa configuration
+
+Un joueur exporte tout son HUD sous forme de code, l'envoie, et l'autre l'applique. Le code
+apporte l'apparence et laisse la disposition tranquille. Un code importé passe par exactement
+la même validation que n'importe quelle sauvegarde : celui exporté sur un serveur aux règles
+différentes ne peut pas amener une valeur verrouillée sur le vôtre.
+
 ## Notifications
 
 Sur un serveur QBCore d'origine, les notifications appartiennent à **qb-core**, pas au HUD :
@@ -180,6 +278,14 @@ couleurs du HUD : `Config.Notifications.mirrorQbCore = true` **et** commentez le
 `SendNUIMessage` dans `QBCore.Functions.Notify` (qb-core/client/functions.lua), sinon chaque
 événement donne deux notifications. Cette modification vous appartient ; cette ressource ne
 touche pas une autre en silence.
+
+## Licence
+
+MIT. Voir [LICENSE](LICENSE). Faites-en ce que vous voulez, gardez la mention de copyright.
+
+Les quatre fichiers de `stream/` sont les masques de minimap standards de la communauté,
+livrés avec qb-hud de QBCore. Ils ne sont pas l'œuvre de l'auteur et sont mentionnés à part
+dans le fichier de licence.
 
 ## Credits
 

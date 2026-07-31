@@ -26,6 +26,26 @@ const S = (() => {
        Strings
        ------------------------------------------------------------------------------------ */
 
+    /**
+     * The choice lists the server offers, already narrowed by Config.Policy.
+     *
+     * The menu builds every control from these rather than from its own idea of what exists,
+     * so a gauge shape or a compass style the operator removed is never offered - not offered
+     * and then refused, which would be a control that does nothing.
+     */
+    function choices() {
+        const from = (state.statik && state.statik.choices) || {};
+        return {
+            gaugeShapes: U.asArray(from.gaugeShapes),
+            surfaces: U.asArray(from.surfaces),
+            compassStyles: U.asArray(from.compassStyles),
+            mapShapes: U.asArray(from.mapShapes),
+            directions: U.asArray(from.directions),
+            units: U.asArray(from.units),
+            removed: U.asArray(from.removed),
+        };
+    }
+
     /** Translate. An unknown key comes back in brackets so a missing string is visible in the
      *  menu rather than rendering as an empty row nobody notices. */
     function t(key, ...args) {
@@ -452,7 +472,7 @@ const S = (() => {
         get state() { return state; },
         get settings() { return state.settings; },
         get statik() { return state.statik; },
-        t, isLocked, get, set, setMany, applySettings, boot,
+        t, choices, isLocked, get, set, setMany, applySettings, boot,
         setMapAspect, scheduleClamp,
         ELEMENTS,
     };

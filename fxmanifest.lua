@@ -28,6 +28,14 @@ shared_scripts {
     -- server validates a saved theme name against the same table the client offers.
     'shared/themes.lua',
     'shared/speedometers.lua',
+
+    -- Drop-in themes. One file per theme, each defining `Themes.<key>`; see THEMES.md.
+    --
+    -- Listed by name rather than globbed with `themes/*.lua`, and that is deliberate. A glob
+    -- that matches nothing prints a warning on every restart, and a glob does not resolve at
+    -- all when the resource is installed as a junction to a git checkout - which is how
+    -- anybody developing against it runs it. One line per theme is the cost.
+    'themes/example.lua',
     -- Merge/validate a settings payload. Shared because the client applies it and the server
     -- re-validates it: one implementation, no drift.
     'shared/settings.lua',

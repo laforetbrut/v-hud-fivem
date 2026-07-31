@@ -252,19 +252,51 @@ end
 
 --- The themes this server offers, in Config.Policy order, as an array the NUI can render
 --- without knowing the table's key order.
+---
+--- A key in Config.Policy.themes with no theme behind it is reported rather than skipped in
+--- silence: it is almost always a typo or a themes/ file missing from fxmanifest.lua, and a
+--- theme that quietly does not appear is a miserable thing to chase.
+local warnedMissing = {}
+
 function Themes.list()
     local out = {}
-    for _, key in ipairs(Config.Policy.themes) do
+
+    for _, key in ipairs(Config.Policy.themes or {}) do
         local theme = Themes[key]
+
         if theme then
             out[#out + 1] = {
                 key = theme.key,
                 label = theme.label,
                 swatch = theme.swatch,
             }
+        elseif not warnedMissing[key] then
+            warnedMissing[key] = true
+            HUD.warn(('Config.Policy.themes lists "%s", but no theme with that key exists. ' ..
+                'Check the spelling, and that its file is in fxmanifest.lua.'):format(key))
         end
     end
+
     return out
+end
+
+--- Register a theme from another resource.
+---
+--- For a theme that ships with a server's own resource rather than living in v-hud's themes/
+--- folder: `exports['v-hud']:RegisterTheme(key, definition)`. It becomes selectable as soon
+--- as the key is in Config.Policy.themes.
+function Themes.register(key, definition)
+    if type(key) ~= 'string' or type(definition) ~= 'table' then return false end
+
+    Themes[key] = {
+        key = key,
+        label = definition.label or key,
+        swatch = definition.swatch or { '#000000', '#ffffff', '#888888' },
+        patch = definition.patch or {},
+    }
+
+    warnedMissing[key] = nil
+    return true
 end
 
 --- Whether `key` is a theme this server allows. Used on both sides; the server calls it on

@@ -138,6 +138,63 @@ const Menu = (() => {
     const click = () => U.post('sound', { name: 'click', volume: 0.06 });
 
     /**
+     * Export and import, as one panel.
+     *
+     * The code is a base64 string of the player's whole settings table. Pasting one goes
+     * through exactly the same validation as any other save - merged into the schema, coerced,
+     * then policed - so a code from a server with different rules cannot smuggle a locked
+     * value in. It arrives as a suggestion, not as an instruction.
+     */
+    function sharePanel() {
+        const field = U.make('textarea', {
+            class: 'share__field',
+            spellcheck: 'false',
+            rows: 3,
+            placeholder: U.SHARE_PREFIX + '…',
+        });
+
+        const status = U.make('p', { class: 'share__status' });
+
+        const say = (text, kind) => {
+            U.text(status, text);
+            U.attr(status, 'data-kind', kind || 'info');
+        };
+
+        return U.make('div', { class: 'share', 'data-search': S.t('share.title').toLowerCase() }, [
+            field,
+            U.make('div', { class: 'share__actions' }, [
+                U.make('button', {
+                    class: 'btn btn--ghost',
+                    text: S.t('share.export'),
+                    onclick: () => {
+                        field.value = U.encodeShare(S.settings);
+                        field.select();
+                        say(U.copyText(field.value) ? S.t('share.copied') : S.t('share.copy_manual'),
+                            'ok');
+                        click();
+                    },
+                }),
+                U.make('button', {
+                    class: 'btn btn--primary',
+                    text: S.t('share.import'),
+                    onclick: () => {
+                        const parsed = U.decodeShare(field.value);
+                        if (!parsed) {
+                            say(S.t('share.invalid'), 'bad');
+                            return;
+                        }
+
+                        U.post('import', { settings: parsed });
+                        say(S.t('share.imported'), 'ok');
+                        click();
+                    },
+                }),
+            ]),
+            status,
+        ]);
+    }
+
+    /**
      * A confirmation the player can actually dismiss.
      *
      * NEVER window.confirm() here. CEF has no chrome to draw a native dialog into: the call
@@ -231,34 +288,38 @@ const Menu = (() => {
                 if (!keys.includes(status.key)) keys.push(status.key);
             }
 
+            // An element the server removed is not shown as a locked switch - it is not shown
+            // at all. A padlock says "you may not have this"; a removed element simply does
+            // not exist on this server, and a row for it is a row about nothing.
+            const removed = U.asArray(S.choices().removed);
+
             return [
                 section(S.t('tab.elements'), S.t('elements.help'),
-                    keys.map((key) => toggle(`show.${key}`, S.t(`element.${key}`)))),
+                    keys.filter((key) => !removed.includes(key))
+                        .map((key) => toggle(`show.${key}`, S.t(`element.${key}`)))),
             ];
         },
 
         style: () => {
-            const shapes = ['square', 'rounded', 'pill', 'circle', 'ring', 'radial',
-                'dot', 'bar', 'segment', 'diamond', 'hex', 'icon'];
+            // Every list comes from the server, already narrowed by Config.Policy. A control
+            // with one option left is not a choice, so it is not drawn at all.
+            const choice = S.choices();
+            const pick = (path, label, values, labeller, help) => (values.length > 1
+                ? segments(path, label, values.map((v) => ({ value: v, label: labeller(v) })), help)
+                : null);
 
             return [
                 section(S.t('style.gauge'), null, [
-                    segments('style.gauge', S.t('style.gauge'),
-                        shapes.map((key) => ({ value: key, label: S.t(`style.gauge_${key}`) }))),
-                    segments('style.direction', S.t('style.direction'), [
-                        { value: 'row', label: S.t('style.direction_row') },
-                        { value: 'column', label: S.t('style.direction_column') },
-                    ]),
-                ]),
+                    pick('style.gauge', S.t('style.gauge'), choice.gaugeShapes,
+                        (v) => S.t(`style.gauge_${v}`)),
+                    pick('style.direction', S.t('style.direction'), choice.directions,
+                        (v) => S.t(`style.direction_${v}`)),
+                ].filter(Boolean)),
                 section(S.t('style.surface'), S.t('style.surface_help'), [
-                    segments('style.surface', S.t('style.surface'), [
-                        { value: 'glass', label: S.t('style.surface_glass') },
-                        { value: 'tint', label: S.t('style.surface_tint') },
-                        { value: 'solid', label: S.t('style.surface_solid') },
-                        { value: 'none', label: S.t('style.surface_none') },
-                    ]),
+                    pick('style.surface', S.t('style.surface'), choice.surfaces,
+                        (v) => S.t(`style.surface_${v}`)),
                     slider('style.blur', S.t('style.blur'), 0, 32, 1, (v) => `${v} px`),
-                ]),
+                ].filter(Boolean)),
                 section(S.t('tab.style'), null, [
                     toggle('style.icons', S.t('style.icons')),
                     toggle('style.values', S.t('style.values')),
@@ -392,18 +453,14 @@ const Menu = (() => {
 
         compass: () => [
             section(S.t('tab.compass'), null, [
-                segments('compass.style', S.t('compass.style'), [
-                    { value: 'bar', label: S.t('compass.style_bar') },
-                    { value: 'tape', label: S.t('compass.style_tape') },
-                    { value: 'dial', label: S.t('compass.style_dial') },
-                    { value: 'text', label: S.t('compass.style_text') },
-                ]),
+                S.choices().compassStyles.length > 1 ? segments('compass.style', S.t('compass.style'),
+                    S.choices().compassStyles.map((v) => ({ value: v, label: S.t(`compass.style_${v}`) }))) : null,
                 toggle('compass.degrees', S.t('compass.degrees')),
                 toggle('compass.pointer', S.t('compass.pointer')),
                 toggle('compass.cardinals', S.t('compass.cardinals')),
                 toggle('compass.follow', S.t('compass.follow'), S.t('compass.follow_help')),
                 toggle('compass.vehicleOnly', S.t('compass.vehicle_only')),
-            ]),
+            ].filter(Boolean)),
         ],
 
         streets: () => [
@@ -435,6 +492,9 @@ const Menu = (() => {
                     toggle('advanced.sounds', S.t('advanced.sounds')),
                     toggle('advanced.notifications', S.t('advanced.notifications')),
                     toggle('advanced.lowFuel', S.t('advanced.low_fuel')),
+                ]),
+                S.statik.sharing === false ? null : section(S.t('share.title'), S.t('share.help'), [
+                    sharePanel(),
                 ]),
                 section('Compatibility', null, [table]),
                 section(S.t('advanced.reset_all'), null, [

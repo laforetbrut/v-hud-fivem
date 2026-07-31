@@ -244,6 +244,11 @@ Config.Policy = {
     -- The pasted settings go through exactly the same validation as any other save, so an
     -- import can never carry a locked value or an unknown key past the policy above.
     allowSharing = true,
+
+    -- An imported code brings the LOOK and leaves the LAYOUT alone: the colours, shapes,
+    -- cluster and theme arrive, the positions the player arranged stay where they are.
+    -- Set to false to let an import move their elements too.
+    importKeepsLayout = true,
 }
 
 -- =======================================================================================

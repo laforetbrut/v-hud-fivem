@@ -103,15 +103,15 @@ function Settings.isLocked(path)
     return false
 end
 
--- Built once. The explicit `locked` list plus everything the higher-level policy switches
--- imply, so the menu draws one padlock per genuinely locked control and the save path has one
--- list to check.
-local lockedCache
+-- Warned-about paths, so a config mistake is reported once rather than on every menu row.
+local warnedProtected = {}
 
 --- Every locked path, as a flat array, for the NUI to draw padlocks with.
+---
+--- Deliberately NOT memoised. The list is a handful of strings and it is derived from
+--- Config.Policy, which a server owner edits and reloads; a cache here means the first call
+--- of the session decides the rules for the rest of it.
 function Settings.lockedPaths()
-    if lockedCache then return lockedCache end
-
     local policy = Config.Policy
     local out = {}
     local seen = {}
@@ -120,8 +120,11 @@ function Settings.lockedPaths()
         if seen[path] then return end
 
         if isProtected(path) then
-            HUD.warn(('Config.Policy tried to lock "%s". Players always keep their layout and ' ..
-                'their minimap shape, so it has been ignored.'):format(path))
+            if not warnedProtected[path] then
+                warnedProtected[path] = true
+                HUD.warn(('Config.Policy tried to lock "%s". Players always keep their layout ' ..
+                    'and their minimap shape, so it has been ignored.'):format(path))
+            end
             return
         end
 
@@ -151,7 +154,6 @@ function Settings.lockedPaths()
     if #(policy.surfaces or {}) <= 1 then add('style.surface') end
     if #(policy.compassStyles or {}) <= 1 then add('compass.style') end
 
-    lockedCache = out
     return out
 end
 
@@ -357,6 +359,17 @@ function Settings.applyPolicy(settings)
     local base = Settings.default()
     local policy = Config.Policy
 
+    -- The player's protected values, put back at the end.
+    --
+    -- Locking a BRANCH forces every leaf under it, and two of those leaves are promised to
+    -- the player. Locking `minimap` is a perfectly reasonable thing for an operator to want -
+    -- it covers hide, scale and the offsets - but it must not drag `minimap.shape` with it.
+    -- Rather than forbid the branch, the promised leaves are restored afterwards.
+    local kept = {}
+    for _, path in ipairs(NEVER_LOCKABLE) do
+        kept[path] = HUD.deepCopy(Settings.getPath(settings, path))
+    end
+
     -- A forced theme is applied in full first, so the colours and shapes that come with it
     -- land before anything else is pinned on top.
     if policy.forcedTheme and Themes[policy.forcedTheme] then
@@ -392,6 +405,11 @@ function Settings.applyPolicy(settings)
         if forced ~= nil then
             Settings.setPath(settings, path, HUD.deepCopy(forced))
         end
+    end
+
+    -- Give the player back what is theirs, whatever the branches above did to it.
+    for path, value in pairs(kept) do
+        if value ~= nil then Settings.setPath(settings, path, value) end
     end
 
     return settings

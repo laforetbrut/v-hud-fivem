@@ -546,6 +546,43 @@
     color: var(--c-muted);
 }
 
+/* Share codes ---------------------------------------------------------------------------- */
+
+.share {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.share__field {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--c-text);
+    resize: vertical;
+    word-break: break-all;
+}
+
+.share__field:focus { border-color: var(--c-accent); }
+.share__field::placeholder { color: var(--c-muted); }
+
+.share__actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.share__status {
+    min-height: 16px;
+    font-size: 11.5px;
+    color: var(--c-muted);
+}
+
+.share__status[data-kind="ok"]  { color: var(--c-health); }
+.share__status[data-kind="bad"] { color: var(--c-warning); }
+
 /* Providers table, on the Advanced tab -------------------------------------------------- */
 
 .providers {

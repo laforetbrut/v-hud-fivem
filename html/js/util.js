@@ -232,6 +232,75 @@ const U = (() => {
     }
 
     /* ------------------------------------------------------------------------------------
+       Share codes
+
+       A settings export is a string a player can paste into Discord, so it has to survive
+       being copied out of a chat message: no newlines, no quotes, nothing a client will turn
+       into a smart quote. Base64 over UTF-8, with the padding stripped and a version prefix
+       so a future format change can be recognised rather than silently mis-parsed.
+       ------------------------------------------------------------------------------------ */
+
+    const SHARE_PREFIX = 'VHUD1:';
+
+    /** UTF-8 safe base64. btoa() alone throws on any character above U+00FF, and the French
+     *  locale is full of them. */
+    function encodeShare(value) {
+        const json = JSON.stringify(value);
+        const bytes = new TextEncoder().encode(json);
+
+        let binary = '';
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+
+        return SHARE_PREFIX + btoa(binary).replace(/=+$/, '');
+    }
+
+    /** The inverse. Returns null for anything that is not one of our codes, rather than
+     *  throwing - a player pasting the wrong thing is a normal event, not an error. */
+    function decodeShare(text) {
+        if (typeof text !== 'string') return null;
+
+        const trimmed = text.trim().replace(/\s+/g, '');
+        if (!trimmed.startsWith(SHARE_PREFIX)) return null;
+
+        try {
+            const body = trimmed.slice(SHARE_PREFIX.length);
+            const binary = atob(body + '='.repeat((4 - (body.length % 4)) % 4));
+
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+
+            const parsed = JSON.parse(new TextDecoder().decode(bytes));
+            return (parsed && typeof parsed === 'object') ? parsed : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * Put text on the clipboard.
+     *
+     * `navigator.clipboard` needs a secure context and a permission CEF does not always
+     * grant, so the old execCommand path is the one that actually works in NUI. The textarea
+     * is off screen and removed immediately.
+     */
+    function copyText(text) {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0;';
+        document.body.appendChild(area);
+
+        area.select();
+        area.setSelectionRange(0, text.length);
+
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (error) { ok = false; }
+
+        area.remove();
+        return ok;
+    }
+
+    /* ------------------------------------------------------------------------------------
        NUI
        ------------------------------------------------------------------------------------ */
 
@@ -260,6 +329,7 @@ const U = (() => {
         rgb, alpha, luminance, mix,
         polar, arcPath, circumference,
         debounce, post, inGame, RESOURCE,
+        encodeShare, decodeShare, copyText, SHARE_PREFIX,
     };
 
 })();
