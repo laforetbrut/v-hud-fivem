@@ -882,8 +882,19 @@ const Speedo = (() => {
         showChip(chips.nitro, options.nitro && data.nitro > 0,
             data.nitroActive, false, data.nitro > 0 && !data.nitroActive);
         showChip(chips.harness, options.harness && data.hasHarness, true);
+        /*
+            The engine lamp answers two questions with one symbol, the way a real one does.
+
+            Lit green   the engine is running and in good health
+            Red         the engine is damaged, running or not - that is a fault either way
+            Dark        the engine is off
+
+            `data.engine` is the engine's HEALTH, not whether it is turning over. Reading only
+            that meant a switched-off car in perfect condition sat there with a green lamp.
+        */
+        const running = data.engineOn !== false;
         showChip(chips.engine, options.engine && !data.bicycle,
-            data.engine > 60, data.engine < 25);
+            running && data.engine > 60, data.engine < 25);
 
         // The handbrake, and the low-fuel lamp at the reserve mark. Both appear only when they
         // have something to say, which is the whole point of a warning lamp.

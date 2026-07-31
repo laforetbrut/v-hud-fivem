@@ -403,3 +403,41 @@ Before gating an expensive call on a narrower condition, check what else that ca
 quietly doing.
 
 ---
+
+## [2026-07-31 23:10] — Headlight tell-tales never changed
+
+**Context:** Switching the headlights and the main beam on and off in a vehicle.
+**Error:** The lights lamp never lit and the main-beam lamp never appeared.
+**Root cause:** Two independent bugs on one line, either of which was enough on its own.
+
+`GET_VEHICLE_LIGHTS_STATE` is `BOOL fn(Vehicle, BOOL* lightsOn, BOOL* highbeamsOn)`, so Lua
+receives THREE values and `pcall` puts its success flag in front of all of them, making four.
+The code destructured three: `local ok, lightsOn, highBeams = pcall(...)`. So `lightsOn` held
+the native's return value, `highBeams` held the real `lightsOn`, and the real high-beam value
+was discarded.
+
+On top of that, both were compared with `== 1`. Cfx hands BOOL out-parameters back as `true`
+on some builds and as `1` on others, and `true == 1` is false in Lua — so on a boolean build
+neither lamp could ever light regardless of the shift.
+**Fix:** Destructure four (`ok, _, lightsOn, highBeams`) and test with a helper that accepts
+`true` or a non-zero number. Main beam now also implies the headlights are on, because a lit
+main-beam lamp beside a dark headlight lamp reads as a broken HUD.
+**Prevention:** Count the return values of any native with out-parameters, and remember pcall
+adds one. Never compare a Cfx BOOL out-parameter with `== 1` or with `== true`; test both.
+A regression test that stubs the native in BOTH shapes is what makes this stay fixed.
+
+---
+
+## [2026-07-31 23:20] — Engine lamp stayed green with the engine switched off
+
+**Context:** Turning the engine off while sitting in the car.
+**Error:** The engine tell-tale stayed lit green.
+**Root cause:** The lamp was driven by `data.engine`, which is engine HEALTH as a percentage,
+not whether the engine is running. A switched-off car in perfect condition scored 100 and lit
+green.
+**Prevention:** "Healthy" and "running" are different questions. When a symbol answers a state,
+check that the value behind it actually measures that state and not a neighbouring one.
+**Fix:** Read `GetIsVehicleEngineRunning` as well; the lamp is green only when running AND
+healthy, red when damaged either way, and dark when the engine is off.
+
+---

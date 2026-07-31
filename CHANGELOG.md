@@ -118,6 +118,16 @@ All notable changes to v-hud are documented here.
   screen allows and the banner is lifted by exactly what is left, measured rather than
   guessed. Square and wide maps are unchanged.
 
+- **Headlight tell-tales never changed** — `GET_VEHICLE_LIGHTS_STATE` returns three values,
+  and `pcall` adds a fourth in front. Destructuring only three meant `lightsOn` held the
+  native's return value, `highBeams` held the real `lightsOn`, and the real high-beam state was
+  discarded. Both were then compared with `== 1`, and Cfx hands these back as `true` on some
+  builds — so on those, neither lamp could light at all. Fixed, and covered by a regression
+  test that stubs the native in both shapes.
+- **Engine lamp lit with the engine off** — It was driven by engine HEALTH, not by whether the
+  engine is running, so a switched-off car in good condition sat there green. Green now means
+  running and healthy, red means damaged, dark means off.
+
 ### Ajouts
 
 - **Thème par défaut Clear Glass** — Panneaux translucides composés d'un dégradé en couches,
@@ -240,5 +250,14 @@ All notable changes to v-hud are documented here.
   de hauteur que la carte n'en occupe ; le dépassement est maintenant basculé vers le bas
   autant que l'écran le permet, et le bandeau est relevé d'exactement ce qui reste, mesuré
   et non estimé. Les cartes carrées et larges sont inchangées.
+- **Témoins de phares figés** — `GET_VEHICLE_LIGHTS_STATE` renvoie trois valeurs, et `pcall`
+  en ajoute une quatrième devant. N'en destructurer que trois faisait que `lightsOn` contenait
+  la valeur de retour du natif, `highBeams` contenait le vrai `lightsOn`, et l'état réel des
+  pleins phares était jeté. Les deux étaient ensuite comparés à `== 1`, or Cfx les renvoie en
+  `true` sur certains builds : sur ceux-là, aucun témoin ne pouvait s'allumer. Corrigé, avec un
+  test de non-régression qui simule le natif dans les deux formes.
+- **Témoin moteur allumé moteur coupé** — Il était piloté par la SANTÉ du moteur, pas par son
+  état de marche : une voiture éteinte en bon état restait au vert. Vert signifie désormais en
+  marche et en bon état, rouge endommagé, éteint coupé.
 
 ---

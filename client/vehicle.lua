@@ -74,10 +74,28 @@ local function doors(vehicle)
     return { door = anyDoor, bonnet = bonnet, boot = boot }
 end
 
+--- Is this native out-parameter set?
+---
+--- Cfx hands BOOL out-parameters back as `true`/`false` on some builds and as `1`/`0` on
+--- others, so neither `== true` nor `== 1` is safe on its own. Comparing against 1 was why the
+--- headlight tell-tales never lit: the value was `true`, and `true == 1` is false in Lua.
+local function isSet(value)
+    if type(value) == 'boolean' then return value end
+    if type(value) == 'number' then return value ~= 0 end
+    return false
+end
+
 --- Indicator and light state. Both natives return through out-parameters, and both are
 --- wrapped because a vehicle handle can die between the check and the call.
 local function lights(vehicle)
-    local ok, lightsOn, highBeams = pcall(GetVehicleLightsState, vehicle)
+    -- GET_VEHICLE_LIGHTS_STATE is `BOOL fn(Vehicle, BOOL* lightsOn, BOOL* highbeamsOn)`, so
+    -- Lua receives THREE values: the return, then the two out-parameters. pcall puts its own
+    -- success flag in front of all of them, making four.
+    --
+    -- Destructuring only three dropped the high-beam value on the floor and shifted the other
+    -- two down a slot - `lightsOn` was really the return value, `highBeams` was really
+    -- lightsOn. Every headlight lamp was reading the wrong variable.
+    local ok, _, lightsOn, highBeams = pcall(GetVehicleLightsState, vehicle)
     local left, right = false, false
 
     local okIndicators, indicatorState = pcall(GetVehicleIndicatorLights, vehicle)
@@ -87,9 +105,14 @@ local function lights(vehicle)
         right = indicatorState == 2 or indicatorState == 3
     end
 
+    -- Main beam implies the headlights are on, whatever the out-parameter says: some vehicles
+    -- report lightsOn false while the high beams are lit, and a dark headlight lamp next to a
+    -- lit main-beam lamp reads as a broken HUD.
+    local high = ok and isSet(highBeams)
+
     return {
-        on = ok and lightsOn == 1,
-        high = ok and highBeams == 1,
+        on = (ok and isSet(lightsOn)) or high,
+        high = high,
         left = left,
         right = right,
     }
@@ -123,7 +146,11 @@ function Vehicle.read(vehicle, settings)
         hasHarness = Vehicle.harness,
         lights = lights(vehicle),
         doors = doors(vehicle),
-        handbrake = GetVehicleHandbrake(vehicle) == true,
+        handbrake = isSet(GetVehicleHandbrake(vehicle)),
+        -- Whether the engine is RUNNING, which is a different question from how healthy it is.
+        -- The tell-tale needs both: a switched-off engine in perfect condition must not sit
+        -- there lit green.
+        engineOn = isSet(GetIsVehicleEngineRunning(vehicle)),
         -- Per-part wear from whichever mechanic script is installed, or nil. Drives the
         -- brake, coolant, driveline and battery tell-tales.
         parts = Compat.vehicleParts(vehicle),
