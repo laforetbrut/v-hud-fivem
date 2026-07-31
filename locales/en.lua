@@ -91,7 +91,6 @@ Locales.en = {
     ['element.oxygen'] = 'Oxygen',
     ['element.stamina'] = 'Stamina',
     ['element.voice'] = 'Voice',
-    ['element.money'] = 'Money',
     ['element.speedometer'] = 'Speedometer',
     ['element.compass'] = 'Compass',
     ['element.streets'] = 'Street names',
@@ -148,7 +147,6 @@ Locales.en = {
     ['colour.oxygen'] = 'Oxygen',
     ['colour.stamina'] = 'Stamina',
     ['colour.voice'] = 'Voice',
-    ['colour.money'] = 'Money',
     ['colour.speed'] = 'Speed',
     ['colour.fuel'] = 'Fuel',
     ['colour.rpm'] = 'Rev counter',
@@ -190,7 +188,6 @@ Locales.en = {
     ['layout.group_speedo'] = 'Speedometer',
     ['layout.group_compass'] = 'Compass',
     ['layout.group_streets'] = 'Street names',
-    ['layout.group_money'] = 'Money',
     ['layout.group_voice'] = 'Voice',
     ['layout.group_vehicle'] = 'Vehicle extras',
 
@@ -276,6 +273,8 @@ Locales.en = {
     ['dir.nw'] = 'NW',
 
     -- Units shown on the HUD itself
+    ['money.cash'] = 'Cash',
+    ['money.bank'] = 'Bank',
     ['unit.kmh'] = 'KM/H',
     ['unit.mph'] = 'MPH',
     ['unit.metres'] = 'M',

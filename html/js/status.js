@@ -264,6 +264,84 @@ const Status = (() => {
                 }
             }
         }
+
+        // Oxygen and stamina appear and disappear, so the arc has to re-space itself. It
+        // returns immediately unless the visible set actually changed.
+        layoutArc(false);
+    }
+
+    /* ------------------------------------------------------------------------------------
+       The arc
+
+       When the gauges are docked to a ROUND map they follow its curve instead of standing in
+       a line beside it. The geometry cannot be CSS: the radius depends on the map's real
+       pixel size, and the spread depends on how many gauges are visible right now - oxygen
+       and stamina come and go, and a fixed set of angles would leave a hole where stamina
+       used to be.
+       ------------------------------------------------------------------------------------ */
+
+    const ARC_SPAN = 116;            // degrees of arc the gauges are spread over
+    let lastArcSignature = '';
+
+    /** Place every visible gauge on the circle around the map. */
+    function layoutArc(force) {
+        if (!listNode || listNode.getAttribute('data-arc') !== 'true') return;
+
+        const visible = [];
+        for (const [key, refs] of nodes) {
+            if (refs.root.getAttribute('data-hidden') !== 'true') visible.push(refs);
+        }
+
+        const box = listNode.getBoundingClientRect();
+        if (!box.width || !box.height) return;
+
+        // Re-place only when the set of visible gauges or the map size actually changed:
+        // this runs off the tick, and writing six positions per frame is six layouts.
+        const signature = `${visible.map((r) => r.definition.key).join()}|${Math.round(box.width)}x${Math.round(box.height)}`;
+        if (!force && signature === lastArcSignature) return;
+        lastArcSignature = signature;
+
+        const cx = box.width / 2;
+        const cy = box.height / 2;
+        const gaugeSize = visible.length ? visible[0].root.getBoundingClientRect().width : 40;
+        // Outside the circle, by half a gauge plus a little air. The map is an ellipse in the
+        // general case, so the larger half-axis decides.
+        const radius = Math.max(box.width, box.height) / 2 + gaugeSize * 0.55 + 6;
+
+        const count = visible.length;
+        const step = count > 1 ? ARC_SPAN / (count - 1) : 0;
+        const start = count > 1 ? -ARC_SPAN / 2 : 0;
+
+        visible.forEach((refs, index) => {
+            const angle = ((start + step * index) - 90) * (Math.PI / 180);
+            // -90 puts angle 0 at three o'clock, so the arc runs down the map's right side.
+            const x = cx + radius * Math.cos(angle + Math.PI / 2);
+            const y = cy + radius * Math.sin(angle + Math.PI / 2);
+
+            refs.root.style.left = `${U.round(x, 1)}px`;
+            refs.root.style.top = `${U.round(y, 1)}px`;
+        });
+    }
+
+    /** Turn arc mode on or off. Called from state.js when the dock or the map shape changes. */
+    function setArc(on) {
+        if (!listNode) listNode = U.el('status-list');
+        if (!listNode) return;
+
+        U.attr(listNode, 'data-arc', !!on);
+        lastArcSignature = '';
+
+        if (!on) {
+            // Hand the gauges back to flex: an inline left/top would survive the class change
+            // and pin them where the arc left them.
+            for (const [, refs] of nodes) {
+                refs.root.style.left = '';
+                refs.root.style.top = '';
+            }
+            return;
+        }
+
+        requestAnimationFrame(() => layoutArc(true));
     }
 
     /** The shape list, for the menu. Kept here so the menu cannot offer one that has no
@@ -272,6 +350,6 @@ const Status = (() => {
         return SHAPES.slice();
     }
 
-    return { build, render, update, shapes };
+    return { build, render, update, shapes, setArc, layoutArc };
 
 })();

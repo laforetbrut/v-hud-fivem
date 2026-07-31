@@ -63,12 +63,25 @@ local function readKvp()
     return decoded.settings, tonumber(decoded.timestamp) or 0
 end
 
+--- Seconds since the epoch, on the CLIENT.
+---
+--- `os.time` does not exist in the client runtime - only on the server - and calling it is an
+--- immediate "attempt to index a nil value (global 'os')" that takes the whole save path with
+--- it. GetCloudTimeAsInt is the client's UNIX clock and is directly comparable with the
+--- server's os.time, which is the whole point: the two timestamps decide which stored copy of
+--- the settings is newer.
+local function now()
+    local ok, seconds = pcall(GetCloudTimeAsInt)
+    if ok and type(seconds) == 'number' and seconds > 0 then return seconds end
+    return 0
+end
+
 local function writeKvp(settings)
     if not Config.Persistence.kvp then return end
 
     SetResourceKvp(KVP_KEY, json.encode({
         settings = settings,
-        timestamp = os.time(),
+        timestamp = now(),
     }))
 end
 
@@ -393,9 +406,24 @@ end)
 
 callback('layoutMode', function(data)
     State.layoutMode = data.on == true
-    SetNuiFocus(State.layoutMode or State.menuOpen, State.layoutMode or State.menuOpen)
+
+    -- Opening the editor from the menu closes the menu, and the page does that ITSELF without
+    -- posting `close` - so without this line the Lua side still believed the menu was open,
+    -- SetNuiFocus below kept focus held for a menu that was no longer on screen, and the
+    -- player was stuck with a cursor and no way to dismiss anything. Clicking Done released
+    -- nothing, because `false or true` is still true.
+    if State.layoutMode then State.menuOpen = false end
+
+    local wantsFocus = State.layoutMode or State.menuOpen
+    SetNuiFocus(wantsFocus, wantsFocus)
+    if Config.Menu.freezeWhileOpen then
+        SetPlayerControl(PlayerId(), not wantsFocus, 0)
+    end
+
     Compat.notify(State.layoutMode and L('notify.layout_edit_on') or L('notify.layout_edit_off'),
         State.layoutMode and 'primary' or 'success')
+
+    if not State.layoutMode then State.flushSave() end
 end)
 
 callback('sound', function(data)
@@ -442,18 +470,22 @@ function State.openMenu()
 end
 
 function State.closeMenu()
-    if not State.menuOpen and not State.layoutMode then return end
+    -- Deliberately NOT guarded on "is something open". This is the function that gives the
+    -- player their mouse back, so it has to work even when the two flags disagree with what
+    -- is actually on screen - which is exactly the situation it is needed in.
+    local wasOpen = State.menuOpen or State.layoutMode
 
     State.menuOpen = false
     State.layoutMode = false
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
     if Config.Menu.freezeWhileOpen then
         SetPlayerControl(PlayerId(), true, 0)
     end
 
     SendNUIMessage({ action = 'closeMenu' })
     State.flushSave()
-    Compat.playSound('click', 0.1)
+    if wasOpen then Compat.playSound('click', 0.1) end
 end
 
 -- ---------------------------------------------------------------------------------------

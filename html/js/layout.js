@@ -66,12 +66,62 @@ const Layout = (() => {
         ghost.style.transform = `translate(${shiftX}%, ${shiftY}%)`;
     }
 
+    /* The minimap gets a ghost too.
+       It is not a `positions` entry - it is the game's own map, moved through
+       `minimap.x` / `minimap.y` - so it is dragged separately and writes different settings.
+       But from the player's side it is one more box to grab, which is the point: "move the
+       HUD" that cannot move the map is a half-finished editor. */
+    let mapGhost = null;
+
+    function positionMapGhost() {
+        if (!mapGhost) return;
+        const frame = U.el('minimap-frame');
+        if (!frame) return;
+
+        const box = frame.getBoundingClientRect();
+        mapGhost.style.left = `${box.left}px`;
+        mapGhost.style.top = `${box.top}px`;
+        mapGhost.style.width = `${box.width}px`;
+        mapGhost.style.height = `${box.height}px`;
+        mapGhost.style.transform = 'none';
+    }
+
+    function startMapDrag(event) {
+        event.preventDefault();
+        const box = mapGhost.getBoundingClientRect();
+
+        drag = {
+            map: true,
+            ghost: mapGhost,
+            offsetX: event.clientX - box.left,
+            offsetY: event.clientY - box.top,
+            width: box.width,
+            height: box.height,
+            // The offsets the map already carries; the drag adds its delta to them.
+            baseX: S.get('minimap.x', 0),
+            baseY: S.get('minimap.y', 0),
+            startLeft: box.left,
+            startTop: box.top,
+        };
+
+        U.attr(mapGhost, 'data-dragging', true);
+        mapGhost.setPointerCapture(event.pointerId);
+    }
+
     function build() {
         overlay = U.el('layout');
         if (!overlay) return;
 
         for (const [, ghost] of ghosts) ghost.remove();
         ghosts.clear();
+        if (mapGhost) { mapGhost.remove(); mapGhost = null; }
+
+        mapGhost = U.make('div', { class: 'ghost ghost--map', 'data-key': 'minimap' }, [
+            U.make('span', { class: 'ghost__label', text: S.t('element.minimap') }),
+        ]);
+        mapGhost.addEventListener('pointerdown', startMapDrag);
+        overlay.appendChild(mapGhost);
+        positionMapGhost();
 
         for (const key of S.ELEMENTS) {
             const ghost = U.make('div', { class: 'ghost', 'data-key': key }, [
@@ -114,6 +164,33 @@ const Layout = (() => {
         const width = window.innerWidth;
         const height = window.innerHeight;
 
+        if (drag.map) {
+            // The map moves through its own offsets, in percent of the screen, and positive
+            // Y means UP - the same convention the sliders and the natives use, so all three
+            // agree and the border never leaves the map.
+            let left = U.clamp(event.clientX - drag.offsetX, 0, width - drag.width);
+            let top = U.clamp(event.clientY - drag.offsetY, 0, height - drag.height);
+
+            const bounds = (S.statik.bounds) || {};
+            const bx = bounds.minimapX || { min: -20, max: 20 };
+            const by = bounds.minimapY || { min: -20, max: 20 };
+
+            let x = drag.baseX + ((left - drag.startLeft) / width) * 100;
+            let y = drag.baseY - ((top - drag.startTop) / height) * 100;
+
+            if (snap) { x = Math.round(x * 4) / 4; y = Math.round(y * 4) / 4; }
+
+            S.setMany({
+                'minimap.x': U.round(U.clamp(x, bx.min, bx.max), 2),
+                'minimap.y': U.round(U.clamp(y, by.min, by.max), 2),
+            });
+
+            // Re-measure rather than trusting the pointer: the offsets are clamped, so the
+            // map can stop moving while the mouse keeps going.
+            requestAnimationFrame(() => { positionMapGhost(); refresh(); });
+            return;
+        }
+
         let left = event.clientX - drag.offsetX;
         let top = event.clientY - drag.offsetY;
 
@@ -153,6 +230,9 @@ const Layout = (() => {
             [`positions.${drag.key}.y`]: y,
             [`positions.${drag.key}.anchor`]: anchor,
             [`positions.${drag.key}.anchorY`]: anchorY,
+            // Dragging is how a player says "not there". An element glued to the minimap has
+            // to let go the moment it is moved, or it would snap straight back.
+            [`positions.${drag.key}.dock`]: 'free',
         });
 
         position(drag.ghost, drag.key);
@@ -191,6 +271,7 @@ const Layout = (() => {
     function refresh() {
         if (!open) return;
         for (const [key, ghost] of ghosts) position(ghost, key);
+        positionMapGhost();
     }
 
     function bind() {

@@ -288,19 +288,21 @@ body {
         radial-gradient(900px 600px at 78% 22%, #10304a 0%, transparent 55%),
         linear-gradient(160deg, #090a12 0%, #16091f 55%, #05070d 100%);
 }
-/* A stand-in for the game minimap, so the street banner and the gauges have something to sit
-   against. In game this rectangle is the map itself. */
+/* A stand-in for the game minimap, drawn from the SAME --map-* variables the real frame and
+   the docked elements use. That is the point: if the placeholder and the border disagree
+   here, they disagree in game too. */
 body::after {
     content: 'MINIMAP';
     position: fixed;
-    left: calc(0.6% + var(--map-x, 0%));
-    bottom: calc(3.2% - var(--map-y, 0%));
-    width: calc(20.4% * var(--map-scale, 1));
-    height: calc(20.9% * var(--map-scale, 1));
+    left: var(--map-left);
+    bottom: var(--map-bottom);
+    width: var(--map-w);
+    height: var(--map-h);
     display: flex; align-items: center; justify-content: center;
     background: repeating-linear-gradient(45deg, #1d2733 0 12px, #232f3d 12px 24px);
     color: rgba(255,255,255,0.35); font-size: 12px; letter-spacing: 0.3em;
     z-index: 1;
+    border-radius: var(--map-radius, 0);
 }
 /* The toolbar sits at the BOTTOM. At the top it covered the compass, the money row and the
    whole top third of the HUD, which is exactly the part a preview exists to show. */

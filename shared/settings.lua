@@ -127,6 +127,13 @@ local ANCHORS = { 'left', 'center', 'right' }
 -- The vertical anchor. 'bottom' means the y coordinate is the element's BOTTOM edge, so it
 -- grows upward as its content gets taller instead of running off the screen.
 local ANCHORS_Y = { 'top', 'bottom' }
+-- Where an element may glue itself. A docked element ignores its own x/y and
+-- follows the minimap rectangle, which is what keeps the shipped arrangement
+-- together on an ultrawide and when the player moves the map.
+-- `map-arc` is not listed: it is DERIVED by the client when the gauges are docked map-right
+-- and the map is round, so it is never a stored value and accepting it here would let a
+-- square map end up with an arc it has no circle for.
+local DOCKS = { 'free', 'map-top', 'map-top-2', 'map-right', 'map-bottom' }
 
 --- Take anything, return a settings table that is safe to apply and safe to store.
 --- Never errors and never returns nil: the worst case is the server defaults.
@@ -189,6 +196,7 @@ function Settings.sanitise(input)
             position.y = clampTo(position.y, 'positionY', fallback.y)
             position.anchor = enum(position.anchor, ANCHORS, fallback.anchor)
             position.anchorY = enum(position.anchorY, ANCHORS_Y, fallback.anchorY or 'top')
+            position.dock = enum(position.dock, DOCKS, fallback.dock or 'free')
         end
     end
 

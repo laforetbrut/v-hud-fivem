@@ -116,4 +116,78 @@ takes a permission STRING as its sixth argument. Bridge.addCommand passed the bo
 **Prevention:** When wrapping a framework function, read its real signature in the qb-core
 source rather than inferring it from the call site that inspired the wrapper.
 
+## [2026-07-31 — in game] — backdrop-filter paints solid black rectangles
+
+**Context:** First look at the Clear Glass theme in the running game.
+**Error:** "Pleins de carré noir partout" — every glass panel, and the settings menu, drawn as
+an opaque black box.
+**Root cause:** FiveM's CEF composites the NUI layer OVER the finished game frame. The game
+is not rendered behind the page, so `backdrop-filter` samples transparent black and paints
+exactly that. The effect looks right in a browser, where there is a page behind it, and is
+black in game — so it survives every test that is not run in the game.
+**Fix:** No `backdrop-filter` anywhere. Glass is a translucent gradient, a lit top edge and a
+drop shadow, all of which composite correctly. The player's blur slider now drives the edge
+strength through `--frost`.
+**Prevention:** `backdrop-filter` is banned in this resource. Any effect that reads what is
+BEHIND the page cannot work in NUI; if a change needs one, it needs a different design.
+
+## [2026-07-31 — in game] — CSS color-mix() is dropped, taking the whole declaration with it
+
+**Context:** The settings panel in game: readable text and controls over a fully transparent
+background, with the street visible straight through it.
+**Error:** No console error. The panel simply had no background.
+**Root cause:** `color-mix()` shipped in Chromium 111; FiveM's CEF is older. A declaration
+containing an unsupported function is invalid and discarded ENTIRELY — so
+`background: linear-gradient(160deg, color-mix(...), ...)` left the element with no
+background at all. Twenty-nine uses across four stylesheets were silently doing nothing.
+**Fix:** `U.mix()` in html/js/util.js, and state.js publishes every blend the stylesheets
+need as a plain custom property (`--c-accent-a18`, `--c-bg-d88`, `--c-panel-tint`, ...).
+**Prevention:** Only CSS that a 2022-era Chromium understands. No `color-mix`, no `oklch`,
+no `:has()`, no container queries. Blends are computed in JS from the hex values, which are
+right there in the settings anyway.
+
+## [2026-07-31 — in game] — NUI focus stranded the player after the layout editor
+
+**Context:** Move the HUD from the settings menu, drag an element, click Done.
+**Error:** Cursor stuck on screen, no menu, no keybind working. Only a client restart fixed
+it. Reported as "je reste bloqué après, je peux plus rien faire".
+**Root cause:** The "Move the HUD" button closes the menu on the PAGE side with
+`Menu.close(true)`, which deliberately does not post `close`. So Lua still believed
+`State.menuOpen` was true, and the layout callback's `SetNuiFocus(layoutMode or menuOpen)`
+evaluated `false or true` when Done was clicked. Focus was never released.
+**Fix:** The `layoutMode` callback clears `menuOpen` when the editor opens.
+`State.closeMenu()` no longer early-returns on "nothing is open" — it is the function that
+gives the mouse back, so it must work when the flags are already wrong. Plus a watchdog that
+releases focus if `IsNuiFocused()` is true while neither surface is open, and a
+`/hudunstuck` command.
+**Prevention:** NUI focus is the one state that can strand a player. Every path that sets it
+must have a path that clears it, and there must be a way out that does not depend on the
+page. Never early-return from a function whose job is to release focus.
+
+## [2026-07-31 — in game] — os.time() does not exist on the client
+
+**Context:** Saving settings after any change.
+**Error:** `@v-hud/client/settings.lua:71: attempt to index a nil value (global 'os')`.
+**Root cause:** The `os` library is server-only in the FiveM Lua runtime. The KVP writer used
+`os.time()` for the timestamp that decides which stored copy of the settings is newer, so
+every single save threw.
+**Fix:** `GetCloudTimeAsInt()`, which is the client's UNIX clock and is directly comparable
+with the server's `os.time()`.
+**Prevention:** `os`, `io` and `package` are server-only. Before using a standard library in
+a client file, check it exists there — the error surfaces at the first call, which may be a
+long way from the change that introduced it.
+
+## [2026-07-31 — in game] — The minimap moved opposite to the drag
+
+**Context:** Dragging the minimap in the layout editor.
+**Error:** The border followed the mouse; the map itself went the other way.
+**Root cause:** Three coordinate systems, one of them inverted. The setting means "positive y
+moves the map up"; the CSS frame uses `bottom`, where larger is higher; but the native
+`SetMinimapComponentPosition` posY grows DOWNWARD even under 'B' alignment — which is why
+the shipped geometry uses `y = -0.047` to lift the square map off the bottom edge. The Lua
+was adding the offset with the wrong sign.
+**Fix:** `dy = -(map.y) / 100`, with the three conventions written out in the comment.
+**Prevention:** When a value crosses between CSS and a native, state both conventions in the
+comment at the crossing point. A bare sign flip reads like a typo and gets "fixed" back.
+
 ---

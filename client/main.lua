@@ -212,6 +212,34 @@ end)
 -- Money
 -- ---------------------------------------------------------------------------------------
 
+-- There is no money element on this HUD, on purpose. A cash and bank readout parked in the
+-- corner of the screen all session is the first thing every player turns off, so it is not
+-- drawn at all - not as a permanent row, and not as a banner every time a wallet moves.
+--
+-- What is left is the part somebody actually asks for: `/cash` and `/bank` answer, once, as
+-- a toast that appears and goes away like any other message.
+
+--- Group thousands the way the operator configured, with the currency symbol on their side.
+local function formatMoney(amount)
+    local text = tostring(math.floor(math.abs(tonumber(amount) or 0)))
+    local separator = Config.Money.thousands or ' '
+
+    -- Grouping is done on the REVERSED string, because digits group from the right and Lua
+    -- patterns only scan left to right. `123456` reversed is `654321`, which chunks cleanly
+    -- into `654 321` and reverses back to `123 456`.
+    local grouped = text:reverse():gsub('(%d%d%d)', '%1' .. separator):reverse()
+
+    -- A number whose digit count is an exact multiple of three picks up a leading separator.
+    -- The separator is escaped before it is used as a pattern: a '.' would otherwise match
+    -- the first character whatever it is.
+    grouped = grouped:gsub('^' .. separator:gsub('%W', '%%%0'), '')
+
+    if Config.Money.symbolPosition == 'suffix' then
+        return grouped .. (Config.Money.symbol or '')
+    end
+    return (Config.Money.symbol or '') .. grouped
+end
+
 local function accountWatched(account)
     for _, name in ipairs(Config.Money.accounts) do
         if name == account then return true end
@@ -219,49 +247,25 @@ local function accountWatched(account)
     return false
 end
 
---- The balance readout behind /cash and /bank.
-RegisterNetEvent('vhud:client:ShowAccount', function(account, amount)
+local function showAccount(account, amount)
     if not accountWatched(account) then return end
 
     SendNUIMessage({
         action = 'showAccount',
-        account = account,
-        amount = math.floor(tonumber(amount) or 0),
+        text = ('%s  %s'):format(L('money.' .. account), formatMoney(amount)),
         duration = Config.Money.balanceDuration,
-    })
-end)
-
---- The change banner. qb-core fires the qb-hud event straight at the client on every money
---- movement, so this is where most of the traffic arrives.
-local function onMoneyChange(account, amount, isMinus)
-    if not accountWatched(account) then return end
-
-    local data = Compat.playerData()
-    local money = data.money or {}
-
-    SendNUIMessage({
-        action = 'money',
-        account = account,
-        amount = math.floor(tonumber(amount) or 0),
-        minus = isMinus == true,
-        cash = math.floor(tonumber(money.cash) or 0),
-        bank = math.floor(tonumber(money.bank) or 0),
-        duration = Config.Money.changeDuration,
     })
 end
 
-RegisterNetEvent('vhud:client:OnMoneyChange', onMoneyChange)
+RegisterNetEvent('vhud:client:ShowAccount', function(account, amount)
+    showAccount(account, amount)
+end)
 
 if Config.Compat.qbHudEvents then
-    RegisterNetEvent('hud:client:OnMoneyChange', onMoneyChange)
+    -- qb-hud's name for the same thing. The passive `hud:client:OnMoneyChange` is deliberately
+    -- NOT answered: it is what drew a banner on every transaction.
     RegisterNetEvent('hud:client:ShowAccounts', function(account, amount)
-        if not accountWatched(account) then return end
-        SendNUIMessage({
-            action = 'showAccount',
-            account = account,
-            amount = math.floor(tonumber(amount) or 0),
-            duration = Config.Money.balanceDuration,
-        })
+        showAccount(account, amount)
     end)
 end
 

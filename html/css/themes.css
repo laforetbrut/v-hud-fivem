@@ -23,7 +23,6 @@
     --c-oxygen: #22d3ee;
     --c-stamina: #a3e635;
     --c-voice: #e2e8f0;
-    --c-money: #4ade80;
     --c-speed: #f8fafc;
     --c-fuel: #fb923c;
     --c-rpm: #f87171;
@@ -39,6 +38,15 @@
     --c-line-strong: rgba(248, 250, 252, 0.28);
     --c-track: rgba(248, 250, 252, 0.12);
     --c-muted: rgba(248, 250, 252, 0.55);
+
+    /* The minimap rectangle, in vh so it tracks the game map on every aspect ratio.
+       Overwritten by state.js with the player's offset and scale applied. Everything that
+       docks to the map reads these rather than repeating the arithmetic. */
+    --map-left: 2.5vh;
+    --map-bottom: 6.3%;
+    --map-w: 29vh;
+    --map-h: 18.5vh;
+    --map-gap: 0.8vh;
 
     /* Shape. Two radii: --radius is what a rectangle wears and is always sane, --gauge-radius
        is the player's own value and may be 999px, which is how a theme asks for a fully round
@@ -84,31 +92,22 @@
    visibly not glass while everything around it is.
    --------------------------------------------------------------------------------------- */
 
-.streets,
-.money__row,
-.money__delta,
-.voice,
-.vext__chip,
-.toast,
-.gauge[data-shape="square"],
-.gauge[data-shape="rounded"],
-.gauge[data-shape="diamond"],
-.gauge[data-shape="pill"],
-.gauge[data-shape="dot"],
-.spd-body[data-style="minimal"],
-.spd-body[data-style="bars"],
-.spd-body[data-style="digital"],
-.spd-body[data-style="sport"],
-.spd-chip {
-    backdrop-filter: var(--panel-blur, none);
-    -webkit-backdrop-filter: var(--panel-blur, none);
-}
+/*
+    NO backdrop-filter. Not a style choice - a hard constraint.
+
+    In FiveM's CEF the game is NOT rendered behind the page: the NUI layer is composited on
+    top of the frame afterwards, so a backdrop filter samples transparent black and paints a
+    solid black rectangle. That is what "des carrés noirs partout" was. Every shipped HUD
+    avoids it for the same reason.
+
+    Glass is built instead out of things that composite correctly: a translucent gradient
+    that lets the scene through, a bright top edge, and a soft drop shadow. Over a dark game
+    scene it reads as a pane of glass and costs nothing to draw.
+*/
 
 /* The glass edge: a bright hairline along the top and a soft drop below, which is what makes
-   a translucent rectangle read as a pane of glass rather than as a grey box. Applied only in
-   glass mode so the other surfaces stay flat. */
+   a translucent rectangle read as a pane of glass rather than as a grey box. */
 .hud[data-surface="glass"] .streets,
-.hud[data-surface="glass"] .money__row,
 .hud[data-surface="glass"] .voice,
 .hud[data-surface="glass"] .vext__chip,
 .hud[data-surface="glass"] .toast,
@@ -122,9 +121,13 @@
 .hud[data-surface="glass"] .spd-body[data-style="digital"],
 .hud[data-surface="glass"] .spd-body[data-style="sport"],
 .hud[data-surface="glass"] .spd-chip {
+    /* Three layers do the work a blur cannot: a lit top edge, a dark bottom edge for
+       thickness, and a drop shadow that lifts the pane off the scene. --frost is the
+       player's blur slider, 0-1, scaling how pronounced the glass reads. */
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.22),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, calc(0.10 + var(--frost, 0.5) * 0.26)),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+        inset 0 12px 24px -12px rgba(255, 255, 255, calc(var(--frost, 0.5) * 0.14)),
         0 8px 26px rgba(0, 0, 0, 0.42);
 }
 
@@ -132,7 +135,6 @@
    not only in the gauge fills. The gradient is on a pseudo-element rather than the
    background, because the background is what the backdrop filter reads through. */
 .hud[data-surface="glass"] .streets::before,
-.hud[data-surface="glass"] .money__row::before,
 .hud[data-surface="glass"] .voice::before,
 .hud[data-surface="glass"] .spd-body[data-style="minimal"]::before,
 .hud[data-surface="glass"] .spd-body[data-style="bars"]::before,
@@ -144,16 +146,15 @@
     border-radius: inherit;
     background: linear-gradient(
         135deg,
-        color-mix(in srgb, var(--c-accent) 18%, transparent) 0%,
+        var(--c-accent-a18) 0%,
         transparent 45%,
-        color-mix(in srgb, var(--c-accent) 8%, transparent) 100%);
+        var(--c-accent-a8) 100%);
     pointer-events: none;
     z-index: 0;
 }
 
 /* Those panels need a stacking context for the wash to sit under their content. */
 .hud[data-surface="glass"] .streets,
-.hud[data-surface="glass"] .money__row,
 .hud[data-surface="glass"] .voice,
 .hud[data-surface="glass"] .spd-body {
     position: relative;
@@ -161,7 +162,6 @@
 }
 
 .hud[data-surface="glass"] .streets > *,
-.hud[data-surface="glass"] .money__row > *,
 .hud[data-surface="glass"] .voice > * {
     position: relative;
     z-index: 1;
@@ -169,7 +169,6 @@
 
 /* No surface at all: the shapes and their glow, nothing behind them. */
 .hud[data-surface="none"] .streets,
-.hud[data-surface="none"] .money__row,
 .hud[data-surface="none"] .voice,
 .hud[data-surface="none"] .vext__chip,
 .hud[data-surface="none"] .spd-chip,

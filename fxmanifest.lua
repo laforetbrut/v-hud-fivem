@@ -56,6 +56,15 @@ server_scripts {
 
 ui_page 'html/index.html'
 
+-- The minimap shape masks and the cleaned-up minimap graphics. FiveM picks a folder named
+-- `stream/` up automatically, so there is nothing to list; this comment is here because a
+-- missing stream folder produces a subtle bug rather than an error - the game keeps its
+-- rounded map while the HUD draws a square border around it, and the two do not line up.
+--
+-- squaremap.ytd / circlemap.ytd are the radar masks AddReplaceTexture swaps in.
+-- minimap.ytd / minimap.gfx remove the vanilla frame and its baked-in health bars.
+-- All four originate from the QBCore qb-hud resource and are the community-standard set.
+
 files {
     'html/index.html',
     'html/css/reset.css',
@@ -69,7 +78,7 @@ files {
     'html/js/status.js',
     'html/js/speedo.js',
     'html/js/compass.js',
-    'html/js/money.js',
+    'html/js/toast.js',
     'html/js/layout.js',
     'html/js/menu.js',
     'html/js/app.js',

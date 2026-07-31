@@ -59,21 +59,6 @@
         </div>
     </div>
 
-    <div class="hud-el" id="el-money" data-element="money">
-        <!-- Both rows start off. Without the explicit data-on the CSS selector for "off" does
-             not match on the first frame, and an empty money row is drawn on every spawn. -->
-        <div class="money" id="money">
-            <div class="money__row money__row--cash" id="money-cash" data-on="false">
-                <span class="money__icon">&#9679;</span>
-                <span class="money__value" id="money-cash-value">0</span>
-            </div>
-            <div class="money__row money__row--bank" id="money-bank" data-on="false">
-                <span class="money__icon">&#9632;</span>
-                <span class="money__value" id="money-bank-value">0</span>
-            </div>
-            <div class="money__delta" id="money-delta" data-on="false"></div>
-        </div>
-    </div>
 
     <div class="hud-el" id="el-voice" data-element="voice">
         <div class="voice" id="voice">
@@ -147,7 +132,7 @@
 <script src="js/status.js"></script>
 <script src="js/speedo.js"></script>
 <script src="js/compass.js"></script>
-<script src="js/money.js"></script>
+<script src="js/toast.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/app.js"></script>

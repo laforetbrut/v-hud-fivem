@@ -137,6 +137,42 @@ const Menu = (() => {
 
     const click = () => U.post('sound', { name: 'click', volume: 0.06 });
 
+    /**
+     * A confirmation the player can actually dismiss.
+     *
+     * NEVER window.confirm() here. CEF has no chrome to draw a native dialog into: the call
+     * blocks the page with NUI focus held, the game keeps the cursor, and the only way out is
+     * to restart the client. That is exactly what "Tout réinitialiser" used to do.
+     */
+    function confirmThen(message, onYes) {
+        const panel = U.el('menu');
+        if (!panel) return;
+
+        const close = () => { if (sheet.parentNode) sheet.remove(); };
+
+        const sheet = U.make('div', { class: 'confirm' }, [
+            U.make('div', { class: 'confirm__box' }, [
+                U.make('p', { class: 'confirm__text', text: message }),
+                U.make('div', { class: 'confirm__actions' }, [
+                    U.make('button', {
+                        class: 'btn btn--ghost',
+                        text: S.t('menu.cancel'),
+                        onclick: () => { close(); click(); },
+                    }),
+                    U.make('button', {
+                        class: 'btn btn--danger',
+                        text: S.t('menu.reset'),
+                        onclick: () => { close(); onYes(); click(); },
+                    }),
+                ]),
+            ]),
+        ]);
+
+        // Clicking the backdrop cancels, so there is always a way out even if a button breaks.
+        sheet.addEventListener('click', (event) => { if (event.target === sheet) close(); });
+        panel.appendChild(sheet);
+    }
+
     /* ------------------------------------------------------------------------------------
        Tabs
        ------------------------------------------------------------------------------------ */
@@ -185,7 +221,7 @@ const Menu = (() => {
         elements: () => {
             const keys = [
                 'health', 'armor', 'hunger', 'thirst', 'stress', 'oxygen', 'stamina',
-                'voice', 'money', 'speedometer', 'compass', 'streets', 'minimap',
+                'voice', 'speedometer', 'compass', 'streets', 'minimap',
                 'nitro', 'harness', 'engine', 'seatbelt', 'parachute', 'armed', 'dev',
             ];
 
@@ -400,7 +436,7 @@ const Menu = (() => {
                 section(S.t('advanced.reset_all'), null, [
                     U.make('div', { class: 'menu__actions' }, [
                         button(S.t('advanced.reset_all'), 'danger', () => {
-                            if (window.confirm(S.t('menu.reset_confirm'))) U.post('reset');
+                            confirmThen(S.t('menu.reset_confirm'), () => U.post('reset'));
                         }),
                     ]),
                 ]),
@@ -524,7 +560,7 @@ const Menu = (() => {
         const reset = U.el('menu-reset');
         if (reset) {
             reset.addEventListener('click', () => {
-                if (window.confirm(S.t('menu.reset_confirm'))) U.post('reset');
+                confirmThen(S.t('menu.reset_confirm'), () => U.post('reset'));
             });
         }
 

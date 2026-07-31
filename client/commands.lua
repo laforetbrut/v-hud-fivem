@@ -9,11 +9,20 @@
 ]]
 
 RegisterCommand('vhud:open', function()
-    if State.menuOpen then
+    -- The key is also the way out of the layout editor, so it closes whichever surface is up.
+    if State.menuOpen or State.layoutMode then
         State.closeMenu()
     else
         State.openMenu()
     end
+end, false)
+
+--- The escape hatch. If anything ever leaves a cursor on screen with nothing behind it, this
+--- takes the game back without a relog. Registered separately from the menu key so it still
+--- works when the menu key is what got stuck.
+RegisterCommand('hudunstuck', function()
+    State.closeMenu()
+    Compat.notify(L('notify.settings_loaded'), 'success', true)
 end, false)
 
 if Config.Menu.key and Config.Menu.key ~= '' then
@@ -83,6 +92,11 @@ end, false)
 
 -- Escape closes the menu. NUI focus swallows the key, so the page reports it back through the
 -- close callback; this is only the native-side fallback for a page that stopped answering.
+--
+-- The second half is the safety net that matters more. NUI focus is the one state that can
+-- strand a player completely: a cursor on screen, no menu to dismiss, and no keybind that
+-- works. If focus is held while neither surface is open, something went wrong upstream and
+-- the only sane response is to take it back.
 CreateThread(function()
     while true do
         if State.menuOpen or State.layoutMode then
@@ -92,6 +106,15 @@ CreateThread(function()
             end
         else
             Wait(500)
+            if IsNuiFocused() then
+                HUD.debug('releasing orphaned NUI focus')
+                SetNuiFocus(false, false)
+                SetNuiFocusKeepInput(false)
+                if Config.Menu.freezeWhileOpen then
+                    SetPlayerControl(PlayerId(), true, 0)
+                end
+                SendNUIMessage({ action = 'closeMenu' })
+            end
         end
     end
 end)

@@ -250,87 +250,98 @@ Config.LayoutPresets = {
     {
         key = 'map',
         label = 'layout.preset_map',
-        -- The gauges stack UP the right-hand edge of the minimap, so this is the one preset
-        -- that wants a column.
         style = { direction = 'column' },
         positions = {
-            streets = { x = 0.7,  y = 71.2, anchor = 'left',   anchorY = 'top' },
-            status  = { x = 21.4, y = 96.6, anchor = 'left',   anchorY = 'bottom' },
-            speedo  = { x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
-            compass = { x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
-            money   = { x = 98.5, y = 8.5,  anchor = 'right',  anchorY = 'top' },
-            voice   = { x = 0.7,  y = 69.4, anchor = 'left',   anchorY = 'bottom' },
-            vehicle = { x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
+            streets = { dock = 'map-top',   x = 0.7,  y = 71.2, anchor = 'left',   anchorY = 'top' },
+            voice   = { dock = 'map-top-2', x = 0.7,  y = 66.0, anchor = 'left',   anchorY = 'bottom' },
+            status  = { dock = 'map-right', x = 19.5, y = 93.5, anchor = 'left',   anchorY = 'bottom' },
+            speedo  = { dock = 'free', x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
+            compass = { dock = 'free', x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
+            vehicle = { dock = 'free', x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
         },
     },
     {
         key = 'classic',
         label = 'layout.preset_default',
+        -- The qb-hud arrangement: gauges beside the map, street name across the top.
         style = { direction = 'row' },
         positions = {
-            streets = { x = 50.0, y = 8.5,  anchor = 'center', anchorY = 'top' },
-            status  = { x = 1.5,  y = 92.0, anchor = 'left',   anchorY = 'bottom' },
-            speedo  = { x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
-            compass = { x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
-            money   = { x = 98.5, y = 8.5,  anchor = 'right',  anchorY = 'top' },
-            voice   = { x = 1.5,  y = 97.5, anchor = 'left',   anchorY = 'bottom' },
-            vehicle = { x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
+            status  = { dock = 'map-right', x = 19.5, y = 93.5, anchor = 'left',   anchorY = 'bottom' },
+            voice   = { dock = 'map-top',   x = 0.7,  y = 71.0, anchor = 'left',   anchorY = 'bottom' },
+            streets = { dock = 'free', x = 50.0, y = 3.0,  anchor = 'center', anchorY = 'top' },
+            speedo  = { dock = 'free', x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
+            compass = { dock = 'free', x = 50.0, y = 10.0, anchor = 'center', anchorY = 'top' },
+            vehicle = { dock = 'free', x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
         },
     },
     {
         key = 'left',
         label = 'layout.preset_left',
+        -- Everything stacked up the left edge, ABOVE the minimap: the bottom-left corner is
+        -- the map's, and a column that runs into it is a column drawn over the map.
+        --
+        -- This is the tight case. Compass 48 + streets 47 + chips 24 + gauges 40 + voice 28 +
+        -- the tallest cluster 274 is 461px of content, and at 720p there are 720px to put it
+        -- in. Everything above the speedometer is therefore TOP-anchored and spaced from a
+        -- 720p budget; at 1080p the same percentages simply leave more air. Only the
+        -- speedometer is bottom-anchored, because it is the one element whose height changes
+        -- with the player's choice and it has to grow into the empty middle.
         style = { direction = 'row' },
         positions = {
-            compass = { x = 1.5,  y = 3.0,  anchor = 'left',   anchorY = 'top' },
-            streets = { x = 1.5,  y = 11.0, anchor = 'left',   anchorY = 'top' },
-            money   = { x = 1.5,  y = 19.0, anchor = 'left',   anchorY = 'top' },
-            vehicle = { x = 1.5,  y = 33.0, anchor = 'left',   anchorY = 'top' },
-            status  = { x = 1.5,  y = 46.0, anchor = 'left',   anchorY = 'bottom' },
-            voice   = { x = 1.5,  y = 51.0, anchor = 'left',   anchorY = 'bottom' },
-            speedo  = { x = 1.5,  y = 94.0, anchor = 'left',   anchorY = 'bottom' },
+            compass = { dock = 'free', x = 1.5,  y = 1.7,  anchor = 'left', anchorY = 'top' },
+            streets = { dock = 'free', x = 1.5,  y = 9.4,  anchor = 'left', anchorY = 'top' },
+            vehicle = { dock = 'free', x = 1.5,  y = 18.0, anchor = 'left', anchorY = 'top' },
+            status  = { dock = 'free', x = 1.5,  y = 24.0, anchor = 'left', anchorY = 'top' },
+            voice   = { dock = 'free', x = 1.5,  y = 31.5, anchor = 'left', anchorY = 'top' },
+            -- Docked, not free. "Everything on the left" and the minimap want the same corner,
+            -- and the map wins - it is the one element whose position the game owns. So the
+            -- speedometer sits directly ON TOP of the map and follows it, which is both the
+            -- only place it fits and the only place it cannot be drawn over the map.
+            speedo  = { dock = 'map-top', x = 1.5, y = 70.0, anchor = 'left', anchorY = 'bottom' },
         },
     },
     {
         key = 'right',
         label = 'layout.preset_right',
+        -- The mirror of `left`, same 720p budget. This side has more room because the map is
+        -- not in it, but the spacing is kept identical so the two read as a pair.
         style = { direction = 'row' },
         positions = {
-            compass = { x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
-            streets = { x = 98.5, y = 11.0, anchor = 'right',  anchorY = 'top' },
-            money   = { x = 98.5, y = 19.0, anchor = 'right',  anchorY = 'top' },
-            vehicle = { x = 98.5, y = 33.0, anchor = 'right',  anchorY = 'top' },
-            status  = { x = 98.5, y = 46.0, anchor = 'right',  anchorY = 'bottom' },
-            voice   = { x = 98.5, y = 51.0, anchor = 'right',  anchorY = 'bottom' },
-            speedo  = { x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
+            compass = { dock = 'free', x = 98.5, y = 1.7,  anchor = 'right', anchorY = 'top' },
+            streets = { dock = 'free', x = 98.5, y = 9.4,  anchor = 'right', anchorY = 'top' },
+            vehicle = { dock = 'free', x = 98.5, y = 18.0, anchor = 'right', anchorY = 'top' },
+            status  = { dock = 'free', x = 98.5, y = 24.0, anchor = 'right', anchorY = 'top' },
+            voice   = { dock = 'free', x = 98.5, y = 31.5, anchor = 'right', anchorY = 'top' },
+            speedo  = { dock = 'free', x = 98.5, y = 97.2, anchor = 'right', anchorY = 'bottom' },
         },
     },
     {
         key = 'bottom',
         label = 'layout.preset_bottom',
+        -- A centred bar along the bottom. The map keeps the left corner, so everything here
+        -- is centred or right and none of it reaches back into it.
         style = { direction = 'row' },
         positions = {
-            streets = { x = 50.0, y = 86.0, anchor = 'center', anchorY = 'bottom' },
-            status  = { x = 50.0, y = 97.5, anchor = 'center', anchorY = 'bottom' },
-            speedo  = { x = 98.5, y = 80.0, anchor = 'right',  anchorY = 'bottom' },
-            compass = { x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
-            money   = { x = 98.5, y = 8.5,  anchor = 'right',  anchorY = 'top' },
-            voice   = { x = 1.5,  y = 97.5, anchor = 'left',   anchorY = 'bottom' },
-            vehicle = { x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
+            streets = { dock = 'free', x = 50.0, y = 88.0, anchor = 'center', anchorY = 'bottom' },
+            status  = { dock = 'free', x = 50.0, y = 97.5, anchor = 'center', anchorY = 'bottom' },
+            speedo  = { dock = 'free', x = 98.5, y = 80.0, anchor = 'right',  anchorY = 'bottom' },
+            compass = { dock = 'free', x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
+            voice   = { dock = 'free', x = 98.5, y = 97.5, anchor = 'right',  anchorY = 'bottom' },
+            vehicle = { dock = 'free', x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
         },
     },
     {
         key = 'corners',
         label = 'layout.preset_corners',
+        -- Three corners, because the fourth is the minimap's.
         style = { direction = 'row' },
         positions = {
-            status  = { x = 1.5,  y = 3.0,  anchor = 'left',   anchorY = 'top' },
-            streets = { x = 1.5,  y = 97.5, anchor = 'left',   anchorY = 'bottom' },
-            speedo  = { x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
-            compass = { x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
-            money   = { x = 98.5, y = 8.5,  anchor = 'right',  anchorY = 'top' },
-            voice   = { x = 1.5,  y = 86.0, anchor = 'left',   anchorY = 'bottom' },
-            vehicle = { x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
+            status  = { dock = 'free', x = 1.5,  y = 3.0,  anchor = 'left',   anchorY = 'top' },
+            voice   = { dock = 'free', x = 1.5,  y = 10.0, anchor = 'left',   anchorY = 'top' },
+            streets = { dock = 'free', x = 50.0, y = 97.5, anchor = 'center', anchorY = 'bottom' },
+            speedo  = { dock = 'free', x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
+            compass = { dock = 'free', x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
+            vehicle = { dock = 'free', x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
         },
     },
 }
@@ -407,6 +418,10 @@ Config.Status = {
 -- 8. Money
 -- =======================================================================================
 
+-- `/cash` and `/bank` only. There is no money element on this HUD: a balance parked on
+-- screen all session is the first thing every player switches off, so it is not drawn, and
+-- the passive "you gained $50" banner is not drawn either. A balance appears because it was
+-- asked for, as a toast, and then it is gone.
 Config.Money = {
     -- Prefix, suffix, or neither. `symbol` is drawn on the side you choose.
     symbol = '$',
@@ -415,21 +430,10 @@ Config.Money = {
     -- Thousands separator. A space is the French convention; use ',' for the English one.
     thousands = ' ',
 
-    -- How long a change banner stays on screen, in milliseconds.
-    changeDuration = 3500,
-
-    -- How long `/cash` and `/bank` show the balance for.
+    -- How long the `/cash` and `/bank` toast stays on screen, in milliseconds.
     balanceDuration = 5000,
 
-    -- Show the bank balance permanently next to the cash one, rather than only on a change.
-    alwaysShowBank = false,
-
-    -- Answer `/cash` and `/bank` even when the money element is switched off. The player asked
-    -- a direct question; the readout appears for its duration and then goes away again.
-    showOnCommand = true,
-
-    -- Accounts to react to. An account not listed here is ignored, so a server with a crypto
-    -- account can decide whether the HUD should flash for it.
+    -- Accounts the commands will answer for.
     accounts = { 'cash', 'bank' },
 }
 
@@ -803,13 +807,10 @@ Config.Defaults = {
         oxygen = true,
         stamina = true,
         voice = true,
-        -- OFF. A cash and bank readout parked in the corner of the screen all session is the
-        -- single most immersion-breaking thing a HUD does, so it does not ship on. The change
-        -- banner is off with it; `/cash` and `/bank` still answer, because an explicit command
-        -- is an explicit request - see Config.Money.showOnCommand.
-        money = false,
         speedometer = true,
-        compass = true,
+        -- OFF. A compass strip across the top of the screen is a strong opinion to impose on
+        -- everybody; the players who want one turn it on in two clicks.
+        compass = false,
         streets = true,
         minimap = true,
         nitro = true,
@@ -855,7 +856,6 @@ Config.Defaults = {
         oxygen     = '#2de2e6',
         stamina    = '#ffe66d',
         voice      = '#ffd6ec',
-        money      = '#2de2e6',
         speed      = '#ffffff',
         fuel       = '#ff8a3d',
         rpm        = '#ff2d6f',
@@ -870,13 +870,23 @@ Config.Defaults = {
     -- The shipped arrangement is built around the minimap: the street banner sits directly on
     -- top of it at the same width, and the status gauges stack up its right-hand edge.
     positions = {
-        streets = { x = 0.7,  y = 71.2, anchor = 'left',   anchorY = 'top' },
-        status  = { x = 21.4, y = 96.6, anchor = 'left',   anchorY = 'bottom' },
-        speedo  = { x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
-        compass = { x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
-        money   = { x = 98.5, y = 8.5,  anchor = 'right',  anchorY = 'top' },
-        voice   = { x = 0.7,  y = 69.4, anchor = 'left',   anchorY = 'bottom' },
-        vehicle = { x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
+        -- `dock` glues an element to an edge of the minimap and makes its x/y unused. That
+        -- is the shipped arrangement: the street banner is the lid of the map, the voice
+        -- indicator sits above it, and the gauges stack up the map's right-hand side.
+        --
+        -- Docking is not the same as a percentage that happens to land near the map. The map
+        -- is sized from the screen HEIGHT; a percentage of the WIDTH drifts off it on any
+        -- aspect ratio but 16:9, and stops tracking entirely when the player moves or
+        -- resizes the map. A docked element follows it on every screen.
+        --
+        -- 'free' uses x/y instead. Dragging an element in the editor sets it to 'free', and
+        -- the x/y kept beside each dock is where it lands when that happens.
+        streets = { dock = 'map-top',   x = 0.7,  y = 71.2, anchor = 'left',   anchorY = 'top' },
+        voice   = { dock = 'map-top-2', x = 0.7,  y = 66.0, anchor = 'left',   anchorY = 'bottom' },
+        status  = { dock = 'map-right', x = 19.5, y = 93.5, anchor = 'left',   anchorY = 'bottom' },
+        speedo  = { dock = 'free', x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
+        compass = { dock = 'free', x = 50.0, y = 2.0,  anchor = 'center', anchorY = 'top' },
+        vehicle = { dock = 'free', x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
     },
 
     minimap = {

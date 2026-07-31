@@ -81,6 +81,114 @@
 .hud-el[data-anchor="center"][data-anchor-y="bottom"] { transform-origin: bottom center; }
 .hud-el[data-anchor="right"][data-anchor-y="bottom"]  { transform-origin: bottom right; }
 
+/*
+    Docking.
+
+    An element with a dock ignores its own x/y and glues itself to an edge of the minimap
+    rectangle, which is the arrangement the HUD ships in: the street banner is the lid of the
+    map and the gauges stack up its right-hand side. Because it reads --map-* rather than a
+    stored percentage, it follows the map when the player moves or resizes it, and it lands
+    correctly on an ultrawide where a percentage of the width would not.
+
+    Dragging an element in the layout editor sets its dock back to `free`.
+*/
+.hud-el[data-dock="map-top"] {
+    left: var(--map-left);
+    top: auto;
+    bottom: calc(var(--map-bottom) + var(--map-h) + var(--map-gap));
+    --anchor-x: 0%;
+    --anchor-y: 0%;
+    transform-origin: bottom left;
+}
+
+.hud-el[data-dock="map-right"] {
+    left: calc(var(--map-left) + var(--map-w) + var(--map-gap));
+    top: auto;
+    bottom: var(--map-bottom);
+    --anchor-x: 0%;
+    --anchor-y: 0%;
+    transform-origin: bottom left;
+}
+
+/* A second row above the street banner. The map's left edge is only ~27px from the screen
+   edge, so there is no usable space beside it - anything that wants to be "near the map" and
+   is not the banner or the gauge column goes above the banner instead.
+
+   The clearance is in PIXELS, scaled with the HUD, because the banner it has to clear is
+   itself a fixed pixel height: as vh it was 33px at 720p against a 47px banner, and the two
+   rows sat on top of each other on every small screen. */
+.hud-el[data-dock="map-top-2"] {
+    left: var(--map-left);
+    top: auto;
+    bottom: calc(var(--map-bottom) + var(--map-h) + var(--map-gap)
+        + (52px * var(--hud-scale)));
+    --anchor-x: 0%;
+    --anchor-y: 0%;
+    transform-origin: bottom left;
+}
+
+.hud-el[data-dock="map-bottom"] {
+    left: var(--map-left);
+    top: auto;
+    bottom: calc(var(--map-bottom) - var(--map-gap));
+    --anchor-x: 0%;
+    --anchor-y: 100%;
+    transform-origin: top left;
+}
+
+/* A docked element sits on the map, so its own transform must not re-offset it. */
+.hud-el[data-dock]:not([data-dock="free"]) {
+    transform: translate(var(--fix-x), var(--fix-y)) scale(var(--hud-scale));
+}
+
+/*
+    Gauges docked to the right of the map stack UPWARD, whatever direction the player picked.
+
+    That is the point of the dock: the column runs up the map's edge. Left as a row, the wide
+    shapes (bar, pill, segment) are ~165px each and six of them reach 988px - most of the way
+    across a 1280px screen, straight through the speedometer. A player who wants a row can
+    drag the cluster off the map, which sets it free.
+*/
+.hud-el[data-dock="map-right"] .status,
+.hud-el[data-dock="map-left"] .status {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/*
+    The arc.
+
+    A round map wants its gauges to follow the curve, not to stand in a straight line beside
+    a circle. In arc mode the element is laid exactly over the map rectangle and each gauge is
+    placed on the circle by status.js - the geometry has to be computed, because the radius
+    depends on the map's real pixel size and the number of gauges currently visible.
+*/
+.hud-el[data-dock="map-arc"] {
+    left: var(--map-left);
+    top: auto;
+    bottom: var(--map-bottom);
+    width: var(--map-w);
+    height: var(--map-h);
+    --anchor-x: 0%;
+    --anchor-y: 0%;
+    transform-origin: center center;
+}
+
+.status[data-arc="true"] {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.status[data-arc="true"] .gauge {
+    position: absolute;
+    /* left/top are written per gauge by status.js; the translate centres each one on its
+       point rather than hanging it from its corner. */
+    transform: translate(-50%, -50%);
+    margin: 0;
+}
+
 .hud-el[data-visible="false"] {
     opacity: 0;
     /* Kept in the DOM rather than removed: a toggled element that is re-created loses its
@@ -118,14 +226,26 @@
    percentages from the same settings.
    --------------------------------------------------------------------------------------- */
 
+/*
+    The frame is measured in vh, NOT in percent of the width.
+
+    The game minimap is sized from the screen HEIGHT inside a 16:9 safe zone, so a frame
+    expressed as a percentage of the width only lines up at one aspect ratio - which is why
+    the border sat well outside the map. These are the geometry qb-hud has shipped for years
+    (square 29vh x 18.5vh at bottom 6.3%, circle 27vh x 22.9vh at bottom 6.9%), which is the
+    one set of numbers known to match the natives in client/minimap.lua.
+
+    --map-* are published by state.js so the street banner and the gauge column can dock to
+    the same rectangle instead of guessing at it.
+*/
 .minimap-frame {
     position: fixed;
-    left: calc(0.6% + var(--map-x, 0%));
-    bottom: calc(3.2% - var(--map-y, 0%));
-    width: calc(20.4% * var(--map-scale, 1));
-    height: calc(20.9% * var(--map-scale, 1));
+    left: var(--map-left);
+    bottom: var(--map-bottom);
+    width: var(--map-w);
+    height: var(--map-h);
     border: 2px solid var(--c-accent);
-    box-shadow: var(--glow), inset 0 0 24px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--glow);
     opacity: 0;
     transition: opacity var(--t-mid) var(--ease);
     pointer-events: none;
@@ -224,10 +344,9 @@
     text-transform: uppercase;
 }
 
-/* The banner sized to the minimap and sitting on its lid. The width is the same expression
-   the frame above uses, so the two cannot drift apart when the map is moved or resized. */
+/* The banner sized to the minimap. Same variable as the frame, so the two cannot drift. */
 .streets[data-match="true"] {
-    width: calc(20.4vw * var(--map-scale, 1) * 1.0);
+    width: var(--map-w);
     justify-content: center;
 }
 
@@ -401,75 +520,7 @@
     text-shadow: var(--glow);
 }
 
-/* ---------------------------------------------------------------------------------------
-   Money
-   --------------------------------------------------------------------------------------- */
-
-.money {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-}
-
-.money__row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 12px;
-    background: var(--c-panel);
-    border: 1px solid var(--c-line);
-    border-radius: var(--radius);
-    font-size: 15px;
-    font-weight: 600;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-    transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
-}
-
-.money__row[data-on="false"] {
-    opacity: 0;
-    transform: translateX(12px);
-    pointer-events: none;
-}
-
-.money__icon {
-    font-size: 9px;
-    line-height: 1;
-    color: var(--c-money);
-    text-shadow: var(--glow);
-}
-
-.money__row--bank .money__icon {
-    color: var(--c-accent);
-}
-
-.money__value {
-    color: var(--c-text);
-}
-
-.money__delta {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 6px;
-    padding: 4px 10px;
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-weight: 700;
-    opacity: 0;
-    transform: translateY(-8px);
-    transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
-    white-space: nowrap;
-}
-
-.money__delta[data-on="true"] {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.money__delta[data-sign="plus"]  { color: var(--c-money);   background: color-mix(in srgb, var(--c-money) 16%, transparent); }
-.money__delta[data-sign="minus"] { color: var(--c-warning); background: color-mix(in srgb, var(--c-warning) 16%, transparent); }
+/* There is no money element. `/cash` and `/bank` answer through the toast stack below. */
 
 /* ---------------------------------------------------------------------------------------
    Voice
@@ -580,13 +631,13 @@
 
 .vext__chip[data-on="true"] {
     color: var(--c-accent);
-    border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+    border-color: var(--c-accent-a55);
     box-shadow: var(--glow);
 }
 
 .vext__chip[data-alert="true"] {
     color: var(--c-warning);
-    border-color: color-mix(in srgb, var(--c-warning) 60%, transparent);
+    border-color: var(--c-warning-a60);
     animation: vext-alert 0.9s steps(2, end) infinite;
 }
 

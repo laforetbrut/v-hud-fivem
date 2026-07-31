@@ -19,10 +19,18 @@ ten realistic instrument clusters, four compasses and a frosted-glass default lo
 - **Ten realistic speedometers** - minimal digital, classic dial, twin sport dials, digital
   cluster, luxury ring, JDM tachometer, American muscle, supercar, truck cluster, retro LCD.
   All with numbered graduations, real needles, a redline, and an E-F fuel gauge.
+- **Built around the minimap** - the street banner is the lid of the map at exactly its
+  width, the gauges stack up its right-hand edge, and on a ROUND map they follow the curve
+  on an arc. All of it docks to the real map rectangle, so it tracks when the map is moved,
+  resized or reshaped, and lands correctly on an ultrawide.
 - **Compass and street names** - four compass styles (bar, tape, dial, text), street +
-  cross street + district banner that can match the minimap width and sit on top of it.
-- **Minimap control** - square or circle, movable, resizable, hideable, vehicle-only mode.
-  Moves the real game minimap, so blips move with it.
+  cross street + district banner. The compass ships off; it is two clicks to turn on.
+- **Minimap control** - square or circle, resizable, hideable, vehicle-only mode, and
+  draggable in the layout editor like everything else. Moves the real game minimap, so blips
+  move with it. Ships the shape masks, so a square border sits on a square map.
+- **No money on screen** - a cash readout parked in a corner all session is the first thing
+  most players switch off, so it is not drawn at all, and neither is the "you gained $50"
+  banner. `/cash` and `/bank` answer once, as a toast, and go away.
 - **Immersive mode** - the HUD fades out when nothing is happening and returns the moment
   anything moves. Compact mode, cinematic bars, HUD scale and opacity sliders.
 - **Player-chosen refresh rate** - 30 / 60 / 90 fps, like qb-core's own setting.
@@ -68,11 +76,13 @@ There is no build step. Lua and JS ship as source.
 
 | Command | Effect |
 |---|---|
-| `I` or `/hud` or `/menu` | Open the settings menu |
-| `/cinematic` | Toggle cinematic bars |
+| `I` or `/hud` or `/menu` | Open the settings menu (also closes the layout editor) |
+| `/hidehud` | Hide the whole HUD and minimap until typed again (not saved) |
+| `/cinematic` | Toggle cinematic bars — hides the HUD with them |
 | `/hudreset` | Reset every setting to the server default |
+| `/hudunstuck` | Release NUI focus if a cursor is ever left on screen |
 | `/hudinfo` | Print detected framework, fuel, voice, inventory |
-| `/cash`, `/bank` | Show a balance (answers even with the money element off) |
+| `/cash`, `/bank` | Show a balance once, as a toast |
 | `/hudadmin theme\|preset\|speedo\|reset\|list` | Admin: force settings on a player or everyone |
 
 ## Notifications

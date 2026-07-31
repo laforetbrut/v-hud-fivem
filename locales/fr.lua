@@ -94,7 +94,6 @@ Locales.fr = {
     ['element.oxygen'] = 'Oxygène',
     ['element.stamina'] = 'Endurance',
     ['element.voice'] = 'Voix',
-    ['element.money'] = 'Argent',
     ['element.speedometer'] = 'Compteur',
     ['element.compass'] = 'Boussole',
     ['element.streets'] = 'Noms de rue',
@@ -151,7 +150,6 @@ Locales.fr = {
     ['colour.oxygen'] = 'Oxygène',
     ['colour.stamina'] = 'Endurance',
     ['colour.voice'] = 'Voix',
-    ['colour.money'] = 'Argent',
     ['colour.speed'] = 'Vitesse',
     ['colour.fuel'] = 'Carburant',
     ['colour.rpm'] = 'Compte-tours',
@@ -193,7 +191,6 @@ Locales.fr = {
     ['layout.group_speedo'] = 'Compteur',
     ['layout.group_compass'] = 'Boussole',
     ['layout.group_streets'] = 'Noms de rue',
-    ['layout.group_money'] = 'Argent',
     ['layout.group_voice'] = 'Voix',
     ['layout.group_vehicle'] = 'Indicateurs véhicule',
 
@@ -279,6 +276,8 @@ Locales.fr = {
     ['dir.nw'] = 'NO',
 
     -- Unités affichées sur le HUD
+    ['money.cash'] = 'Liquide',
+    ['money.bank'] = 'Banque',
     ['unit.kmh'] = 'KM/H',
     ['unit.mph'] = 'MPH',
     ['unit.metres'] = 'M',

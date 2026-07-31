@@ -102,7 +102,10 @@ const S = (() => {
        Applying settings to the document
        ------------------------------------------------------------------------------------ */
 
-    const ELEMENTS = ['status', 'speedo', 'compass', 'streets', 'money', 'voice', 'vehicle'];
+    // No `money` element. A permanent cash readout is the thing every player turns off
+    // first, so it is not built at all; `/cash` and `/bank` answer through the toast stack
+    // instead, which is the part that was ever wanted.
+    const ELEMENTS = ['status', 'speedo', 'compass', 'streets', 'voice', 'vehicle'];
 
     // Which `show` key decides whether each positioned element is drawn. `status` has none:
     // it is drawn whenever at least one gauge inside it is on, which status.js works out.
@@ -110,7 +113,6 @@ const S = (() => {
         speedo: 'speedometer',
         compass: 'compass',
         streets: 'streets',
-        money: 'money',
         voice: 'voice',
     };
 
@@ -127,6 +129,54 @@ const S = (() => {
        rather than per tick, and a ResizeObserver re-runs it when an element's own content
        changes size (a new cluster, a longer street name, a gauge column that grew).
        ------------------------------------------------------------------------------------ */
+
+    /* ------------------------------------------------------------------------------------
+       The minimap rectangle
+
+       Published as CSS variables so the frame, the street banner and anything docked to the
+       map all read one source. Expressed in vh because the game minimap is sized from the
+       screen HEIGHT inside a 16:9 safe zone - a percentage of the WIDTH only lines up at one
+       aspect ratio, which is why the border used to sit outside the map.
+
+       The base numbers are the geometry qb-hud has shipped for years against these same
+       natives; client/minimap.lua drives the game side with the matching values.
+       ------------------------------------------------------------------------------------ */
+
+    const MAP_SHAPES = {
+        square: { left: 2.5, bottom: 6.3, w: 29.0, h: 18.5 },
+        circle: { left: 3.4, bottom: 6.9, w: 27.0, h: 22.9 },
+    };
+
+    // The aspect-ratio correction client/minimap.lua applied to the native components, as a
+    // fraction of the screen width. Latched from the `minimap` message; the frame has to
+    // apply the same shift or it leaves the map on anything wider than 16:9.
+    let mapAspect = 0;
+
+    function setMapAspect(value) {
+        if (typeof value !== 'number' || !isFinite(value)) return;
+        mapAspect = value;
+        applyMapGeometry(state.settings && state.settings.minimap);
+    }
+
+    function applyMapGeometry(minimap) {
+        const root = document.documentElement;
+        const base = MAP_SHAPES[(minimap && minimap.shape) || 'square'] || MAP_SHAPES.square;
+        const scale = (minimap && minimap.scale) || 1;
+
+        // The player's offsets are a percentage of the screen, matching the sliders and the
+        // native calls; the rest of the rectangle is vh.
+        const dx = ((minimap && minimap.x) || 0) + mapAspect * 100;
+        const dy = (minimap && minimap.y) || 0;
+
+        // The left edge is NOT scaled: client/minimap.lua scales the component's width and
+        // height but leaves its origin alone, and the two sides have to agree or the border
+        // drifts off the map at any scale but 1.
+        U.cssVar(root, '--map-left', `calc(${U.round(base.left, 2)}vh + ${dx}vw)`);
+        U.cssVar(root, '--map-bottom', `calc(${U.round(base.bottom, 2)}% + ${dy}vh)`);
+        U.cssVar(root, '--map-w', `${U.round(base.w * scale, 2)}vh`);
+        U.cssVar(root, '--map-h', `${U.round(base.h * scale, 2)}vh`);
+        U.cssVar(root, '--map-radius', (minimap && minimap.shape) === 'circle' ? '50%' : 'var(--radius)');
+    }
 
     const EDGE = 6;                  // px of breathing room at each screen edge
     let clampQueued = false;
@@ -207,20 +257,52 @@ const S = (() => {
         const text = colours.text || '#f8fafc';
         const style = settings.style || {};
 
-        /* The surface. Each mode is one alpha and one filter, and picking them here rather
-           than in CSS is what lets the blur radius be a slider. */
+        /* The surface.
+           Glass is a translucent GRADIENT, never a backdrop-filter: CEF composites the NUI
+           over the finished frame, so a backdrop filter has nothing behind it to blur and
+           paints solid black. The `blur` setting drives the gradient's softness and the
+           edge highlight instead, which is the part of "frosted" that actually reads. */
         const surface = style.surface || 'glass';
-        const SURFACE_ALPHA = { glass: 0.34, tint: 0.7, solid: 0.97, none: 0 };
+        const SURFACE_ALPHA = { glass: 0.42, tint: 0.7, solid: 0.97, none: 0 };
         const alpha = SURFACE_ALPHA[surface] === undefined ? 0.82 : SURFACE_ALPHA[surface];
+        const frost = U.clamp(style.blur === undefined ? 16 : style.blur, 0, 32) / 32;
 
         U.cssVar(root, '--c-panel', U.alpha(bg, alpha));
         U.cssVar(root, '--c-panel-solid', bg);
-        U.cssVar(root, '--panel-blur', surface === 'glass' ? `blur(${style.blur || 16}px) saturate(1.4)` : 'none');
-        U.cssVar(root, '--c-line', U.alpha(text, surface === 'glass' ? 0.24 : 0.14));
+        U.cssVar(root, '--frost', frost);
+        U.cssVar(root, '--c-line', U.alpha(text, surface === 'glass' ? 0.26 : 0.14));
         U.cssVar(root, '--c-line-strong', U.alpha(text, 0.34));
         U.cssVar(root, '--c-track', U.alpha(text, 0.14));
         U.cssVar(root, '--c-muted', U.alpha(text, 0.6));
         U.attr(hud, 'data-surface', surface);
+
+        /* Blended colours.
+           CSS color-mix() is dropped as invalid by FiveM's CEF - it predates Chromium 111 -
+           so every blend the stylesheets want is computed here and published as a plain
+           value. The names say what they are: `-aNN` is that colour at NN% alpha, `-dNN` is
+           it darkened to NN% of itself over black. */
+        const alphas = {
+            accent: [8, 10, 12, 18, 20, 28, 30, 40, 55, 60],
+            health: [10, 20, 28, 55],
+            warning: [20, 32, 60],
+            rpm: [60],
+            fuel: [55],
+        };
+        for (const [key, steps] of Object.entries(alphas)) {
+            const hex = colours[key] || '#ffffff';
+            for (const step of steps) {
+                U.cssVar(root, `--c-${key}-a${step}`, U.alpha(hex, step / 100));
+            }
+        }
+
+        for (const step of [76, 88, 92, 94]) {
+            U.cssVar(root, `--c-bg-d${step}`, U.mix(bg, '#000000', step));
+        }
+
+        // The settings panel: the player's background, warmed by a trace of their accent at
+        // the top and shaded at the bottom, so it reads as a lit surface rather than a slab.
+        U.cssVar(root, '--c-panel-tint', U.mix(bg, colours.accent || '#ffffff', 94));
+        U.cssVar(root, '--c-panel-shade', U.mix(bg, '#000000', 88));
 
         /* Shape and scale.
            Two radii, and they are separate for a reason. `corner` is the GAUGE radius and the
@@ -250,11 +332,36 @@ const S = (() => {
             if (!node) continue;
 
             const position = (settings.positions || {})[key]
-                || { x: 50, y: 50, anchor: 'left', anchorY: 'top' };
-            node.style.left = `${position.x}%`;
-            node.style.top = `${position.y}%`;
+                || { x: 50, y: 50, anchor: 'left', anchorY: 'top', dock: 'free' };
+            let dock = position.dock || 'free';
+
+            // A round map gets its gauges on an arc that follows the curve rather than a
+            // straight column standing beside a circle. Derived rather than stored, so it
+            // follows the map shape without the player having to set it twice.
+            if (key === 'status' && dock === 'map-right'
+                && (settings.minimap || {}).shape === 'circle') {
+                dock = 'map-arc';
+            }
+
+            U.attr(node, 'data-dock', dock);
             U.attr(node, 'data-anchor', position.anchor || 'left');
             U.attr(node, 'data-anchor-y', position.anchorY || 'top');
+
+            if (dock === 'free') {
+                node.style.left = `${position.x}%`;
+                node.style.top = `${position.y}%`;
+                node.style.right = '';
+                node.style.bottom = '';
+            } else {
+                // The dock rules in hud.css own every edge; leaving an inline left/top here
+                // would win the cascade and the element would ignore its dock.
+                node.style.left = '';
+                node.style.top = '';
+                node.style.right = '';
+                node.style.bottom = '';
+            }
+
+            if (key === 'status') Status.setArc(dock === 'map-arc');
 
             const showKey = ELEMENT_VISIBILITY[key];
             if (showKey) {
@@ -263,6 +370,8 @@ const S = (() => {
         }
 
         scheduleClamp();
+
+        applyMapGeometry(settings.minimap);
 
         /* The street banner can be sized to the minimap rather than to its own content. */
         const streets = settings.streets || {};
@@ -307,6 +416,7 @@ const S = (() => {
         get settings() { return state.settings; },
         get statik() { return state.statik; },
         t, isLocked, get, set, setMany, applySettings, boot,
+        setMapAspect, scheduleClamp,
         ELEMENTS,
     };
 

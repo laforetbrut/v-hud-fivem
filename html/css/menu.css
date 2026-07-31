@@ -13,9 +13,12 @@
     inset: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    padding: 4vh 0 4vh 4vw;
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 45%, transparent 70%);
+    /* Centred. Pinned to the left it sat over the minimap and the gauges - the very things a
+       player is looking at while they change them - and on an ultrawide it was marooned in
+       one corner. The dimmed backdrop is even, for the same reason. */
+    justify-content: center;
+    padding: 4vh 2vw;
+    background: rgba(0, 0, 0, 0.55);
     z-index: var(--z-menu);
     animation: menu-in var(--t-mid) var(--ease);
 }
@@ -33,23 +36,36 @@
     to { opacity: 0; }
 }
 
+/*
+    Two rules this panel is built on, both learned the hard way.
+
+    NO backdrop-filter: CEF composites the NUI over the finished game frame, so a backdrop
+    filter has nothing to sample and paints a solid black rectangle.
+
+    NO color-mix(): FiveM's CEF predates Chromium 111, so any declaration containing it is
+    dropped as invalid - which left this panel with NO background at all and the street
+    showing straight through the settings. The two blended colours it wants are computed in
+    state.js and arrive as --c-panel-tint and --c-panel-shade.
+*/
 .menu__panel {
     display: flex;
     flex-direction: column;
-    width: min(860px, 62vw);
-    height: min(760px, 92vh);
-    background: var(--c-panel);
-    backdrop-filter: blur(18px);
-    border: 1px solid var(--c-line);
+    width: min(880px, 90vw);
+    height: min(780px, 90vh);
+    background: linear-gradient(160deg,
+        var(--c-panel-tint) 0%,
+        var(--c-panel-solid) 55%,
+        var(--c-panel-shade) 100%);
+    border: 1px solid var(--c-line-strong);
     border-radius: calc(var(--radius) + 8px);
-    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 32px 90px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(0, 0, 0, 0.5);
     overflow: hidden;
     animation: panel-in var(--t-mid) var(--ease);
 }
 
 @keyframes panel-in {
-    from { opacity: 0; transform: translateX(-24px) scale(0.985); }
-    to   { opacity: 1; transform: translateX(0) scale(1); }
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Head ---------------------------------------------------------------------------------- */
@@ -149,7 +165,7 @@
 }
 
 .tab[data-active="true"] {
-    background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+    background: var(--c-accent-a18);
     color: var(--c-text);
     box-shadow: inset 2px 0 0 var(--c-accent);
 }
@@ -468,11 +484,11 @@
 .btn--ghost:hover { background: rgba(255, 255, 255, 0.13); }
 
 .btn--danger {
-    background: color-mix(in srgb, var(--c-warning) 20%, transparent);
+    background: var(--c-warning-a20);
     color: var(--c-warning);
 }
 
-.btn--danger:hover { background: color-mix(in srgb, var(--c-warning) 32%, transparent); }
+.btn--danger:hover { background: var(--c-warning-a32); }
 
 .btn--small { padding: 5px 11px; font-size: 11px; }
 
@@ -517,6 +533,42 @@
 .providers dt { color: var(--c-muted); }
 .providers dd { color: var(--c-text); font-family: 'Courier New', monospace; }
 
+/* Confirmation sheet. Replaces window.confirm(), which CEF cannot draw and which locks the
+   page with NUI focus held - the only way out being a client restart. */
+.confirm {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 10;
+    animation: menu-in var(--t-fast) var(--ease);
+}
+
+.confirm__box {
+    width: min(360px, 80%);
+    padding: 22px;
+    background: var(--c-panel-solid);
+    border: 1px solid var(--c-line-strong);
+    border-radius: calc(var(--radius) + 6px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    text-align: center;
+}
+
+.confirm__text {
+    margin-bottom: 18px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--c-text);
+}
+
+.confirm__actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
 /* =======================================================================================
    Layout editor
    ======================================================================================= */
@@ -550,8 +602,7 @@
     align-items: center;
     gap: 14px;
     padding: 12px 18px;
-    background: var(--c-panel);
-    backdrop-filter: blur(18px);
+    background: var(--c-panel-solid);
     border: 1px solid var(--c-line);
     border-radius: calc(var(--radius) + 6px);
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
@@ -576,19 +627,30 @@
     position: absolute;
     border: 1px dashed var(--c-accent);
     border-radius: var(--radius);
-    background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+    background: var(--c-accent-a10);
     cursor: grab;
     transition: background var(--t-fast) var(--ease);
 }
 
-.ghost:hover { background: color-mix(in srgb, var(--c-accent) 20%, transparent); }
+.ghost:hover { background: var(--c-accent-a20); }
 
 .ghost[data-dragging="true"] {
     cursor: grabbing;
-    background: color-mix(in srgb, var(--c-accent) 28%, transparent);
+    background: var(--c-accent-a28);
     border-style: solid;
     box-shadow: var(--glow);
 }
+
+/* The minimap's ghost. A different colour because dragging it moves the GAME map rather than
+   a HUD element, and the two write different settings. */
+.ghost--map {
+    border-color: var(--c-health);
+    background: var(--c-health-a10);
+}
+
+.ghost--map:hover { background: var(--c-health-a20); }
+.ghost--map[data-dragging="true"] { background: var(--c-health-a28); }
+.ghost--map .ghost__label { background: var(--c-health); }
 
 .ghost__label {
     position: absolute;

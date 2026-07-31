@@ -94,12 +94,25 @@ function Minimap.apply(settings)
             AddReplaceTexture('platform:/textures/graphics', 'radarmask1g', shape.dict, 'radarmasksm')
         elseif not warnedMissing then
             warnedMissing = true
-            HUD.warn('Minimap shape masks are not streaming. The map keeps the game shape; see README > Minimap.')
+            HUD.warn(('Minimap mask "%s" is not streaming - the map keeps the game shape while the ' ..
+                'border draws the chosen one, so the two will not line up. The masks ship in ' ..
+                'v-hud/stream; check that folder survived the copy.'):format(shape.dict))
         end
 
         -- The player's offsets are a percentage of the screen; the natives want a fraction.
+        --
+        -- THE SIGN ON Y IS NOT A TYPO. Three coordinate systems have to agree here:
+        --
+        --   the setting   positive y means the map moves UP  (what the slider and the drag say)
+        --   the CSS frame `bottom: calc(base + y)`           - larger bottom is higher, so +y
+        --   the native    posY grows DOWNWARD even under 'B' alignment, which is why the
+        --                 shipped geometry uses y = -0.047 to lift the square map off the
+        --                 bottom edge. Moving up therefore means going MORE negative.
+        --
+        -- Get this wrong and the map slides the opposite way to the mouse while the border
+        -- follows the mouse correctly, which is precisely what it looked like.
         local dx = (map.x or 0.0) / 100.0
-        local dy = -(map.y or 0.0) / 100.0     -- positive Y in the menu means "up"
+        local dy = -(map.y or 0.0) / 100.0
         local scale = map.scale or 1.0
 
         for _, component in ipairs({ 'minimap', 'minimap_mask', 'minimap_blur' }) do
@@ -125,6 +138,10 @@ function Minimap.apply(settings)
 
         -- Tell the NUI which border to draw, and where. The border is CSS because the native
         -- one cannot be recoloured.
+        --
+        -- `aspect` is the correction applied to the components just above, as a fraction of
+        -- the screen width. The CSS frame has to apply the SAME shift or it leaves the map on
+        -- any screen wider than 16:9 - which is the whole ultrawide story in one variable.
         SendNUIMessage({
             action = 'minimap',
             shape = map.shape,
@@ -132,6 +149,7 @@ function Minimap.apply(settings)
             x = map.x,
             y = map.y,
             scale = scale,
+            aspect = offset,
         })
     end)
 end

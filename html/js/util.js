@@ -178,6 +178,25 @@ const U = (() => {
         return 0.299 * r + 0.587 * g + 0.114 * b;
     }
 
+    /**
+     * Blend two hex colours: `pct` percent of `a`, the rest of `b`. Returns `#rrggbb`.
+     *
+     * This exists because CSS `color-mix()` DOES NOT WORK in FiveM. Its CEF is built on an
+     * older Chromium than the one that shipped color-mix (111), so every declaration using it
+     * is dropped as invalid - which is why the settings panel rendered with no background at
+     * all and the game showed straight through it. Anything that needs a blended colour is
+     * computed here and published as a plain custom property instead.
+     */
+    function mix(a, b, pct) {
+        const ca = rgb(a);
+        const cb = rgb(b);
+        const t = clamp(pct, 0, 100) / 100;
+        const channel = (x, y) => Math.round(x * t + y * (1 - t));
+        const hex = (n) => n.toString(16).padStart(2, '0');
+
+        return `#${hex(channel(ca.r, cb.r))}${hex(channel(ca.g, cb.g))}${hex(channel(ca.b, cb.b))}`;
+    }
+
     /* ------------------------------------------------------------------------------------
        SVG geometry
        ------------------------------------------------------------------------------------ */
@@ -238,7 +257,7 @@ const U = (() => {
     return {
         SVG_NS, el, make, svg, fill, attr, text, cssVar, append, show, asArray,
         clamp, ratio, round, money,
-        rgb, alpha, luminance,
+        rgb, alpha, luminance, mix,
         polar, arcPath, circumference,
         debounce, post, inGame, RESOURCE,
     };

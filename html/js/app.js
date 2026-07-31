@@ -102,7 +102,6 @@
 
         boot(data) {
             S.boot(data);
-            Money.configure(S.statik.money);
             Toast.configure(S.statik.notifications);
         },
 
@@ -140,28 +139,22 @@
             U.text(U.el('street-dir'), data.cardinal || '');
         },
 
-        money(data) {
-            // The change banner obeys the element switch. It is passive - nobody asked for it -
-            // so a player who turned the money element off should not see it flash.
-            if (!S.settings || !S.settings.show || !S.settings.show.money) return;
-            Money.change(data);
-        },
-
+        // There is no money element. A balance is only ever shown because the player typed
+        // `/cash` or `/bank`, and then it is a toast like any other message - it appears, it
+        // is read, it goes away. Passive money change banners are not drawn at all.
         showAccount(data) {
-            // `/cash` and `/bank` answer even when the element is off. The player asked.
-            Money.reveal(data.duration);
-            Money.showAccount(data.account, data.amount, data.duration);
+            Toast.show(data.text, 'primary', data.duration);
         },
 
         minimap(data) {
+            // The aspect correction is the only thing here the settings do not already carry:
+            // it is measured from the real screen, so it can only come from the game side.
+            S.setMapAspect(data.aspect);
+            S.scheduleClamp();
+
             const frame = U.el('minimap-frame');
-            const root = document.documentElement;
-
-            U.cssVar(root, '--map-x', `${data.x || 0}%`);
-            U.cssVar(root, '--map-y', `${data.y || 0}%`);
-            U.cssVar(root, '--map-scale', data.scale || 1);
-
             if (!frame) return;
+
             U.attr(frame, 'data-shape', data.shape || 'square');
             U.attr(frame, 'data-on', data.borders !== false);
         },

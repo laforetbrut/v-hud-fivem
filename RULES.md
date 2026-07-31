@@ -60,13 +60,27 @@ anything new.
   Adding one must never require touching the update path.
 - Send nothing to the NUI when nothing changed. The tick compares before it posts.
 
-**JS/HTML gotchas already paid for (see ERROR_LOG.md).**
+**NUI constraints that are not negotiable (all learned in game — see ERROR_LOG.md).**
+- **No `backdrop-filter`.** CEF composites the page over the finished frame, so it samples
+  nothing and paints solid black. Glass is a gradient plus a lit edge.
+- **No `color-mix()`**, and nothing else newer than a 2022 Chromium (no `oklch`, `:has()`,
+  container queries). An unsupported function invalidates the WHOLE declaration silently.
+  Blends are computed with `U.mix()` and published as custom properties by state.js.
+- **`os`, `io`, `package` are server-only.** The client uses `GetCloudTimeAsInt()` for wall
+  clock.
+- **NUI focus must always have a way out.** Every path that sets it clears it; there is a
+  watchdog and `/hudunstuck`. Never early-return from a function that releases focus.
+- **Never `window.confirm`/`alert`/`prompt`.** They block the page with focus held.
+
+**Other gotchas already paid for.**
 - An empty Lua list arrives in JS as `{}` — pass every list through `U.asArray`.
 - Never write the `hidden` attribute through `U.attr`; use `U.show`.
 - Player style values never feed UI surfaces the player is not styling
   (`--gauge-radius` vs `--radius`).
+- The minimap is sized from screen HEIGHT: geometry is `vh`, never a percentage of the width.
+  The native posY grows downward under 'B' alignment while CSS `bottom` grows upward.
 - In a read-modify-write script over a source file, open for writing only after the new
-  content is fully computed.
+  content is fully computed. Better: edit the file directly.
 
 **What NOT to do.** No hard dependency. No placeholders or `TODO` in committed code. No
 version bump unless asked. No emoji or em dashes in authored prose. No reformatting.
