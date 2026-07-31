@@ -36,6 +36,28 @@
 <body>
 
 <!--
+    Paint servers shared by every instrument.
+
+    speedo.css strokes the chrome bezels with url(#chromeGradient), and an SVG fragment
+    reference resolves against the WHOLE document, not the SVG it sits in. Defining the
+    gradient inside each built face therefore put a dozen identical ids in the page, and
+    whichever one happened to be first won - including one inside a menu preview card that the
+    next tab change deleted, which silently unpainted the live cluster's bezel.
+
+    One definition, in a node nothing ever removes, and the reference cannot dangle.
+-->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <defs>
+        <linearGradient id="chromeGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f6f6f4"/>
+            <stop offset="42%" stop-color="#8c8c88"/>
+            <stop offset="58%" stop-color="#dedad2"/>
+            <stop offset="100%" stop-color="#5f5f5c"/>
+        </linearGradient>
+    </defs>
+</svg>
+
+<!--
     Three layers, and they are separate on purpose.
 
     #hud        always mounted, never given pointer events. Everything the player sees while
@@ -55,7 +77,7 @@
 
     <!-- The minimap border. The map itself is the game's; this is only the frame around it,
          because the native one cannot be recoloured. -->
-    <div class="minimap-frame" id="minimap-frame" data-shape="square"></div>
+    <div class="minimap-frame" id="minimap-frame" data-shape="square" data-radar="true"></div>
 
     <div class="hud-el" id="el-status" data-element="status">
         <div class="status" id="status-list"></div>
@@ -152,7 +174,7 @@
 <script>
     (function () {
         var token = window.__vhudToken || '';
-        var scripts = ['util', 'state', 'status', 'speedo', 'compass', 'toast', 'layout', 'menu', 'app'];
+        var scripts = ['util', 'state', 'status', 'speedo', 'compass', 'toast', 'sound', 'layout', 'menu', 'app'];
 
         for (var i = 0; i < scripts.length; i += 1) {
             document.write('<script src="js/' + scripts[i] + '.js' + token + '"><\/script>');

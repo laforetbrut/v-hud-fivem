@@ -127,12 +127,6 @@
     stroke-width: 3;
 }
 
-.spd-panel {
-    fill: var(--c-panel);
-    stroke: var(--c-line);
-    stroke-width: 1;
-}
-
 .spd-arc-track { fill: none; stroke: var(--c-track); stroke-width: 4; stroke-linecap: round; }
 .spd-arc-fill  { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round;
                  transition: stroke-dashoffset var(--t-fast) linear; }
@@ -179,16 +173,22 @@
     margin: 0;
     padding: 3px 10px;
     border-radius: 4px;
-    /* The plate. Enough to lift the numbers off the graduations without becoming a box. */
-    background: rgba(0, 0, 0, 0.42);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+    /* The plate.
+       Opaque, not translucent. At 0.42 the dial's graduations and numerals read straight
+       through the digits behind them, which is the "some readouts are unreadable" complaint:
+       the plate has to be a plate, not a tint. */
+    background: rgba(8, 8, 10, 0.9);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
 }
 
-.spd-body[data-style="classic"]  .spd-centre { top: 60%; }
-.spd-body[data-style="luxury"]   .spd-centre { top: 58%; }
-.spd-body[data-style="jdm"]      .spd-centre { top: 60%; }
+/* Each one is set so the plate PLUS the odometer badge hanging below it still lands inside the
+   face. Measured, not estimated: the badge is 15px and sits 5px under the plate, so the plate's
+   own height decides how far down it can start. */
+.spd-body[data-style="classic"]  .spd-centre { top: 55%; }
+.spd-body[data-style="luxury"]   .spd-centre { top: 52%; }
+.spd-body[data-style="jdm"]      .spd-centre { top: 57%; }
 .spd-body[data-style="supercar"] .spd-centre { top: 58%; }
-.spd-body[data-style="dial"]     .spd-centre { top: 60%; }
+.spd-body[data-style="dial"]     .spd-centre { top: 55%; }
 
 /* The cream dials keep dark ink on a light face, so their plate is light too. */
 .spd-body[data-style="classic"] .spd-centre {
@@ -277,6 +277,27 @@
 
 .spd-odo:empty { display: none; }
 
+/*
+    On a round face the odometer badge hangs UNDER the plate, not inside it.
+
+    Inside, the badge was the widest thing in the stack, so it set the plate's width: 99px
+    across a 168px dial. The plate then covered the first and last numerals of the scale - the
+    0 and the 260 - which is what made these dials look broken. Outside, the plate shrinks to
+    the width of the speed itself and the whole scale stays readable.
+
+    The badge already carries its own frame and background, so it needs no plate behind it.
+*/
+.spd-body[data-style="classic"] .spd-centre .spd-odo,
+.spd-body[data-style="luxury"]  .spd-centre .spd-odo,
+.spd-body[data-style="jdm"]     .spd-centre .spd-odo,
+.spd-body[data-style="muscle"]  .spd-centre .spd-odo,
+.spd-body[data-style="dial"]    .spd-centre .spd-odo {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
 /* On the cream-faced dials it is printed on the face, not lit. */
 .spd-body[data-style="classic"] .spd-odo,
 .spd-body[data-style="muscle"] .spd-odo {
@@ -310,13 +331,23 @@
 /* Strip gauges: E-F for fuel, C-H for coolant. Both marked, like the real thing. */
 .spd-strips { display: flex; gap: 12px; width: 100%; }
 
+/*
+    `flex: 1` belongs to a strip sitting in a ROW - two of them sharing the width inside
+    .spd-strips. On the supercar face the strip is a direct child of the face, which is a
+    COLUMN, and there `flex: 1` grows it along the vertical axis instead: the E-F gauge was
+    204px tall on a 244px face and the speed readout was printed inside it.
+
+    So the default is no growth, and the row context asks for it explicitly.
+*/
 .spd-strip {
     display: flex;
     align-items: center;
     gap: 5px;
-    flex: 1;
+    flex: none;
     min-width: 74px;
 }
+
+.spd-strips > .spd-strip { flex: 1; }
 
 .spd-strip__cap {
     font-size: 8px;
@@ -348,25 +379,37 @@
 .spd-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
     justify-content: center;
     max-width: 100%;
 }
 
+/* Sized to be read at a glance from a driving seat, not to be tidy.
+
+   At 24x20 with a 13px glyph these were a row of indistinct smudges: a seatbelt and a handbrake
+   tell-tale are different shapes, but not at 13px over a moving road. A real cluster's warning
+   lamps are the biggest icons on the panel for exactly this reason. The dim state also carries
+   more contrast now - an unlit lamp still has to be identifiable, or the player cannot tell
+   which one just came on. */
 .spd-chip {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 20px;
+    width: 32px;
+    height: 27px;
     background: var(--c-panel);
-    border: 1px solid var(--c-line);
+    border: 1px solid var(--c-line-strong);
     border-radius: var(--radius);
     color: var(--c-muted);
     transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
 }
 
-.spd-chip svg { width: 13px; height: 13px; }
+.spd-chip svg {
+    width: 19px;
+    height: 19px;
+    /* The glyphs are stroked, and a hairline stroke is what made them mush. */
+    stroke-width: 1.9;
+}
 
 .spd-chip[data-on="true"] {
     color: var(--c-health);
@@ -558,16 +601,18 @@
 
 .spd-body[data-style="muscle"] .spd-bezel { stroke: url(#chromeGradient); stroke-width: 4; }
 .spd-body[data-style="muscle"] .spd-bezel--thin { stroke-width: 3; }
-.spd-body[data-style="muscle"] .spd-panel { fill: var(--c-bg-d88); }
 .spd-body[data-style="muscle"] .spd-value { font-size: 20px; }
 
 /* The muscle cluster's readout sits under the big centre dial, on the same light plate the
    classic face uses - three chrome gauges with a glowing black panel between them looks like
    two different cars. */
+/* Lower than the other faces: the centre dial keeps its printed "km/h" because the two gauges
+   beside it are labelled FUEL and RPM, and three labelled dials with the middle one blank
+   reads as a missing label rather than as a clean face. So the plate goes under it. */
 .spd-body[data-style="muscle"] .spd-centre {
     position: absolute;
     left: 50%;
-    top: 62%;
+    top: 55%;
     transform: translateX(-50%);
     margin: 0;
     padding: 2px 9px;
@@ -721,15 +766,11 @@
     background: rgba(0, 0, 0, 0.28);
 }
 
-.spd-preview .spd-body {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    /* 0.55 is the fallback, not a placeholder: if --preview-scale never arrives for any
-       reason, the card must still show the instrument rather than nothing. */
-    transform: translate(-50%, -50%) scale(var(--preview-scale, 0.55));
-    transform-origin: center center;
-    flex: none;
+/* In flow, centred by the frame's flexbox, scaled by an inline transform speedo.js writes.
+   Nothing here may take the face out of flow: an empty frame has a max-content width of zero,
+   and a zero-width frame with overflow:hidden shows nothing at all. */
+.spd-preview > .spd-body {
+    flex: 0 0 auto;
 }
 
 /* A preview is a still life: no blinking limiter, no flashing shift light, no pulsing alert.

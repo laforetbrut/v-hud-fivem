@@ -225,6 +225,46 @@ Config.Tick.defaultRate = 60
 
 Every entry is offered to the player; removing one removes the choice.
 
+## Warning sounds
+
+Three of them, all under `Config.Alerts`, and all silent for a player who turned HUD sounds
+off in the settings menu — this is your ceiling, not an override.
+
+```lua
+Config.Alerts = {
+    speed = 40,        -- driving warnings only sound above this, in the player's own unit
+    grace = 1200,      -- ms the fault must hold first, so a tap at a junction is silent
+
+    seatbelt = { enabled = true,  interval = 2500, sound = 'Beep_Red',
+                 set = 'DLC_HEIST_HACKING_SNAKE_SOUNDS' },
+
+    -- Off, and it should usually stay off: a door that reads as open is very often a door
+    -- that is BROKEN, and a chime you cannot silence by driving properly trains players to
+    -- ignore every other warning. The tell-tale on the cluster still lights.
+    door     = { enabled = false, interval = 4000, sound = 'CHECKPOINT_MISSED',
+                 set = 'HUD_MINI_GAME_SOUNDSET' },
+
+    includeBootAndBonnet = false,   -- a mechanic script leaves the bonnet up; not a fault
+
+    growl = {
+        enabled    = true,
+        thresholds = { 10, 5, 0 },  -- percentages of hunger/thirst REMAINING
+        rearm      = 3,             -- how far back above a threshold before it can fire again
+        seconds    = 3.5,           -- hard cap on the length
+        volume     = 0.5,
+        cooldown   = 8000,          -- ms, so hunger and thirst crossing together is one sound
+
+        useGameSound = false,       -- fall back to a frontend sound if page audio is blocked
+        sound = 'Beep_Red', set = 'DLC_HEIST_HACKING_SNAKE_SOUNDS',
+    },
+}
+```
+
+The growl is edge-triggered on the way **down**. Sitting at 4% is silent; eating back above
+`threshold + rearm` and starving again growls afresh; climbing back up never growls. The sound
+itself is synthesised by the NUI page — there is no audio file to ship, and `seconds` is an
+exact cap rather than whatever length a file happens to be.
+
 ---
 
 # Guide du propriétaire de serveur (Version Française)
@@ -276,6 +316,22 @@ serveur** : ni dessiné, ni calculé, ni présent dans le menu).
 ```lua
 Config.Policy.elements = { streets = 'forced', stress = 'off', dev = 'off' }
 ```
+
+## Sons d'alerte
+
+Trois, tous dans `Config.Alerts`, tous muets pour un joueur qui a coupé les sons du HUD dans
+le menu : ceci est votre plafond, pas une surcharge.
+
+- **Ceinture** (`seatbelt`) : active. Sonne au-delà de `speed`, après `grace` ms de maintien,
+  puis toutes les `interval` ms.
+- **Porte ouverte** (`door`) : **désactivée**, et il vaut mieux la laisser ainsi. Une porte
+  signalée ouverte est très souvent une porte *cassée*, et une alerte qu'on ne peut pas faire
+  taire en conduisant correctement apprend à ignorer toutes les autres. Le témoin sur le
+  compteur reste allumé.
+- **Gargouillement** (`growl`) : se déclenche en **descendant** à travers 10 %, 5 % et 0 % de
+  faim ou de soif. Rester à 4 % est silencieux ; remanger au-dessus de `threshold + rearm`
+  puis redescendre redéclenche ; remonter ne déclenche jamais. Le son est synthétisé par la
+  page NUI : aucun fichier audio à livrer, et `seconds` est une durée exacte.
 
 ## Le reste
 

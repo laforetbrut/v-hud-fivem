@@ -78,6 +78,127 @@ RegisterNetEvent('QBCore:Client:OnPlayerUpdated', function(key, value)
 end)
 
 -- ---------------------------------------------------------------------------------------
+-- The stomach growl
+-- ---------------------------------------------------------------------------------------
+
+--[[
+    Hunger and thirst arrive through five different events, so the crossing is detected by
+    SAMPLING the value rather than by hooking each handler - one watcher covers every path,
+    including a future sixth one.
+
+    The detector is per need and per threshold, and it is edge-triggered on the way DOWN:
+
+      * armed[t] starts true. Falling to or below t fires and disarms t.
+      * t re-arms only once the value climbs back above t + rearm.
+
+    So starving at 4% is silent, eating back to 60% and starving again growls afresh, and a
+    value oscillating on the line does not growl every tick.
+]]
+
+Growl = {}
+
+local growlState = {
+    hunger = {},
+    thirst = {},
+    last = 0,
+    seeded = false,
+}
+
+--- Thresholds, highest first, so a single big drop fires the HIGHEST one crossed rather than
+--- all three at once. Sorted here because the operator writes them in whatever order.
+local function growlThresholds()
+    local out = {}
+    for _, value in ipairs(Config.Alerts.growl.thresholds or {}) do
+        local number = tonumber(value)
+        if number then out[#out + 1] = number end
+    end
+    table.sort(out, function(a, b) return a > b end)
+    return out
+end
+
+local sortedThresholds
+
+local function playGrowl()
+    local rules = Config.Alerts.growl
+    local now = GetGameTimer()
+
+    -- One growl at a time, whichever need triggered it. Hunger and thirst usually run out
+    -- together, and two overlapping growls sound like a bug.
+    if (now - growlState.last) < (rules.cooldown or 0) then return false end
+    growlState.last = now
+
+    if State.settings and not State.settings.advanced.sounds then return false end
+
+    if rules.useGameSound then
+        Compat.playFrontendSound(rules.sound, rules.set)
+    else
+        SendNUIMessage({
+            action = 'growl',
+            seconds = rules.seconds or 3.5,
+            volume = rules.volume or 0.5,
+        })
+    end
+
+    return true
+end
+
+--- Forget every crossing. Used by the tests, and by anything that needs the detector to treat
+--- the next sample as a fresh start rather than as a continuation.
+function Growl.reset()
+    growlState.hunger, growlState.thirst = {}, {}
+    growlState.last, growlState.seeded = 0, false
+    sortedThresholds = growlThresholds()
+end
+
+--- Look at one need and fire if it just crossed a threshold downward.
+function Growl.check(key, value)
+    local rules = Config.Alerts.growl
+    local armed = growlState[key]
+    sortedThresholds = sortedThresholds or growlThresholds()
+
+    for _, threshold in ipairs(sortedThresholds) do
+        if armed[threshold] == nil then armed[threshold] = true end
+
+        if value > (threshold + (rules.rearm or 0)) then
+            armed[threshold] = true
+        elseif value <= threshold and armed[threshold] then
+            -- Disarm whatever fired OR not: a growl suppressed by the cooldown must still
+            -- count as handled, or it retries every tick until the cooldown lapses and then
+            -- growls for a crossing that happened ten seconds ago.
+            armed[threshold] = false
+            playGrowl()
+            return
+        end
+    end
+end
+
+if Config.Alerts and Config.Alerts.growl and Config.Alerts.growl.enabled then
+    sortedThresholds = growlThresholds()
+
+    CreateThread(function()
+        while true do
+            Wait(1000)
+
+            if State.ready and LocalPlayer.state.isLoggedIn then
+                -- The first pass only records where the player already is. Without it, logging
+                -- in already starving growls immediately - which is a crossing that happened
+                -- before the session started.
+                if not growlState.seeded then
+                    growlState.seeded = true
+                    for _, threshold in ipairs(sortedThresholds) do
+                        growlState.hunger[threshold] = Needs.hunger > threshold
+                        growlState.thirst[threshold] = Needs.thirst > threshold
+                    end
+                else
+                    Growl.check('hunger', Needs.hunger)
+                    Growl.check('thirst', Needs.thirst)
+                end
+            end
+        end
+    end)
+end
+
+-- ---------------------------------------------------------------------------------------
 -- Gaining stress
 -- ---------------------------------------------------------------------------------------
 

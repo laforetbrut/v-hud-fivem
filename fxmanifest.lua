@@ -91,6 +91,7 @@ files {
     'html/js/speedo.js',
     'html/js/compass.js',
     'html/js/toast.js',
+    'html/js/sound.js',
     'html/js/layout.js',
     'html/js/menu.js',
     'html/js/app.js',

@@ -116,10 +116,12 @@
 .hud[data-surface="glass"] .gauge[data-shape="diamond"],
 .hud[data-surface="glass"] .gauge[data-shape="pill"],
 .hud[data-surface="glass"] .gauge[data-shape="dot"],
+/* Only the faces that ARE a panel get the pane treatment: the minimal readout, the digital
+   cluster and the LCD. A face made of dials is an instrument, not a widget, and giving it a
+   glass plate put a translucent box behind the sport twin-dials that nobody asked for. */
 .hud[data-surface="glass"] .spd-body[data-style="minimal"],
 .hud[data-surface="glass"] .spd-body[data-style="bars"],
 .hud[data-surface="glass"] .spd-body[data-style="digital"],
-.hud[data-surface="glass"] .spd-body[data-style="sport"],
 .hud[data-surface="glass"] .spd-chip {
     /* Three layers do the work a blur cannot: a lit top edge, a dark bottom edge for
        thickness, and a drop shadow that lifts the pane off the scene. --frost is the
@@ -138,8 +140,7 @@
 .hud[data-surface="glass"] .voice::before,
 .hud[data-surface="glass"] .spd-body[data-style="minimal"]::before,
 .hud[data-surface="glass"] .spd-body[data-style="bars"]::before,
-.hud[data-surface="glass"] .spd-body[data-style="digital"]::before,
-.hud[data-surface="glass"] .spd-body[data-style="sport"]::before {
+.hud[data-surface="glass"] .spd-body[data-style="digital"]::before {
     content: '';
     position: absolute;
     inset: 0;

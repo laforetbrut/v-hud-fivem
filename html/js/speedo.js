@@ -217,19 +217,14 @@ const Speedo = (() => {
 
             return {
                 node: U.make('div', { class: 'spd-body', 'data-style': 'classic' }, [
+                    // #chromeGradient lives in index.html, not here: see the note beside it.
                     U.svg('svg', { class: 'spd-svg', viewBox: '0 0 168 168' }, [
-                        U.svg('defs', {}, [
-                            U.svg('linearGradient', { id: 'chromeGradient', x1: '0', y1: '0', x2: '0', y2: '1' }, [
-                                U.svg('stop', { offset: '0%', 'stop-color': '#f6f6f4' }),
-                                U.svg('stop', { offset: '42%', 'stop-color': '#8c8c88' }),
-                                U.svg('stop', { offset: '58%', 'stop-color': '#dedad2' }),
-                                U.svg('stop', { offset: '100%', 'stop-color': '#5f5f5c' }),
-                            ]),
-                        ]),
                         U.svg('circle', { class: 'spd-bezel', cx: 84, cy: 84, r: 80 }),
                         U.svg('circle', { class: 'spd-face', cx: 84, cy: 84, r: 74 }),
                         ...fuel.parts,
-                        U.svg('text', { class: 'spd-facelabel', x: 84, y: 132, 'text-anchor': 'middle', text: 'km/h' }),
+                        // No printed "km/h" on a single-dial face: the digital readout sits in
+                        // the lower third and prints the unit itself, so the painted one is
+                        // both redundant and exactly where the readout plate covers it.
                         ...speed.parts,
                     ]),
                     U.make('div', { class: 'spd-centre' }, [
@@ -326,7 +321,9 @@ const Speedo = (() => {
             const speed = dial({
                 cx: 92, cy: 92, r: 78, from: -135, to: 135, max: MAX_KMH,
                 step: 5, labelEvery: 20, needleClass: 'spd-needle spd-needle--thin',
-                labelRadius: 0.78, fontSize: 8,
+                // Pushed out toward the rim so the "260" at the end of the sweep clears the
+                // readout plate below the hub.
+                labelRadius: 0.85, fontSize: 8,
             });
             const fuel = arcGauge(92, 92, 46, 150, 210, 'fuel');
 
@@ -334,7 +331,7 @@ const Speedo = (() => {
                 node: U.make('div', { class: 'spd-body', 'data-style': 'luxury' }, [
                     U.svg('svg', { class: 'spd-svg', viewBox: '0 0 184 184' }, [
                         ...fuel.parts,
-                        U.svg('text', { class: 'spd-facelabel', x: 92, y: 150, 'text-anchor': 'middle', text: 'km/h' }),
+                        // Unit printed by the readout, not on the face - see the classic dial.
                         ...speed.parts,
                     ]),
                     U.make('div', { class: 'spd-centre' }, [
@@ -400,16 +397,20 @@ const Speedo = (() => {
 
             return {
                 node: U.make('div', { class: 'spd-body', 'data-style': 'muscle' }, [
+                    // No backing plate. Three chrome-rimmed gauges floating over the scene is
+                    // what a muscle car dash looks like; the rounded box they used to sit on
+                    // read as a widget stuck on the screen.
                     U.svg('svg', { class: 'spd-svg', viewBox: '0 0 296 168' }, [
-                        U.svg('rect', { class: 'spd-panel', x: 3, y: 3, width: 290, height: 150, rx: 14 }),
                         U.svg('circle', { class: 'spd-bezel spd-bezel--thin', cx: 46, cy: 86, r: 44 }),
                         U.svg('circle', { class: 'spd-bezel', cx: 148, cy: 82, r: 68 }),
                         U.svg('circle', { class: 'spd-bezel spd-bezel--thin', cx: 250, cy: 86, r: 48 }),
                         U.svg('circle', { class: 'spd-face', cx: 46, cy: 86, r: 40 }),
                         U.svg('circle', { class: 'spd-face', cx: 148, cy: 82, r: 64 }),
                         U.svg('circle', { class: 'spd-face', cx: 250, cy: 86, r: 44 }),
+                        // Only the two outer gauges are labelled. The big one in the middle is
+                        // obviously the speedometer, its readout prints KM/H, and a label there
+                        // sits exactly where the readout plate lands.
                         U.svg('text', { class: 'spd-facelabel', x: 46, y: 104, 'text-anchor': 'middle', text: 'FUEL' }),
-                        U.svg('text', { class: 'spd-facelabel', x: 148, y: 118, 'text-anchor': 'middle', text: 'km/h' }),
                         U.svg('text', { class: 'spd-facelabel', x: 250, y: 106, 'text-anchor': 'middle', text: 'RPM x1000' }),
                         ...fuelDial.parts, ...speed.parts, ...tach.parts,
                     ]),
@@ -480,8 +481,8 @@ const Speedo = (() => {
 
             return {
                 node: U.make('div', { class: 'spd-body', 'data-style': 'truck' }, [
+                    // No backing plate - see the note on the muscle face.
                     U.svg('svg', { class: 'spd-svg', viewBox: '0 0 298 176' }, [
-                        U.svg('rect', { class: 'spd-panel', x: 2, y: 2, width: 294, height: 158, rx: 8 }),
                         U.svg('circle', { class: 'spd-face', cx: 84, cy: 88, r: 72 }),
                         U.svg('circle', { class: 'spd-face', cx: 214, cy: 88, r: 72 }),
                         U.svg('text', { class: 'spd-facelabel', x: 84, y: 126, 'text-anchor': 'middle', text: 'km/h' }),
@@ -610,11 +611,41 @@ const Speedo = (() => {
             ? Math.min(CARD_ROOM.w / size.w, CARD_ROOM.h / size.h, 1)
             : 0.6;
 
-        // Written BEFORE the node is inserted, so the very first paint is already correct.
-        U.cssVar(container, '--preview-scale', U.round(Math.max(scale, 0.2), 3));
+        // A scale and NOTHING else.
+        //
+        // The face stays in normal flow and the frame centres it with flexbox. That matters
+        // for more than tidiness: while the face was `position: absolute`, the frame had no
+        // in-flow content, so its max-content width was zero - and CEF's UA stylesheet puts
+        // `align-items: flex-start` on the <button> these cards used to be, which sizes every
+        // child to its content. A zero-width frame with `overflow: hidden` clipped the entire
+        // instrument away, which is exactly how these cards came to render empty in game while
+        // being perfect in a browser that dropped that UA rule years ago.
+        //
+        // `transform` does not affect layout, so the unscaled face is centred first and the
+        // scaled paint always lands inside the frame.
+        built.node.style.transformOrigin = '50% 50%';
+        built.node.style.transform = `scale(${U.round(Math.max(scale, 0.2), 3)})`;
 
         U.fill(container, [built.node]);
+
+        // Painted now so the card is never empty, and remembered so it can be painted AGAIN
+        // once it is actually in the document. The first pass runs against a detached node,
+        // where every path measures zero length and every arc is skipped; only the second one
+        // can draw them. Text and tell-tales need no measurement and are right immediately.
+        container.__preview = { built: built, sample: sample };
         applyTo(built, sample);
+    }
+
+    /** Re-paint every preview card under `root`. Called once the cards are in the document,
+     *  which is the first moment an SVG path can report its own length. */
+    function settlePreviews(root) {
+        const scope = root || document;
+        const cards = scope.querySelectorAll ? scope.querySelectorAll('.spd-preview') : [];
+
+        for (let i = 0; i < cards.length; i++) {
+            const stored = cards[i].__preview;
+            if (stored) applyTo(stored.built, stored.sample);
+        }
     }
 
     /* ------------------------------------------------------------------------------------
@@ -623,11 +654,20 @@ const Speedo = (() => {
 
     /** Set a stroked arc to `pct` of its own length. The length is measured once and cached on
      *  the node: getTotalLength forces a layout, and doing it per tick is the most expensive
-     *  thing this page could do. */
+     *  thing this page could do.
+     *
+     *  A zero is NOT cached, and that is the whole point of the guard. getTotalLength returns 0
+     *  for a path that is not in the document yet, so a face built off-document measured zero,
+     *  cached the zero, and never drew an arc again once it was inserted - which is exactly how
+     *  the menu preview cards ended up blank while the live cluster was fine. */
     function setArc(node, pct) {
         if (!node) return;
-        if (node.__length === undefined) node.__length = node.getTotalLength() || 0;
-        if (!node.__length) return;
+
+        if (!node.__length) {
+            const length = node.getTotalLength ? (node.getTotalLength() || 0) : 0;
+            if (!length) return;      // off-document, or a degenerate path: try again next call
+            node.__length = length;
+        }
 
         U.attr(node, 'stroke-dasharray', `${U.round(node.__length, 1)} ${U.round(node.__length, 1)}`);
         U.attr(node, 'stroke-dashoffset', U.round(node.__length * (1 - U.clamp(pct, 0, 1)), 1));
@@ -763,6 +803,6 @@ const Speedo = (() => {
         U.attr(root, 'data-on', false);
     }
 
-    return { setStyle, update, hide, preview, FACES };
+    return { setStyle, update, hide, preview, settlePreviews, FACES };
 
 })();

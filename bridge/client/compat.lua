@@ -310,6 +310,19 @@ function Compat.playSound(name, volume)
     TriggerServerEvent('InteractSound_SV:PlayOnSource', name, volume or 0.1)
 end
 
+--- Play one of the game's own frontend sounds. Unlike Compat.playSound this needs no sound
+--- resource at all - the samples ship with GTA - which is what makes it the right choice for
+--- the driving warnings, where a server with no InteractSound would otherwise get silence.
+---
+--- Honours the player's sound setting for the same reason everything else does: a HUD that
+--- keeps beeping after you turned its sounds off is a HUD you delete.
+function Compat.playFrontendSound(name, set)
+    if not name or name == '' then return end
+    if State and State.settings and not State.settings.advanced.sounds then return end
+
+    PlaySoundFrontend(-1, name, set or '', true)
+end
+
 -- ---------------------------------------------------------------------------------------
 -- Inventory
 -- ---------------------------------------------------------------------------------------
@@ -545,6 +558,25 @@ end
 local overlayChecked = {}
 local lastOverlay = 0
 
+-- The game puts up more than one kind of full-screen thing, and only ONE of them answers to
+-- IsPauseMenuActive(). The "do you really want to quit" box (Alt+F4, and the Quit entry in the
+-- pause menu) is a frontend WARNING MESSAGE - a different screen, drawn by a different scaleform,
+-- with the pause menu already closed behind it. That is why the HUD stayed on screen over it.
+--
+-- Each entry is looked up rather than called directly: a native missing on an older build would
+-- otherwise take the whole tick down, and this runs every frame.
+local frontendChecks = {}
+
+for _, name in ipairs({
+    'IsWarningMessageActive',   -- quit prompt, "unsaved progress", store warnings
+    'IsPlayerSwitchInProgress', -- the character switch fly-over
+}) do
+    -- _G[name] rather than rawget: some Cfx Lua runtimes bind natives lazily through a
+    -- metatable, and a raw read would find nothing and silently skip the check.
+    local fn = _G[name]
+    if type(fn) == 'function' then frontendChecks[#frontendChecks + 1] = fn end
+end
+
 --- Whether something is on screen that the HUD should get out from under: the pause menu, a
 --- loading screen, another resource's NUI, or a resource that says it is open.
 ---
@@ -556,6 +588,15 @@ function Compat.overlayOpen()
     if hide.pauseMenu and (IsPauseMenuActive() or GetIsLoadingScreenActive()) then
         lastOverlay = GetGameTimer()
         return true
+    end
+
+    if hide.frontend then
+        for i = 1, #frontendChecks do
+            if frontendChecks[i]() then
+                lastOverlay = GetGameTimer()
+                return true
+            end
+        end
     end
 
     -- Focus held by anything that is not this resource's own menu.

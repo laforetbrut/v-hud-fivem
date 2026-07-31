@@ -136,6 +136,78 @@ function Vehicle.read(vehicle, settings)
 end
 
 -- ---------------------------------------------------------------------------------------
+-- Driving warnings
+-- ---------------------------------------------------------------------------------------
+
+-- Two chimes, driven off the same data the speedometer already reads, so the tell-tale on the
+-- cluster and the sound in the player's ears can never disagree.
+--
+-- The state is per-condition rather than a single timer: an open door and an unfastened belt
+-- are separate faults, and fixing one must not silence the other.
+-- `since` and `last` are nil when unset, NOT zero. Zero is a perfectly good game timer value,
+-- so using it as the sentinel silently threw away the first tick after a resource restart.
+local warnings = {
+    seatbelt = { since = nil, last = nil },
+    door = { since = nil, last = nil },
+}
+
+local function chime(key, active, now)
+    local rules = Config.Alerts and Config.Alerts[key]
+    local track = warnings[key]
+
+    if not rules or not rules.enabled or not active then
+        -- Both are cleared, not just the timer. Leaving `last` set would make `interval = 0`
+        -- - documented as "once per occurrence" - mean "once, ever".
+        track.since, track.last = nil, nil
+        return
+    end
+
+    -- The fault has to hold for the grace period before anything sounds. Without it, every
+    -- door tap at a junction is a beep.
+    if not track.since then
+        track.since = now
+        return
+    end
+
+    if (now - track.since) < (Config.Alerts.grace or 0) then return end
+
+    local interval = rules.interval or 0
+    if track.last and (interval <= 0 or (now - track.last) < interval) then return end
+
+    track.last = now
+    -- Routed through Compat so a player who turned HUD sounds off gets none of this.
+    Compat.playFrontendSound(rules.sound, rules.set)
+end
+
+--- Sound the belt and door warnings for `data`, the table `Vehicle.read` just returned.
+--- Reads only; every decision is already in that table.
+function Vehicle.warn(data)
+    if not Config.Alerts or not data or data.bicycle or not data.driver then
+        warnings.seatbelt.since, warnings.door.since = nil, nil
+        return
+    end
+
+    local now = GetGameTimer()
+    local fast = data.speed > (Config.Alerts.speed or 40)
+    local doorState = data.doors or {}
+
+    local doorOpen = doorState.door == true
+    if Config.Alerts.includeBootAndBonnet then
+        doorOpen = doorOpen or doorState.bonnet == true or doorState.boot == true
+    end
+
+    chime('seatbelt', fast and data.seatbelt ~= true, now)
+    chime('door', fast and doorOpen, now)
+end
+
+--- Forget both warnings. Called on leaving a vehicle, so getting back in starts the grace
+--- period again rather than chiming on the first frame.
+function Vehicle.resetWarnings()
+    warnings.seatbelt.since, warnings.seatbelt.last = nil, nil
+    warnings.door.since, warnings.door.last = nil, nil
+end
+
+-- ---------------------------------------------------------------------------------------
 -- The harness item
 -- ---------------------------------------------------------------------------------------
 
@@ -197,6 +269,7 @@ CreateThread(function()
         local inVehicle = IsPedInAnyVehicle(PlayerPedId(), false)
         if wasIn and not inVehicle then
             Compat.resetVehicleState()
+            Vehicle.resetWarnings()
             Vehicle.harness = false
             fuelCache.vehicle = 0
         end

@@ -33,17 +33,30 @@ const S = (() => {
      * so a gauge shape or a compass style the operator removed is never offered - not offered
      * and then refused, which would be a control that does nothing.
      */
+    // What this build can render. Used as the fallback when the server did not send a list,
+    // because a MISSING field must not read as "the operator removed every option" - that
+    // silently deletes a control, which is a far worse failure than showing one option too
+    // many. An operator removing something is an explicit, non-empty, shorter list.
+    const ALL_CHOICES = {
+        gaugeShapes: ['square', 'rounded', 'pill', 'circle', 'ring', 'radial',
+            'dot', 'bar', 'segment', 'diamond', 'hex', 'icon'],
+        surfaces: ['glass', 'tint', 'solid', 'none'],
+        compassStyles: ['bar', 'tape', 'dial', 'text'],
+        mapShapes: ['square', 'circle'],
+        directions: ['row', 'column'],
+        units: ['kmh', 'mph'],
+    };
+
     function choices() {
         const from = (state.statik && state.statik.choices) || {};
-        return {
-            gaugeShapes: U.asArray(from.gaugeShapes),
-            surfaces: U.asArray(from.surfaces),
-            compassStyles: U.asArray(from.compassStyles),
-            mapShapes: U.asArray(from.mapShapes),
-            directions: U.asArray(from.directions),
-            units: U.asArray(from.units),
-            removed: U.asArray(from.removed),
-        };
+        const out = { removed: U.asArray(from.removed) };
+
+        for (const [key, everything] of Object.entries(ALL_CHOICES)) {
+            const sent = U.asArray(from[key]);
+            out[key] = sent.length > 0 ? sent : everything;
+        }
+
+        return out;
     }
 
     /** Translate. An unknown key comes back in brackets so a missing string is visible in the

@@ -23,15 +23,30 @@ local applied
 local textureState = {}          -- dict name -> true (available) / false (checked, missing)
 local warnedMissing = false
 
--- The last shape actually pushed to the engine. The bigmap toggle that makes a new mask take
--- effect is a VISIBLE flicker - the map jumps to full size and back - so it is only worth
--- paying when the shape really changed, not every time a colour slider moves.
-local appliedShape = nil
+-- The layout the ENGINE has actually re-read, as a signature. Not just the shape.
+--
+-- SetMinimapComponentPosition is not the whole story, and this is the trap:
+--
+--   minimap_mask  updates live. The hole moves the instant the native is called.
+--   minimap_blur  updates live.
+--   minimap       does NOT. The component that carries the terrain, the blips and the player
+--                 arrow only re-reads its rectangle when the minimap is REBUILT - by opening
+--                 the pause map, or by toggling the bigmap.
+--
+-- So moving or resizing the map without a rebuild moves the hole, the blur and the CSS border
+-- and leaves the terrain behind: a slab of ground seen from where the map used to be, with the
+-- player arrow outside the visible area. That is the "map from somewhere else" bug, and it was
+-- introduced by gating the rebuild on the shape alone to kill a flicker.
+--
+-- The rebuild is therefore owed to ANY geometry change. The flicker it costs is paid once per
+-- settled drag, not once per frame, because the whole apply is coalesced above.
+local appliedGeometry = nil
+local appliedDict = nil
 local applyToken = 0
 
 -- True only while the paired SetBigmapActive(true)/SetBigmapActive(false) is in flight, so
 -- the watchdog below does not fight the one moment the expanded map is legitimately on.
-local changingShape = false
+local rebuilding = false
 
 -- The native geometry each shape starts from, before the player's offsets are applied. These
 -- are screen-fraction units: 1.0 is the full width or height.
@@ -106,18 +121,22 @@ function Minimap.apply(settings)
         local map = applied
         local shape = SHAPES[map.shape] or SHAPES.square
         local offset = aspectOffset()
-        local shapeChanged = appliedShape ~= map.shape
 
         SetMinimapClipType(shape.clip)
 
-        if textureReady(shape.dict) then
-            AddReplaceTexture('platform:/textures/graphics', 'radarmasksm', shape.dict, 'radarmasksm')
-            AddReplaceTexture('platform:/textures/graphics', 'radarmask1g', shape.dict, 'radarmasksm')
-        elseif not warnedMissing then
-            warnedMissing = true
-            HUD.warn(('Minimap mask "%s" is not streaming - the map keeps the game shape while the ' ..
-                'border draws the chosen one, so the two will not line up. The masks ship in ' ..
-                'v-hud/stream; check that folder survived the copy.'):format(shape.dict))
+        -- The mask texture only depends on the SHAPE, so it is swapped only when the shape
+        -- changes. It used to be re-registered on every colour slider nudge.
+        if appliedDict ~= shape.dict then
+            if textureReady(shape.dict) then
+                AddReplaceTexture('platform:/textures/graphics', 'radarmasksm', shape.dict, 'radarmasksm')
+                AddReplaceTexture('platform:/textures/graphics', 'radarmask1g', shape.dict, 'radarmasksm')
+                appliedDict = shape.dict
+            elseif not warnedMissing then
+                warnedMissing = true
+                HUD.warn(('Minimap mask "%s" is not streaming - the map keeps the game shape while the ' ..
+                    'border draws the chosen one, so the two will not line up. The masks ship in ' ..
+                    'v-hud/stream; check that folder survived the copy.'):format(shape.dict))
+            end
         end
 
         -- The player's offsets are a percentage of the screen; the natives want a fraction.
@@ -136,6 +155,11 @@ function Minimap.apply(settings)
         local dy = -(map.y or 0.0) / 100.0
         local scale = map.scale or 1.0
 
+        -- Everything the native components are built from. Anything here changing means the
+        -- engine has to re-read them, which only a rebuild makes it do.
+        local signature = ('%s|%.4f|%.4f|%.4f|%.4f'):format(map.shape or 'square', dx, dy, scale, offset)
+        local geometryChanged = appliedGeometry ~= signature
+
         for _, component in ipairs({ 'minimap', 'minimap_mask', 'minimap_blur' }) do
             local geometry = shape[component]
             SetMinimapComponentPosition(
@@ -149,30 +173,30 @@ function Minimap.apply(settings)
 
         SetBlipAlpha(GetNorthRadarBlip(), 0)
 
-        -- The bigmap toggle forces the engine to rebuild the minimap with the new MASK.
-        -- Without it a new shape only appears the next time the player opens the pause map,
-        -- which reads as "the setting did nothing".
+        -- The bigmap toggle is what forces the engine to rebuild the minimap, and the rebuild
+        -- is the ONLY thing that makes the `minimap` component pick up a new rectangle or a
+        -- new mask. It is owed to any geometry change, not only to a change of shape - see the
+        -- note on `appliedGeometry` at the top of this file.
         --
-        -- It is also a visible flicker: the map jumps to full size for a frame. So it is only
-        -- paid when the shape actually changed. Moving, resizing or recolouring the map needs
-        -- none of it - SetMinimapComponentPosition takes effect immediately.
-        if shapeChanged then
-            appliedShape = map.shape
+        -- One frame is enough for the engine to notice. The 50ms this used to wait was a
+        -- visible jump to the full map; Wait(0) is a rebuild the player does not see.
+        if geometryChanged then
+            appliedGeometry = signature
 
             -- These two calls are a PAIR and nothing may come between them. An early return
             -- here - a token check, a guard, anything - leaves the expanded map on screen
             -- permanently, because the code that would have closed it never runs. That is
-            -- exactly what happened: a second settings change during the 50ms wait bailed out
-            -- of this block and the player was left staring at the full map.
+            -- exactly what happened: a second settings change during the wait bailed out of
+            -- this block and the player was left staring at the full map.
             --
             -- Coalescing is done BEFORE any of this, at the top of the thread, where bailing
             -- out is free because nothing has been touched yet.
-            changingShape = true
+            rebuilding = true
             SetBigmapActive(true, false)
-            Wait(50)
+            Wait(0)
             SetBigmapActive(false, false)
             SetMinimapClipType(shape.clip)
-            changingShape = false
+            rebuilding = false
         end
 
         -- Tell the NUI which border to draw, and where. The border is CSS because the native
@@ -227,6 +251,10 @@ CreateThread(function()
             if show ~= last then
                 last = show
                 DisplayRadar(show)
+                -- The CSS border is a frame around the native map, so it goes wherever the
+                -- map goes. It used to be told only about `minimap.hide`, which meant turning
+                -- the minimap off in the Elements tab left an empty rectangle on screen.
+                SendNUIMessage({ action = 'radar', on = show })
             end
         end
     end
@@ -240,12 +268,24 @@ end)
 -- two seconds and it means the worst case is a two second flash rather than a broken HUD for
 -- the rest of the session.
 CreateThread(function()
+    local strikes = 0
+
     while true do
         Wait(2000)
 
-        if State.ready and not changingShape and IsBigmapActive() then
-            HUD.debug('closing an expanded minimap nobody asked for')
-            SetBigmapActive(false, false)
+        -- Two consecutive samples before acting. A rebuild started between one sample and the
+        -- next is a legitimate bigmap this thread must not close under: with the rebuild now
+        -- running on every MOVE rather than only on a shape change, that window is hit far more
+        -- often than it used to be.
+        if State.ready and not rebuilding and IsBigmapActive() then
+            strikes = strikes + 1
+            if strikes >= 2 then
+                strikes = 0
+                HUD.debug('closing an expanded minimap nobody asked for')
+                SetBigmapActive(false, false)
+            end
+        else
+            strikes = 0
         end
     end
 end)

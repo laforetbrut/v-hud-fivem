@@ -159,6 +159,19 @@
             U.attr(frame, 'data-on', data.borders !== false);
         },
 
+        // Whether the game is drawing a radar right now. Sent by the minimap loop, which is
+        // the only place that knows: it folds in the element toggle, vehicle-only mode,
+        // cinematic mode and any other resource's menu being open. The border is a frame
+        // around the map, so it follows the map rather than deciding for itself.
+        radar(data) {
+            const frame = U.el('minimap-frame');
+            if (frame) U.attr(frame, 'data-radar', data.on !== false);
+        },
+
+        growl(data) {
+            Sound.growl(data.seconds, data.volume);
+        },
+
         cinematic(data) {
             // The bars only. Whether the HUD itself is drawn is the tick's decision - two
             // writers on one attribute means the loser flickers.

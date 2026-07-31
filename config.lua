@@ -821,6 +821,90 @@ Config.Compat = {
 }
 
 -- =======================================================================================
+-- 10a-bis. Driving warnings
+-- =======================================================================================
+
+-- The two chimes a real car has. Both only sound above a speed, because a warning that goes
+-- off while you are parked and loading the boot is a warning players turn off.
+--
+-- These use the game's own frontend sounds rather than a streamed audio file: nothing to
+-- download, and they already sit at the right volume against the rest of the game.
+--
+-- Set `enabled = false` on either to remove it. A player who has turned HUD sounds off in the
+-- settings menu hears neither, so this is the operator's ceiling, not an override.
+Config.Alerts = {
+    -- Above this speed, in the player's own unit, a warning may sound. Below it, silence.
+    speed = 40,
+
+    -- Do not start chiming the instant a door is nudged or the belt is unclipped at a light:
+    -- the condition has to hold for this long first, in milliseconds.
+    grace = 1200,
+
+    seatbelt = {
+        enabled = true,
+        -- Milliseconds between repeats while the condition holds. 0 means once per occurrence.
+        interval = 2500,
+        -- A frontend sound: the name, then the sound SET it belongs to.
+        sound = 'Beep_Red',
+        set = 'DLC_HEIST_HACKING_SNAKE_SOUNDS',
+    },
+
+    -- OFF, and it should stay off on most servers.
+    --
+    -- A door that reads as open is very often a door that is BROKEN - shot off, torn away in a
+    -- crash, or detached by a damage script - and there is nothing the player can do about it.
+    -- A chime you cannot silence by driving properly is a chime that trains people to ignore
+    -- every other warning. The tell-tale on the cluster still lights, which is the right amount
+    -- of information for a fault you cannot fix at the roadside.
+    door = {
+        enabled = false,
+        interval = 4000,
+        -- Deliberately a DIFFERENT sound from the belt: two warnings that sound alike are one
+        -- warning nobody can act on.
+        sound = 'CHECKPOINT_MISSED',
+        set = 'HUD_MINI_GAME_SOUNDSET',
+    },
+
+    -- The bonnet and boot count as "a door is open" for the chime. Off by default: a mechanic
+    -- script leaves the bonnet up while it works, and that is not a driving fault.
+    includeBootAndBonnet = false,
+
+    -- A stomach growl when the player is running out of food or water.
+    --
+    -- It fires on the way DOWN through each threshold and only once per crossing: sitting at
+    -- 4% is silent, and eating back up to 60% and starving again growls afresh. A warning that
+    -- repeats while you are already looking for a shop is a warning players mute.
+    --
+    -- The sound is synthesised by the NUI page rather than streamed, so there is no audio file
+    -- to ship and `seconds` is an exact cap rather than whatever length a file happens to be.
+    -- If your CEF blocks page audio, set `useGameSound` and a frontend sound is used instead -
+    -- it will not sound like a stomach, but it will definitely play.
+    growl = {
+        enabled = true,
+
+        -- Percentages of hunger/thirst REMAINING. Order does not matter; they are sorted.
+        thresholds = { 10, 5, 0 },
+
+        -- How far back above a threshold the value has to climb before that threshold can
+        -- fire again. Stops a value hovering on the line from growling every tick.
+        rearm = 3,
+
+        -- Total length of the growl, in seconds. Capped at 10 by the page.
+        seconds = 3.5,
+        volume = 0.5,
+
+        -- Hunger and thirst can both cross at once. This is the gap enforced between any two
+        -- growls, in milliseconds, so that is one sound and not two on top of each other.
+        cooldown = 8000,
+
+        -- Fall back to a frontend sound instead of the synthesised one.
+        useGameSound = false,
+        sound = 'Beep_Red',
+        set = 'DLC_HEIST_HACKING_SNAKE_SOUNDS',
+    },
+}
+
+-- =======================================================================================
 -- 10b. When the HUD gets out of the way
 -- =======================================================================================
 
@@ -831,6 +915,11 @@ Config.HideWhen = {
     -- The GTA pause menu, the map screen and the loading screen. There is no reason to draw
     -- a speedometer over a menu the game itself put up.
     pauseMenu = true,
+
+    -- The game's other full-screen prompts, which the pause menu check does NOT cover because
+    -- the pause menu is already closed behind them: the "do you really want to quit" box on
+    -- Alt+F4, and the character switch fly-over.
+    frontend = true,
 
     -- ANY other resource holding NUI focus. That is the general answer to "a menu is open":
     -- the phone, the inventory, a shop, a job menu. They take focus, this steps aside.

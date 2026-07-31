@@ -24,8 +24,14 @@ const Menu = (() => {
        Control builders
        ------------------------------------------------------------------------------------ */
 
-    /** The shell every control sits in: a label, an optional help line, a lock state. */
-    function row(label, control, help, path) {
+    /**
+     * The shell every control sits in: a label, an optional help line, a lock state.
+     *
+     * `stacked` puts the control on its own line under the label instead of beside it. A wide
+     * control in the right-hand column squeezes the label into a two-word-per-line sliver and
+     * still runs out of room - which is what twelve gauge shapes did to "Forme des jauges".
+     */
+    function row(label, control, help, path, stacked) {
         const locked = path ? S.isLocked(path) : false;
 
         const children = [
@@ -41,6 +47,7 @@ const Menu = (() => {
         return U.make('div', {
             class: 'row',
             'data-locked': locked,
+            'data-stacked': stacked ? 'true' : 'false',
             'data-search': `${label} ${help || ''}`.toLowerCase(),
         }, children);
     }
@@ -100,7 +107,9 @@ const Menu = (() => {
             wrap.appendChild(node);
         }
 
-        return row(label, wrap, help, path);
+        // Four is where a segmented control stops fitting beside its label at the panel's
+        // width. Above that it gets its own line.
+        return row(label, wrap, help, path, options.length > 4);
     }
 
     function colour(path, label) {
@@ -240,8 +249,13 @@ const Menu = (() => {
             const themes = U.make('div', { class: 'themes' });
 
             for (const theme of (S.statik.themes || [])) {
-                const card = U.make('button', {
+                // A div, not a <button>. See the note on .speedo-card in menu.css: the UA
+                // stylesheet CEF ships puts `align-items: flex-start` on every button, which
+                // collapsed this card's colour swatch to a 26px sliver.
+                const card = U.make('div', {
                     class: 'theme-card',
+                    role: 'button',
+                    tabindex: '0',
                     'data-active': S.get('theme') === theme.key,
                     'data-search': theme.label.toLowerCase(),
                     onclick: () => {
@@ -415,8 +429,11 @@ const Menu = (() => {
 
             for (const entry of (S.statik.speedometers || [])) {
                 const preview = U.make('div', { class: 'spd-preview' });
-                const card = U.make('button', {
+                // A div, not a <button> - the whole reason these cards were blank in game.
+                const card = U.make('div', {
                     class: 'speedo-card',
+                    role: 'button',
+                    tabindex: '0',
                     'data-active': S.get('speedometer.style') === entry.key,
                     'data-search': S.t(entry.label).toLowerCase(),
                     onclick: () => {
@@ -537,6 +554,11 @@ const Menu = (() => {
         U.fill(content, builder());
         content.scrollTop = 0;
         applyFilter();
+
+        // The speedometer cards are built before this insertion, so their arcs measured zero
+        // and drew nothing. Now that they are in the document their paths have a length, so
+        // paint them again. Cheap - ten faces, and only on a tab change.
+        Speedo.settlePreviews(content);
     }
 
     /** The search box. Hides rows whose label and help do not contain the query, and hides a

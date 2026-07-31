@@ -181,8 +181,14 @@ CreateThread(function()
                 payload.radioActive = voice.radioActive
             end
 
-            if inVehicle and settings.show.speedometer then
-                payload.vehicle = Vehicle.read(vehicle, settings)
+            if inVehicle then
+                -- Read whenever there is a vehicle, not only when the cluster is on screen:
+                -- the belt and door chimes are a safety warning, and hiding the speedometer
+                -- is a choice about what to LOOK at, not a request to drive without them.
+                local data = Vehicle.read(vehicle, settings)
+                Vehicle.warn(data)
+
+                if settings.show.speedometer then payload.vehicle = data end
             end
 
             -- Immersive mode. The timer is reset by anything that counts as activity, and the

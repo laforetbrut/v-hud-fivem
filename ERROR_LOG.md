@@ -310,3 +310,96 @@ open". When integrating with another resource's visibility, use the signal it pu
 never patch it, and never assume the export exists.
 
 ---
+
+## [2026-07-31 19:40] — Speedometer preview cards blank in game
+
+**Context:** The settings menu speedometer picker. Ten cards, each showing a scaled copy of
+an instrument. Correct in a browser, empty frames in game, across two fix attempts.
+**Error:** Cards rendered with their label and background but no visible instrument.
+**Root cause:** `setArc()` sizes a stroked arc from `node.getTotalLength()` and caches the
+result on the node. `getTotalLength()` returns 0 for a path that is not in the document, and
+`preview()` painted the face while it was still detached, so the zero was cached and
+`if (!node.__length) return` skipped that arc for the rest of the page's life. The first fix
+attempt made the build synchronous, which made it worse: the previous `requestAnimationFrame`
+had at least let the card attach first.
+**Fix:** Never cache a zero length, and repaint the cards from `renderContent()` once they
+are in the document.
+**Prevention:** A cache keyed on "have I computed this yet" must distinguish "not yet" from
+"computed as zero". More generally, any geometry read - `getTotalLength`, `getBoundingClientRect`,
+`getComputedStyle` - answers meaninglessly for a detached node, so building off-document is
+only safe for work that needs no measurement.
+
+---
+
+## [2026-07-31 19:55] — Driving warnings lost their first tick
+
+**Context:** New belt and door chimes, under test on real Lua before shipping.
+**Error:** The grace period was measured from the second tick, not the first, so the chime
+was late by one tick interval and "once per occurrence" could mean "once, ever".
+**Root cause:** `0` was used both as the "not started" sentinel and as a valid `GetGameTimer()`
+value, so the first call stored 0 and the next call still read it as unset.
+**Fix:** `nil` as the sentinel, cleared on both fields when the fault goes away.
+**Prevention:** Never use a value the domain can actually produce as an "unset" marker. Zero
+is a real timestamp.
+
+---
+
+## [2026-07-31 20:05] — HUD drawn over the quit confirmation
+
+**Context:** Alt+F4 in game.
+**Error:** The minimap, gauges and speedometer stayed on screen over "Voulez-vous vraiment
+quitter Grand Theft Auto V ?".
+**Root cause:** That prompt is a frontend WARNING MESSAGE, a different screen from the pause
+menu, and the pause menu is already closed behind it - so `IsPauseMenuActive()` is false.
+**Fix:** `IsWarningMessageActive()` and `IsPlayerSwitchInProgress()` added to
+`Compat.overlayOpen()`, behind `Config.HideWhen.frontend`, looked up through `_G` so a build
+missing either native skips the check instead of erroring on the tick.
+**Prevention:** "The game put something full-screen up" is several different natives. The
+pause menu is only one of them.
+
+---
+
+## [2026-07-31 21:30] — Speedometer preview cards blank in game (second, real cause)
+
+**Context:** Third report of the same symptom. The first fix (never cache a zero
+`getTotalLength`) was necessary but not sufficient.
+**Error:** Cards showed their label and background, no instrument at all — not even the plain
+large text of the speed number.
+**Root cause:** The cards were `<button>` elements. Chromium's UA stylesheet, up to and
+including 103 — which is the CEF FiveM ships — contains `align-items: flex-start` for
+`button`. In a `flex-direction: column` card the cross axis is horizontal, so that one
+declaration sizes every child to its own content instead of stretching it. `.spd-preview`
+declares no width, and its only child was `position: absolute`, i.e. out of flow, so its
+max-content width was **0**; `overflow: hidden` then clipped the whole face away. The label
+survived only because text has an intrinsic width. Chrome removed that UA rule years ago,
+which is exactly why the same page was correct in a desktop browser and empty in game.
+**Fix:** The cards are `div`s with `role="button"`, `align-items: stretch` is stated
+explicitly anyway, and the face stays in normal flow scaled by a `transform` — no absolute
+positioning, no percentage offsets, no negative translate. The same bug was collapsing the
+theme colour swatches to a 26px sliver.
+**Prevention:** A browser is not a proxy for CEF. When a page is right in Chrome and wrong in
+game, suspect a UA-stylesheet or feature difference from Chromium ~90-103 BEFORE suspecting
+the page's own logic — and reproduce it by injecting the old UA rule into the harness, which
+is what finally turned this from a guess into a measurement.
+
+---
+
+## [2026-07-31 21:40] — Moving the minimap showed terrain from where it used to be
+
+**Context:** Dragging the minimap to a new place on screen.
+**Error:** A large slab of ground with no mask edges and the player blip missing, framed by a
+border sitting somewhere else.
+**Root cause:** `SetMinimapComponentPosition` updates `minimap_mask` and `minimap_blur`
+immediately, but the `minimap` component — the one carrying the terrain and the blips — only
+re-reads its rectangle when the minimap is REBUILT. The rebuild was gated on `shapeChanged`,
+a change made earlier to remove a resize flicker. So a move repositioned the hole, the blur
+and the CSS border and left the map render behind. A regression from the flicker fix.
+**Fix:** Gate the rebuild on a signature of the whole geometry (shape, dx, dy, scale, aspect),
+and drop the rebuild wait from 50ms to a single frame so it is not a visible jump. The
+watchdog that closes an unrequested bigmap now needs two consecutive strikes, because the
+rebuild window is hit far more often than it used to be.
+**Prevention:** "The native took effect" and "the engine re-read it" are different claims.
+Before gating an expensive call on a narrower condition, check what else that call was
+quietly doing.
+
+---

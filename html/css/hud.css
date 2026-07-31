@@ -92,10 +92,12 @@
 
     Dragging an element in the layout editor sets its dock back to `free`.
 */
+/* --arc-overshoot is how far the gauge arc reaches above the map on a ROUND map, measured by
+   status.js. It is 0px in every other case, so this calc is the same as it always was. */
 .hud-el[data-dock="map-top"] {
     left: var(--map-left);
     top: auto;
-    bottom: calc(var(--map-bottom) + var(--map-h) + var(--map-gap));
+    bottom: calc(var(--map-bottom) + var(--map-h) + var(--map-gap) + var(--arc-overshoot, 0px));
     --anchor-x: 0%;
     --anchor-y: 0%;
     transform-origin: bottom left;
@@ -121,7 +123,7 @@
     left: var(--map-left);
     top: auto;
     bottom: calc(var(--map-bottom) + var(--map-h) + var(--map-gap)
-        + (52px * var(--hud-scale)));
+        + var(--arc-overshoot, 0px) + (52px * var(--hud-scale)));
     --anchor-x: 0%;
     --anchor-y: 0%;
     transform-origin: bottom left;
@@ -251,7 +253,15 @@
     pointer-events: none;
 }
 
-.minimap-frame[data-on="true"] {
+/* Two separate conditions, and both have to hold.
+
+   data-on   is the player's "draw a border" preference.
+   data-radar is whether the game is drawing a radar at all right now - the element toggle,
+             vehicle-only mode, cinematic mode, a phone being open.
+
+   They were one flag, so switching the minimap off in the Elements tab hid the map and left
+   its border on screen as an empty rectangle. */
+.minimap-frame[data-on="true"][data-radar="true"] {
     opacity: 0.85;
 }
 

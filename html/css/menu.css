@@ -229,6 +229,16 @@
 
 .row:last-child { border-bottom: 0; }
 
+/* A wide control gets the full width, under its label, rather than being crushed into the
+   right-hand column while the label wraps two words at a time. */
+.row[data-stacked="true"] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+}
+
+.row[data-stacked="true"] .row__control { justify-content: flex-start; }
+.row[data-stacked="true"] .segments { justify-content: flex-start; }
+
 .row[data-locked="true"] {
     opacity: 0.45;
     pointer-events: none;
@@ -238,8 +248,15 @@
     display: flex;
     align-items: center;
     gap: 7px;
+    min-width: 0;
     font-size: 13px;
+    line-height: 1.35;
     color: var(--c-text);
+    /* Wrap between words, never mid-word: a label broken across three lines a syllable at a
+       time is the tell that its column has been squeezed to nothing. */
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
 }
 
 .row__lock {
@@ -407,11 +424,15 @@
     margin-top: 10px;
 }
 
+/* align-items and the div-not-button treatment for the same reason as .speedo-card above:
+   without it the colour swatch collapsed to a 26px sliver in game. */
 .theme-card {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 9px;
     padding: 11px;
+    cursor: pointer;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--c-line);
     border-radius: var(--radius);
@@ -459,11 +480,28 @@
     margin-top: 10px;
 }
 
+/*
+    These cards are divs with role="button", not <button> elements, and that is load-bearing.
+
+    The UA stylesheet Chromium ships up to and including 103 - which is what FiveM's CEF is -
+    contains `align-items: flex-start` for `button`. In a `flex-direction: column` card the
+    cross axis is horizontal, so that one declaration sizes every child to its own content
+    instead of stretching it. The preview frame has no width of its own, so it collapsed to
+    0px and `overflow: hidden` clipped the instrument away entirely. The label survived only
+    because text has an intrinsic width. Chrome dropped that UA rule years ago, which is why
+    the same page was perfect in a browser and blank in game.
+
+    `align-items: stretch` is stated explicitly as well, so the cards survive being turned back
+    into buttons by someone who does not know the above.
+*/
 .speedo-card {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 6px;
     padding: 10px;
+    cursor: pointer;
+    text-align: left;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--c-line);
     border-radius: var(--radius);

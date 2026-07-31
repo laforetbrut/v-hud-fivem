@@ -281,6 +281,8 @@ const Status = (() => {
        ------------------------------------------------------------------------------------ */
 
     const ARC_SPAN = 116;            // degrees of arc the gauges are spread over
+    const ARC_MAX_TILT = 18;         // how far down the arc may be rotated to clear the banner
+    const DEG = 180 / Math.PI;
     let lastArcSignature = '';
 
     /** Place every visible gauge on the circle around the map. */
@@ -297,7 +299,9 @@ const Status = (() => {
 
         // Re-place only when the set of visible gauges or the map size actually changed:
         // this runs off the tick, and writing six positions per frame is six layouts.
-        const signature = `${visible.map((r) => r.definition.key).join()}|${Math.round(box.width)}x${Math.round(box.height)}`;
+        // box.top is part of the signature because the downward tilt below is limited by how
+        // much screen is left under the map: moving the map re-decides the layout.
+        const signature = `${visible.map((r) => r.definition.key).join()}|${Math.round(box.width)}x${Math.round(box.height)}@${Math.round(box.top)}`;
         if (!force && signature === lastArcSignature) return;
         lastArcSignature = signature;
 
@@ -310,7 +314,29 @@ const Status = (() => {
 
         const count = visible.length;
         const step = count > 1 ? ARC_SPAN / (count - 1) : 0;
-        const start = count > 1 ? -ARC_SPAN / 2 : 0;
+        const half = count > 1 ? ARC_SPAN / 2 : 0;
+
+        /*
+            The arc is rotated DOWNWARD rather than centred on three o'clock.
+
+            Six gauges spread over 116 degrees need more vertical room than the map itself
+            occupies, so the ends of the arc always reach past the map's top and bottom edges.
+            Those two directions are not equivalent: the street banner is the lid of the map,
+            and below the map there is nothing. So the overshoot is pushed downward, and the
+            top gauge stops eating into the banner.
+
+            The tilt is the shortfall at the top, not a fixed nudge, so it is zero whenever the
+            gauges already fit - a short list on a large map is left centred.
+        */
+        const clear = Math.asin(U.clamp((cy - gaugeSize / 2 - 2) / radius, 0, 1)) * DEG;
+
+        // ...but never so far that the bottom gauge is pushed off the screen. On a map already
+        // sitting low, that limit is the binding one.
+        const room = (window.innerHeight - 4 - gaugeSize / 2) - (box.top + cy);
+        const roomTilt = Math.asin(U.clamp(room / radius, 0, 1)) * DEG - half;
+
+        const tilt = U.clamp(Math.min(half - clear, roomTilt), 0, ARC_MAX_TILT);
+        const start = -half + tilt;
 
         visible.forEach((refs, index) => {
             const angle = ((start + step * index) - 90) * (Math.PI / 180);
@@ -321,6 +347,19 @@ const Status = (() => {
             refs.root.style.left = `${U.round(x, 1)}px`;
             refs.root.style.top = `${U.round(y, 1)}px`;
         });
+
+        /*
+            Tell the street banner how far the arc reaches above the map.
+
+            The tilt above pushes the overshoot downward as far as the screen allows, but six
+            gauges over 116 degrees still need more height than there is between the banner and
+            the bottom of the screen, so some of it stays at the top. Rather than guess a
+            clearance in CSS, the banner is moved up by the amount actually measured here: it
+            is exact at any resolution, any HUD scale, and any number of visible gauges, and it
+            is zero the moment the arc does fit.
+        */
+        const topY = cy + radius * Math.sin(start * (Math.PI / 180)) - gaugeSize / 2;
+        U.cssVar(document.documentElement, '--arc-overshoot', `${Math.max(0, U.round(-topY, 1))}px`);
     }
 
     /** Turn arc mode on or off. Called from state.js when the dock or the map shape changes. */
@@ -338,6 +377,8 @@ const Status = (() => {
                 refs.root.style.left = '';
                 refs.root.style.top = '';
             }
+            // No arc, nothing above the map, so the banner takes its clearance back.
+            U.cssVar(document.documentElement, '--arc-overshoot', '0px');
             return;
         }
 
