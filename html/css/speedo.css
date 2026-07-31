@@ -725,7 +725,9 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(var(--preview-scale, 0.62));
+    /* 0.55 is the fallback, not a placeholder: if --preview-scale never arrives for any
+       reason, the card must still show the instrument rather than nothing. */
+    transform: translate(-50%, -50%) scale(var(--preview-scale, 0.55));
     transform-origin: center center;
     flex: none;
 }

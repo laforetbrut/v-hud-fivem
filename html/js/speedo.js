@@ -585,26 +585,36 @@ const Speedo = (() => {
         U.fill(root, [refs.node, chips.node]);
     }
 
+    // The room a preview card gives a face, in CSS pixels. Fixed on purpose: the card is a
+    // fixed-height box in a grid whose minimum column is 178px, so these are known without
+    // measuring anything.
+    const CARD_ROOM = { w: 176, h: 138 };
+
     /**
      * A face rendered into an arbitrary container, for the menu's preview cards.
      *
-     * The scale is computed per face rather than fixed. The ten range from 168px square to
-     * 298px wide, so one factor either shrank the small ones to a smudge or let the wide ones
-     * run out from under their own label - which is what the truck and muscle cards did.
+     * The scale is per face, because the ten range from 168px square to 298px wide and one
+     * factor either shrinks the small ones to a smudge or lets the wide ones run out from
+     * under their own label.
+     *
+     * It is computed from the face's DECLARED size against a known card, never from measuring
+     * the DOM. Measuring meant waiting for a frame, and a card whose measurement never
+     * arrived - or arrived while it was still zero - got a scale of zero and rendered blank.
+     * That is what left every preview card empty in game while they rendered in a browser.
      */
     function preview(container, faceName, sample, size) {
         const face = FACES[faceName] || FACES.minimal;
         const built = face();
 
+        const scale = (size && size.w && size.h)
+            ? Math.min(CARD_ROOM.w / size.w, CARD_ROOM.h / size.h, 1)
+            : 0.6;
+
+        // Written BEFORE the node is inserted, so the very first paint is already correct.
+        U.cssVar(container, '--preview-scale', U.round(Math.max(scale, 0.2), 3));
+
         U.fill(container, [built.node]);
         applyTo(built, sample);
-
-        if (size && size.w && size.h) {
-            const box = container.getBoundingClientRect();
-            const room = { w: (box.width || 200) - 12, h: (box.height || 150) - 12 };
-            const scale = Math.min(room.w / size.w, room.h / size.h, 1);
-            U.cssVar(container, '--preview-scale', U.round(scale, 3));
-        }
     }
 
     /* ------------------------------------------------------------------------------------

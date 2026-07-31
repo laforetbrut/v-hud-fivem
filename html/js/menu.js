@@ -367,9 +367,10 @@ const Menu = (() => {
                 }, [preview, U.make('span', { class: 'speedo-card__label', text: S.t(entry.label) })]);
 
                 cards.appendChild(card);
-                // Measured after the card is in the document, so the scale is computed from
-                // the real card size rather than from zero.
-                requestAnimationFrame(() => Speedo.preview(preview, entry.key, sample, entry.size));
+                // Built synchronously. Deferring this to an animation frame is what left the
+                // cards blank in game: the callback ran against a card that had not been laid
+                // out, and a scale computed from a zero-width box is a zero scale.
+                Speedo.preview(preview, entry.key, sample, entry.size);
             }
 
             return [
