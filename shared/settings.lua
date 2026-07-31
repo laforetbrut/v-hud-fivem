@@ -76,22 +76,99 @@ function Settings.setPath(tbl, path, value)
     return true
 end
 
+-- The two things a player keeps whatever the server says.
+--
+-- This is a promise the resource makes, so it is enforced here rather than left to whoever
+-- edits config.lua: `positions` is how a player arranges their own screen, and the minimap
+-- shape is the single most personal preference in the whole HUD. A config that lists either
+-- is warned about and ignored.
+local NEVER_LOCKABLE = { 'positions', 'minimap.shape' }
+
+local function isProtected(path)
+    for _, keep in ipairs(NEVER_LOCKABLE) do
+        if path == keep or path:sub(1, #keep + 1) == keep .. '.' then return true end
+    end
+    return false
+end
+
 --- Whether the server has locked `path`. Exact match, or any ancestor: locking `colours`
 --- locks every colour under it.
 function Settings.isLocked(path)
-    for _, locked in ipairs(Config.Policy.locked or {}) do
+    if isProtected(path) then return false end
+
+    for _, locked in ipairs(Settings.lockedPaths()) do
         if locked == path then return true end
         if path:sub(1, #locked + 1) == locked .. '.' then return true end
     end
     return false
 end
 
+-- Built once. The explicit `locked` list plus everything the higher-level policy switches
+-- imply, so the menu draws one padlock per genuinely locked control and the save path has one
+-- list to check.
+local lockedCache
+
 --- Every locked path, as a flat array, for the NUI to draw padlocks with.
 function Settings.lockedPaths()
+    if lockedCache then return lockedCache end
+
+    local policy = Config.Policy
     local out = {}
-    for _, locked in ipairs(Config.Policy.locked or {}) do
-        out[#out + 1] = locked
+    local seen = {}
+
+    local function add(path)
+        if seen[path] then return end
+
+        if isProtected(path) then
+            HUD.warn(('Config.Policy tried to lock "%s". Players always keep their layout and ' ..
+                'their minimap shape, so it has been ignored.'):format(path))
+            return
+        end
+
+        seen[path] = true
+        out[#out + 1] = path
     end
+
+    for _, path in ipairs(policy.locked or {}) do add(path) end
+
+    -- A forced theme or cluster locks its own picker.
+    if policy.forcedTheme then add('theme') end
+    if policy.forcedSpeedometer then add('speedometer.style') end
+
+    -- Every forced style key and colour.
+    for key in pairs(policy.forcedStyle or {}) do add('style.' .. key) end
+    for key in pairs(policy.forcedColours or {}) do add('colours.' .. key) end
+
+    -- An element that is forced on or removed is not the player's to switch.
+    for key, mode in pairs(policy.elements or {}) do
+        if mode == 'forced' or mode == 'off' then add('show.' .. key) end
+    end
+
+    -- A list with one entry left is not a choice.
+    if #(policy.themes or {}) <= 1 then add('theme') end
+    if #(policy.speedometers or {}) <= 1 then add('speedometer.style') end
+    if #(policy.gaugeShapes or {}) <= 1 then add('style.gauge') end
+    if #(policy.surfaces or {}) <= 1 then add('style.surface') end
+    if #(policy.compassStyles or {}) <= 1 then add('compass.style') end
+
+    lockedCache = out
+    return out
+end
+
+--- How the server treats an element: 'player', 'forced' or 'off'.
+function Settings.elementMode(key)
+    local mode = (Config.Policy.elements or {})[key]
+    if mode == 'forced' or mode == 'off' then return mode end
+    return 'player'
+end
+
+--- The elements this server removed outright, for the NUI to leave out of the menu.
+function Settings.removedElements()
+    local out = {}
+    for key, mode in pairs(Config.Policy.elements or {}) do
+        if mode == 'off' then out[#out + 1] = key end
+    end
+    table.sort(out)
     return out
 end
 
@@ -121,8 +198,39 @@ local GAUGE_SHAPES = {
 local SURFACES = { 'glass', 'tint', 'solid', 'none' }
 local DIRECTIONS = { 'row', 'column' }
 local UNITS = { 'kmh', 'mph' }
-local MAP_SHAPES = { 'square', 'circle' }
 local COMPASS_STYLES = { 'bar', 'tape', 'dial', 'text' }
+
+-- Square or round, always. This is one of the two promises to the player, so the list is a
+-- constant here and there is no Config.Policy entry that can shorten it.
+local MAP_SHAPES = { 'square', 'circle' }
+
+--- The values the server offers for a setting: the intersection of what this resource can
+--- render and what Config.Policy allows. An operator list that names nothing valid falls back
+--- to the full list rather than leaving the player with no options at all.
+local function offered(policyKey, everything)
+    local allowed = Config.Policy[policyKey]
+    if type(allowed) ~= 'table' or #allowed == 0 then return everything end
+
+    local out = {}
+    for _, value in ipairs(allowed) do
+        if HUD.oneOf(value, everything) then out[#out + 1] = value end
+    end
+
+    return #out > 0 and out or everything
+end
+
+--- Every choice list the menu renders, so the NUI never offers something the server refuses.
+function Settings.choices()
+    return {
+        gaugeShapes = offered('gaugeShapes', GAUGE_SHAPES),
+        surfaces = offered('surfaces', SURFACES),
+        compassStyles = offered('compassStyles', COMPASS_STYLES),
+        mapShapes = MAP_SHAPES,
+        directions = DIRECTIONS,
+        units = UNITS,
+        removed = Settings.removedElements(),
+    }
+end
 local ANCHORS = { 'left', 'center', 'right' }
 -- The vertical anchor. 'bottom' means the y coordinate is the element's BOTTOM edge, so it
 -- grows upward as its content gets taller instead of running off the screen.
@@ -243,12 +351,43 @@ function Settings.sanitise(input)
     return out
 end
 
---- Force every locked path back to the server default. Runs last, so nothing above it can
---- leave a locked value changed.
+--- Force everything the server decided. Runs LAST, so nothing above it - not a theme, not a
+--- job override, not an imported settings code - can leave a policed value changed.
 function Settings.applyPolicy(settings)
     local base = Settings.default()
+    local policy = Config.Policy
 
-    for _, path in ipairs(Config.Policy.locked or {}) do
+    -- A forced theme is applied in full first, so the colours and shapes that come with it
+    -- land before anything else is pinned on top.
+    if policy.forcedTheme and Themes[policy.forcedTheme] then
+        settings = Themes.apply(settings, policy.forcedTheme)
+    end
+
+    if policy.forcedSpeedometer and Speedometers.allowed(policy.forcedSpeedometer) then
+        settings.speedometer.style = policy.forcedSpeedometer
+    end
+
+    for key, value in pairs(policy.forcedStyle or {}) do
+        if settings.style[key] ~= nil then settings.style[key] = value end
+    end
+
+    for key, value in pairs(policy.forcedColours or {}) do
+        if settings.colours[key] ~= nil then
+            settings.colours[key] = HUD.colour(value, settings.colours[key])
+        end
+    end
+
+    -- Element policy. 'forced' is drawn whatever the player said; 'off' is never drawn, which
+    -- is what makes it a removal rather than a default.
+    for key, mode in pairs(policy.elements or {}) do
+        if settings.show[key] ~= nil then
+            if mode == 'forced' then settings.show[key] = true
+            elseif mode == 'off' then settings.show[key] = false end
+        end
+    end
+
+    -- Then the freeform list, which is allowed to override the lot.
+    for _, path in ipairs(Settings.lockedPaths()) do
         local forced = Settings.getPath(base, path)
         if forced ~= nil then
             Settings.setPath(settings, path, HUD.deepCopy(forced))

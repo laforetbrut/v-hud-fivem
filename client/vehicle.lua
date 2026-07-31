@@ -53,6 +53,27 @@ local function gear(vehicle)
     return tostring(current)
 end
 
+--- Which doors are not shut. Index 4 is the bonnet and 5 is the boot, so "a door is open" and
+--- "the bonnet is up" are reported separately - one is a warning you drive away from, the
+--- other is usually the mechanic working on you.
+---
+--- The angle ratio is used rather than IsVehicleDoorFullyOpen, because a door that is ajar is
+--- exactly the case worth warning about and "fully open" misses it.
+local function doors(vehicle)
+    local anyDoor, bonnet, boot = false, false, false
+
+    for index = 0, 5 do
+        local ok, ratio = pcall(GetVehicleDoorAngleRatio, vehicle, index)
+        if ok and type(ratio) == 'number' and ratio > 0.01 then
+            if index == 4 then bonnet = true
+            elseif index == 5 then boot = true
+            else anyDoor = true end
+        end
+    end
+
+    return { door = anyDoor, bonnet = bonnet, boot = boot }
+end
+
 --- Indicator and light state. Both natives return through out-parameters, and both are
 --- wrapped because a vehicle handle can die between the check and the call.
 local function lights(vehicle)
@@ -101,6 +122,7 @@ function Vehicle.read(vehicle, settings)
         harness = belt.harnessHp,
         hasHarness = Vehicle.harness,
         lights = lights(vehicle),
+        doors = doors(vehicle),
         -- Total distance this vehicle has covered. nil when nothing is tracking it, which
         -- hides the readout rather than printing a zero on every car in the city.
         odometer = Odometer and Odometer.display(vehicle, settings.units) or nil,

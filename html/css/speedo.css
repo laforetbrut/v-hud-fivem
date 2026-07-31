@@ -11,10 +11,15 @@
         minimal  classic  sport  digital  luxury  jdm  muscle  supercar  truck  retro
 */
 
+/*
+    The face and its warning lights are one instrument, so they are centred on each other -
+    not both flushed to the right edge of whatever box the element happens to have. A row of
+    tell-tales hanging off the corner of a dial does not look like a cluster.
+*/
 .speedo {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
     gap: 6px;
     opacity: 0;
     transform: translateY(6px);
@@ -338,7 +343,15 @@
 
 /* Chips ---------------------------------------------------------------------------------- */
 
-.spd-chips { display: flex; gap: 5px; justify-content: flex-end; }
+/* Centred under the face, and allowed to wrap: eight tell-tales are wider than the narrowest
+   dial, and a row that cannot wrap pushes the whole element sideways instead. */
+.spd-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+    max-width: 100%;
+}
 
 .spd-chip {
     display: flex;
@@ -361,9 +374,16 @@
     box-shadow: var(--glow);
 }
 
+/* A warning state is RED and steady. It only blinks once it is urgent - `data-flash` - so a
+   belt left unfastened while parked is visible without being nagging, and the same chip
+   demands attention the moment the car is moving. */
 .spd-chip[data-alert="true"] {
     color: var(--c-warning);
     border-color: var(--c-warning-a60);
+    background: var(--c-warning-a20);
+}
+
+.spd-chip[data-flash="true"] {
     animation: spd-alert 0.8s steps(2, end) infinite;
 }
 

@@ -106,23 +106,20 @@ Config.Persistence = {
 -- 4. Server policy
 -- =======================================================================================
 
+-- Two promises this resource makes to PLAYERS, which no setting below can take away:
+--
+--   1. They can always move every element. Positions and docking are never lockable.
+--   2. They can always choose the minimap shape, square or round.
+--
+-- Both are enforced in code, not by convention: `Settings.isLocked` refuses those paths and
+-- the server prints a warning if a config tries to lock them. Everything else is yours.
 Config.Policy = {
-    -- Dotted paths into Config.Defaults. Each one is forced to its default value, shown
-    -- greyed out with a padlock in the menu, and refused on save.
-    --
-    --   locked = {
-    --       'theme',                 -- everyone runs the theme you chose
-    --       'colours.background',    -- but they may still recolour their own gauges
-    --       'minimap.hide',          -- nobody may hide the minimap
-    --       'show.streets',          -- street names are mandatory
-    --       'speedometer.style',
-    --   },
-    --
-    -- Leave empty and the player owns every setting, which is the shipped position.
-    locked = {},
+
+    -- --- What is offered -----------------------------------------------------------------
 
     -- Themes offered in the menu. Remove one and it stops being selectable AND stops being
-    -- accepted on save. The order here is the order in the menu.
+    -- accepted on save. The order here is the order in the menu. An empty list leaves the
+    -- player on whatever `Config.Defaults.theme` says, with no picker at all.
     themes = { 'glass', 'square', 'miami', 'neon', 'modern' },
 
     -- Speedometers offered in the menu, same rules. All ten ship enabled, and every one of
@@ -132,6 +129,90 @@ Config.Policy = {
         'minimal', 'classic', 'sport', 'digital', 'luxury',
         'jdm', 'muscle', 'supercar', 'truck', 'retro',
     },
+
+    -- Gauge shapes offered under Style. Twelve ship; cut the list to impose a house look
+    -- without locking the setting outright.
+    gaugeShapes = {
+        'square', 'rounded', 'pill', 'circle', 'ring', 'radial',
+        'dot', 'bar', 'segment', 'diamond', 'hex', 'icon',
+    },
+
+    -- Compass styles offered. An EMPTY list removes the compass from the server entirely -
+    -- no element, no tab, nothing computed.
+    compassStyles = { 'bar', 'tape', 'dial', 'text' },
+
+    -- Panel surfaces offered under Style.
+    surfaces = { 'glass', 'tint', 'solid', 'none' },
+
+    -- --- What is forced ------------------------------------------------------------------
+
+    -- Everyone runs this theme and the picker is locked. nil lets them choose.
+    --   forcedTheme = 'glass',
+    forcedTheme = nil,
+
+    -- Everyone runs this cluster and the picker is locked. nil lets them choose.
+    --   forcedSpeedometer = 'digital',
+    forcedSpeedometer = nil,
+
+    -- Style values imposed on everyone, whatever theme they pick. Any key of
+    -- Config.Defaults.style. Each one is forced on save and greyed out in the menu.
+    --
+    --   forcedStyle = { surface = 'solid', glow = false, corner = 4 },
+    forcedStyle = {},
+
+    -- Colours imposed on everyone. Any key of Config.Defaults.colours.
+    --
+    --   forcedColours = { accent = '#ff0044', background = '#0a0a0a' },
+    forcedColours = {},
+
+    -- --- What each element may do --------------------------------------------------------
+
+    -- One entry per drawable element. Three answers:
+    --
+    --   'player'  the player decides. The switch is in the menu. (default)
+    --   'forced'  always drawn. The switch is shown locked.
+    --   'off'     never drawn on this server. Removed from the menu and never computed -
+    --             this is how you delete an element rather than merely defaulting it off.
+    --
+    -- Anything not listed here is 'player'. A gauge added to Config.Status can be listed too.
+    elements = {
+        health      = 'player',
+        armor       = 'player',
+        hunger      = 'player',
+        thirst      = 'player',
+        stress      = 'player',
+        oxygen      = 'player',
+        stamina     = 'player',
+        voice       = 'player',
+        speedometer = 'player',
+        compass     = 'player',
+        streets     = 'player',
+        minimap     = 'player',
+        nitro       = 'player',
+        harness     = 'player',
+        engine      = 'player',
+        seatbelt    = 'player',
+        parachute   = 'player',
+        armed       = 'player',
+        dev         = 'player',
+    },
+
+    -- --- Anything else -------------------------------------------------------------------
+
+    -- Dotted paths into Config.Defaults, for whatever the switches above do not cover. Each
+    -- one is forced to its default value, shown greyed out with a padlock, and refused on
+    -- save.
+    --
+    --   locked = {
+    --       'colours.background',    -- but they may still recolour their own gauges
+    --       'minimap.hide',          -- nobody may hide the minimap
+    --       'advanced.refresh',      -- everyone runs the rate you chose
+    --       'units',                 -- km/h only
+    --   },
+    --
+    -- Two paths are REFUSED here and always will be: `positions` and `minimap.shape`. See the
+    -- note above this table.
+    locked = {},
 
     -- Bounds the player's sliders may not leave. These exist so that "movable" cannot become
     -- "moved somewhere nobody can see it" on a server that cares.
@@ -158,6 +239,11 @@ Config.Policy = {
 
     -- Announce to the player when an admin changes their HUD. Off means it happens silently.
     announceAdminPush = true,
+
+    -- Let players export their settings as a shareable code, and paste somebody else's in.
+    -- The pasted settings go through exactly the same validation as any other save, so an
+    -- import can never carry a locked value or an unknown key past the policy above.
+    allowSharing = true,
 }
 
 -- =======================================================================================

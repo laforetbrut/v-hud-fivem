@@ -130,6 +130,9 @@ const Speedo = (() => {
 
     const CHIP_ICONS = {
         belt:    'M5 3h4l6 18h-4L5 3zM19 3h-4M19 3v18h-4',
+        // The dashboard door warning: a car seen from above with both doors swung open.
+        door:    'M12 4v16M12 4 6 7v10l6 3M12 4l6 3v10l-6 3M4 9 2 11l2 2M20 9l2 2-2 2',
+        bonnet:  'M3 16h18M5 16V9l4-4h6l4 4v7M9 5V3h6v2',
         nitro:   'M12 2c3 4 5 6.5 5 10a5 5 0 0 1-10 0c0-3.5 2-6 5-10z',
         harness: 'M12 3v18M6 6l12 12M18 6L6 18',
         engine:  'M5 9h3l2-2h4l2 2h3v6h-3l-2 2h-4l-2-2H5V9z',
@@ -548,20 +551,20 @@ const Speedo = (() => {
        Building
        ------------------------------------------------------------------------------------ */
 
-    function buildChips() {
-        const node = U.make('div', { class: 'spd-chips' }, [
-            chip('belt'), chip('cruise'), chip('nitro'), chip('harness'), chip('engine'), chip('lights'),
-        ]);
+    // The warnings come first, left to right, because that is the order a driver scans in and
+    // the two that matter - a door not shut and a belt not fastened - should never be at the
+    // end of a row of decorations.
+    const CHIP_ORDER = ['belt', 'door', 'bonnet', 'cruise', 'nitro', 'harness', 'engine', 'lights'];
 
-        return {
-            node,
-            belt: node.querySelector('[data-chip="belt"]'),
-            cruise: node.querySelector('[data-chip="cruise"]'),
-            nitro: node.querySelector('[data-chip="nitro"]'),
-            harness: node.querySelector('[data-chip="harness"]'),
-            engine: node.querySelector('[data-chip="engine"]'),
-            lights: node.querySelector('[data-chip="lights"]'),
-        };
+    function buildChips() {
+        const node = U.make('div', { class: 'spd-chips' }, CHIP_ORDER.map(chip));
+        const refs = { node };
+
+        for (const name of CHIP_ORDER) {
+            refs[name] = node.querySelector(`[data-chip="${name}"]`);
+        }
+
+        return refs;
     }
 
     /** Rebuild for `next`. A no-op when the style has not changed, which is every call but the
@@ -716,8 +719,22 @@ const Speedo = (() => {
             U.attr(node, 'data-armed', !!armed);
         };
 
+        // The seatbelt is shown the whole time you are driving, not only once you are already
+        // going fast enough for it to matter. Green fastened, red unfastened, and it only
+        // flashes above 40 - so the state is always readable and the nagging is not constant.
+        const belted = data.seatbelt === true;
         showChip(chips.belt, options.belt && !data.bicycle && data.driver,
-            data.seatbelt, !data.seatbelt && data.speed > 40);
+            belted, !belted, false);
+        U.attr(chips.belt, 'data-flash', !belted && data.speed > 40);
+
+        // A door, bonnet or boot left open. Two separate warnings: a door you drive away with
+        // is a mistake, a bonnet up usually means somebody is working on the car.
+        const doors = data.doors || {};
+        showChip(chips.door, !data.bicycle && doors.door === true, false, true);
+        U.attr(chips.door, 'data-flash', doors.door === true && data.speed > 5);
+        showChip(chips.bonnet, !data.bicycle && (doors.bonnet === true || doors.boot === true),
+            false, true);
+
         showChip(chips.cruise, !data.bicycle, data.cruise);
         showChip(chips.nitro, options.nitro && data.nitro > 0,
             data.nitroActive, false, data.nitro > 0 && !data.nitroActive);

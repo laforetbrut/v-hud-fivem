@@ -29,6 +29,10 @@ local warnedMissing = false
 local appliedShape = nil
 local applyToken = 0
 
+-- True only while the paired SetBigmapActive(true)/SetBigmapActive(false) is in flight, so
+-- the watchdog below does not fight the one moment the expanded map is legitimately on.
+local changingShape = false
+
 -- The native geometry each shape starts from, before the player's offsets are applied. These
 -- are screen-fraction units: 1.0 is the full width or height.
 local SHAPES = {
@@ -154,11 +158,21 @@ function Minimap.apply(settings)
         -- none of it - SetMinimapComponentPosition takes effect immediately.
         if shapeChanged then
             appliedShape = map.shape
+
+            -- These two calls are a PAIR and nothing may come between them. An early return
+            -- here - a token check, a guard, anything - leaves the expanded map on screen
+            -- permanently, because the code that would have closed it never runs. That is
+            -- exactly what happened: a second settings change during the 50ms wait bailed out
+            -- of this block and the player was left staring at the full map.
+            --
+            -- Coalescing is done BEFORE any of this, at the top of the thread, where bailing
+            -- out is free because nothing has been touched yet.
+            changingShape = true
             SetBigmapActive(true, false)
             Wait(50)
-            if token ~= applyToken then return end
             SetBigmapActive(false, false)
             SetMinimapClipType(shape.clip)
+            changingShape = false
         end
 
         -- Tell the NUI which border to draw, and where. The border is CSS because the native
@@ -214,6 +228,24 @@ CreateThread(function()
                 last = show
                 DisplayRadar(show)
             end
+        end
+    end
+end)
+
+-- The expanded map, left on, is unrecoverable from the player's side: there is no key that
+-- closes it and no setting that mentions it. So it is watched. If it is on while this
+-- resource is not in the middle of a shape change, it gets closed.
+--
+-- This is a net under a bug that has already been fixed once. It costs one native call every
+-- two seconds and it means the worst case is a two second flash rather than a broken HUD for
+-- the rest of the session.
+CreateThread(function()
+    while true do
+        Wait(2000)
+
+        if State.ready and not changingShape and IsBigmapActive() then
+            HUD.debug('closing an expanded minimap nobody asked for')
+            SetBigmapActive(false, false)
         end
     end
 end)

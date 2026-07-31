@@ -217,6 +217,9 @@ HARNESS = """
                 speed, maxSpeed: 260, rpm: (Math.sin(t) + 1) / 2, gear: String(1 + (Math.floor(t) % 6)),
                 fuel: Math.round(40 + Math.sin(t * 0.3) * 35), range: 180, engine: 82,
                 seatbelt: Math.sin(t * 0.5) > 0, cruise: false, nitro: 60, nitroActive: Math.sin(t) > 0.6,
+                // A door ajar and the bonnet up, on their own cycles, so the two warning
+                // tell-tales are exercised rather than assumed.
+                doors: { door: Math.sin(t * 0.35) > 0.2, bonnet: Math.sin(t * 0.2) > 0.6, boot: false },
                 harness: 20, hasHarness: true, aircraft: false, bicycle: false, driver: true,
                 lights: { on: true, high: false, left: Math.sin(t) > 0.7, right: false },
                 // The odometer climbs, so the preview shows what a real one does rather than
@@ -386,10 +389,21 @@ def main():
         if "'%s'" % name not in page:
             sys.exit('preview: %s.js is not listed in html/index.html' % name)
 
+    # A cache-busting stamp, for the same reason the shipped page has one: a browser serving a
+    # cached stylesheet or script after a rebuild makes a fix and a fix that was never applied
+    # look identical. The stamp is the newest mtime across the assets, so it only changes when
+    # something really did.
+    stamp = 0
+    for name in STYLES:
+        stamp = max(stamp, os.path.getmtime(os.path.join(ROOT, 'html', 'css', name + '.css')))
+    for name in SCRIPTS:
+        stamp = max(stamp, os.path.getmtime(os.path.join(ROOT, 'html', 'js', name + '.js')))
+    token = '?v=%d' % int(stamp)
+
     head = '\n    '.join(
-        '<link rel="stylesheet" href="../html/css/%s.css">' % name for name in STYLES)
+        '<link rel="stylesheet" href="../html/css/%s.css%s">' % (name, token) for name in STYLES)
     scripts = '\n'.join(
-        '<script src="../html/js/%s.js"></script>' % name for name in SCRIPTS)
+        '<script src="../html/js/%s.js%s"></script>' % (name, token) for name in SCRIPTS)
 
     harness = (HARNESS
                .replace('__STATIC__', json.dumps(static, ensure_ascii=False))
