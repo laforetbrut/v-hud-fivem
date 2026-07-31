@@ -549,6 +549,114 @@ function Compat.resetVehicleState()
 end
 
 -- ---------------------------------------------------------------------------------------
+-- Mechanical wear
+-- ---------------------------------------------------------------------------------------
+
+--[[
+    Per-part condition, for the tell-tales that a real cluster has and GTA does not: brakes,
+    clutch, coolant, the driveline.
+
+    Two sources, in order:
+
+      * a vehicle STATE BAG, which is what a mechanic script publishes when it wants other
+        resources to read it. Free to read, no round trip, so it is tried first.
+      * a framework CALLBACK keyed on the plate. qb-mechanicjob keeps its wear table
+        server-side in `vehicleComponents[plate]` and publishes exactly one way in:
+        `qb-mechanicjob:server:getVehicleStatus`. Verified against an installed copy.
+
+    The result is cached per plate and refreshed on a timer, because a callback per HUD tick
+    is a network round trip per HUD tick. Wear changes when a mechanic works on the car, not
+    while you drive.
+
+    Nothing here is a dependency. No mechanic script means every part reads nil and every
+    lamp for it stays dark.
+]]
+
+local partsCache = { plate = nil, at = 0, values = nil, pending = false }
+
+local function normalisePart(value, maxValue)
+    local number = tonumber(value)
+    if not number then return nil end
+
+    -- Scripts store these as 0-100, some as 0-1000 like the engine natives. Both normalise to
+    -- a percentage; anything above the declared maximum is treated as the 0-1000 scale.
+    local top = tonumber(maxValue) or 100
+    if number > top then number = number / 10 end
+
+    return HUD.clamp(number, 0, 100, nil)
+end
+
+local function readPartBags(vehicle)
+    local state = DoesEntityExist(vehicle) and Entity(vehicle).state
+    if not state then return nil end
+
+    local out, found = {}, false
+    for part, bags in pairs(Config.Compat.partBags or {}) do
+        for _, bag in ipairs(bags) do
+            local value = normalisePart(state[bag])
+            if value then
+                out[part] = value
+                found = true
+                break
+            end
+        end
+    end
+
+    return found and out or nil
+end
+
+local function requestPartCallback(plate)
+    local entry = Config.Compat.partsCallback
+    if not entry or partsCache.pending then return end
+    if not started(entry.resource) then return end
+
+    local object = Compat.core()
+    if not object or not object.Functions or not object.Functions.TriggerCallback then return end
+
+    partsCache.pending = true
+
+    -- Fire and forget. The answer lands in the cache and the next tick picks it up; the HUD
+    -- never waits on the network.
+    pcall(object.Functions.TriggerCallback, entry.name, function(status)
+        partsCache.pending = false
+        if type(status) ~= 'table' then return end
+
+        local out = {}
+        for part, value in pairs(status) do
+            local number = normalisePart(type(value) == 'table' and value.level or value)
+            if number then out[part] = number end
+        end
+
+        partsCache.plate = plate
+        partsCache.at = GetGameTimer()
+        partsCache.values = out
+    end, plate)
+end
+
+--- Per-part condition for `vehicle`, as percentages, or nil when nothing publishes any.
+function Compat.vehicleParts(vehicle)
+    if not Config.Compat.parts or not vehicle or vehicle == 0 then return nil end
+    if not DoesEntityExist(vehicle) then return nil end
+
+    -- State bags first: current, free, and no round trip.
+    local bags = readPartBags(vehicle)
+    if bags then return bags end
+
+    local plate = GetVehicleNumberPlateText(vehicle)
+    if not plate then return nil end
+
+    local stale = partsCache.plate ~= plate
+        or (GetGameTimer() - partsCache.at) > (Config.Compat.partsRefresh or 30000)
+
+    if stale then
+        if partsCache.plate ~= plate then partsCache.values = nil end
+        requestPartCallback(plate)
+    end
+
+    return (partsCache.plate == plate) and partsCache.values or nil
+end
+
+-- ---------------------------------------------------------------------------------------
 -- Getting out of the way
 -- ---------------------------------------------------------------------------------------
 

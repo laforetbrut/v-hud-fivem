@@ -128,22 +128,104 @@ const Speedo = (() => {
         return { parts: [track, fill], fill };
     }
 
+    /*
+        The tell-tales.
+
+        Drawn as the symbols on a real dashboard, because those are the only warning icons a
+        driver already knows how to read: the headlamp with its rays slanting down for dipped
+        beam and straight for main beam, the solid triangles for the indicators, the engine
+        block, the fuel pump.
+
+        Each entry is a list of parts so a symbol can mix a solid body with stroked rays -
+        which is what makes a headlamp read as a headlamp rather than as a blob.
+    */
     const CHIP_ICONS = {
-        belt:    'M5 3h4l6 18h-4L5 3zM19 3h-4M19 3v18h-4',
+        belt:    [{ d: 'M5 3h4l6 18h-4L5 3zM19 3h-4M19 3v18h-4' }],
         // The dashboard door warning: a car seen from above with both doors swung open.
-        door:    'M12 4v16M12 4 6 7v10l6 3M12 4l6 3v10l-6 3M4 9 2 11l2 2M20 9l2 2-2 2',
-        bonnet:  'M3 16h18M5 16V9l4-4h6l4 4v7M9 5V3h6v2',
-        nitro:   'M12 2c3 4 5 6.5 5 10a5 5 0 0 1-10 0c0-3.5 2-6 5-10z',
-        harness: 'M12 3v18M6 6l12 12M18 6L6 18',
-        engine:  'M5 9h3l2-2h4l2 2h3v6h-3l-2 2h-4l-2-2H5V9z',
-        lights:  'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5V16h8v-2.5A6 6 0 0 0 12 3z',
-        cruise:  'M12 4a8 8 0 1 0 8 8M12 12l5-5',
+        door:    [{ d: 'M12 4v16M12 4 6 7v10l6 3M12 4l6 3v10l-6 3M4 9 2 11l2 2M20 9l2 2-2 2' }],
+        bonnet:  [{ d: 'M3 16h18M5 16V9l4-4h6l4 4v7M9 5V3h6v2' }],
+        nitro:   [{ d: 'M12 2c3 4 5 6.5 5 10a5 5 0 0 1-10 0c0-3.5 2-6 5-10z' }],
+        harness: [{ d: 'M12 3v18M6 6l12 12M18 6L6 18' }],
+        engine:  [{ d: 'M5 9h3l2-2h4l2 2h3v6h-3l-2 2h-4l-2-2H5V9z' }],
+        cruise:  [{ d: 'M12 4a8 8 0 1 0 8 8M12 12l5-5' }],
+
+        // Mechanical wear, from the mechanic script. Each one is the symbol a real dashboard
+        // uses, so nothing here needs a legend.
+        // A disc with pad marks either side.
+        brakes:  [{ d: 'M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M2 9v6M22 9v6' }],
+        // The thermometer in waves: coolant temperature.
+        radiator: [{ d: 'M10 4a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0zM12 8v6M3 20c1.5-1.5 3-1.5 4.5 0M16.5 20c1.5-1.5 3-1.5 4.5 0' }],
+        // A battery with its terminals.
+        electronics: [{ d: 'M3 8h18v10H3zM7 5h3v3H7M14 5h3v3h-3M6 13h4M15 13h4M17 11v4' }],
+        // The oil can.
+        injector: [{ d: 'M3 17v-5h7l3-3h4v3h4l-3 5zM7 12V9h4M13 20c1.6-2.2 2.4-3.6 2.4-4.4a2.4 2.4 0 0 0-4.8 0c0 .8.8 2.2 2.4 4.4z' }],
+        // A gear wheel, for the clutch and the transmission.
+        clutch:  [{ d: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2' }],
+        transmission: [{ d: 'M6 5v14M12 5v14M18 5v14M4 5h16M6 12h12' }],
+        // The axle: a shaft with a wheel at each end.
+        axle:    [{ d: 'M4 8v8M20 8v8M4 12h16M8 10v4M16 10v4' }],
+        suspension: [{ d: 'M12 3v3M12 18v3M9 6h6M9 18h6M12 6c-3 1.5-3 3 0 4.5s3 3 0 4.5' }],
+
+        // Dipped beam: rays slant DOWN. Main beam: rays are STRAIGHT. That one difference is
+        // the whole convention, and it is why the two symbols must not be merged.
+        lights: [
+            { d: 'M3 5h4a7 7 0 0 1 0 14H3z', fill: true },
+            { d: 'M13 7l8 3M13 12l8 3M13 17l8 3' },
+        ],
+        beam: [
+            { d: 'M3 5h4a7 7 0 0 1 0 14H3z', fill: true },
+            { d: 'M13 8h8M13 12h8M13 16h8' },
+        ],
+
+        left:  [{ d: 'M14 4 5 12l9 8z', fill: true }],
+        right: [{ d: 'M10 4l9 8-9 8z', fill: true }],
+
+        fuel:  [{ d: 'M4 21V5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v16M3 21h12M5 11h7M16 9v6a2 2 0 0 0 4 0V9l-3-3' }],
+        brake: [{ d: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16M12 8v5M12 15.6v.8M2 8c-1.4 2.6-1.4 5.4 0 8M22 8c1.4 2.6 1.4 5.4 0 8' }],
     };
 
+    /*
+        The lamp colour, per tell-tale, fixed rather than themed.
+
+        A blue main-beam lamp is blue in every car ever built, and a red warning is red. These
+        do NOT follow the player's accent colour: the whole value of the symbols is that they
+        mean the same thing everywhere, and a pink low-fuel light means nothing to anybody.
+    */
+    const CHIP_LAMPS = {
+        // A real car has no "belt fastened" lamp, only a red "belt undone" one. This HUD shows
+        // both states on purpose - green fastened, red undone - because in a game you cannot
+        // feel the strap, and a lamp that is dark whether you are belted or not answers
+        // nothing. So the resting colour is GREEN and the fault state turns it red.
+        belt: 'green',
+        door: 'red', bonnet: 'red', brake: 'red',
+        engine: 'green', fuel: 'amber',
+        lights: 'green', left: 'green', right: 'green', cruise: 'green',
+        beam: 'blue',
+        nitro: 'accent', harness: 'accent',
+        // Wear lamps. They only ever appear as a fault, so the resting colour never shows.
+        brakes: 'red', radiator: 'red', electronics: 'red', injector: 'red',
+        clutch: 'amber', transmission: 'amber', axle: 'amber', suspension: 'amber',
+    };
+
+    // The wear lamps, in the order a driver would want to know about them: stop first, then
+    // things that will strand you, then things that are merely getting worse.
+    const WEAR_CHIPS = [
+        'brakes', 'radiator', 'injector', 'electronics',
+        'clutch', 'transmission', 'axle', 'suspension',
+    ];
+
     function chip(name) {
-        return U.make('div', { class: 'spd-chip', 'data-chip': name, hidden: 'hidden' }, [
-            U.svg('svg', { viewBox: '0 0 24 24' }, [U.svg('path', { d: CHIP_ICONS[name] || '' })]),
-        ]);
+        const parts = (CHIP_ICONS[name] || []).map((part) => U.svg('path', {
+            d: part.d,
+            class: part.fill ? 'spd-chip__solid' : '',
+        }));
+
+        return U.make('div', {
+            class: 'spd-chip',
+            'data-chip': name,
+            'data-lamp': CHIP_LAMPS[name] || 'green',
+            hidden: 'hidden',
+        }, [U.svg('svg', { viewBox: '0 0 24 24' }, parts)]);
     }
 
     const digits = (cls) => U.make('span', { class: cls, text: '0' });
@@ -555,7 +637,18 @@ const Speedo = (() => {
     // The warnings come first, left to right, because that is the order a driver scans in and
     // the two that matter - a door not shut and a belt not fastened - should never be at the
     // end of a row of decorations.
-    const CHIP_ORDER = ['belt', 'door', 'bonnet', 'cruise', 'nitro', 'harness', 'engine', 'lights'];
+    //
+    // The indicators sit at the two ends, the way they do on a dashboard, so a glance at the
+    // left of the row means "turning left" without reading anything.
+    const CHIP_ORDER = [
+        'left',
+        'belt', 'door', 'bonnet', 'brake', 'fuel', 'engine',
+        'brakes', 'radiator', 'injector', 'electronics',
+        'clutch', 'transmission', 'axle', 'suspension',
+        'cruise', 'nitro', 'harness',
+        'lights', 'beam',
+        'right',
+    ];
 
     function buildChips() {
         const node = U.make('div', { class: 'spd-chips' }, CHIP_ORDER.map(chip));
@@ -791,8 +884,49 @@ const Speedo = (() => {
         showChip(chips.harness, options.harness && data.hasHarness, true);
         showChip(chips.engine, options.engine && !data.bicycle,
             data.engine > 60, data.engine < 25);
-        showChip(chips.lights, !data.bicycle,
-            data.lights && data.lights.on, data.lights && (data.lights.left || data.lights.right));
+
+        // The handbrake, and the low-fuel lamp at the reserve mark. Both appear only when they
+        // have something to say, which is the whole point of a warning lamp.
+        showChip(chips.brake, !data.bicycle && data.handbrake === true, false, true);
+        showChip(chips.fuel, options.fuel && !data.bicycle && data.fuel <= 15, false, true);
+        U.attr(chips.fuel, 'data-flash', data.fuel <= 5);
+
+        /*
+            Mechanical wear, from whichever mechanic script is installed.
+
+            A worn part lights its lamp; a healthy one shows nothing at all. That is not the
+            same rule as the seatbelt, and deliberately: a dashboard that permanently displays
+            eight healthy components is a dashboard nobody scans. `data.parts` is nil on a
+            server with no mechanic script, so every one of these stays hidden and the row is
+            exactly what it was before.
+        */
+        const parts = data.parts || {};
+        const worn = data.partWarning === undefined ? 50 : data.partWarning;
+        for (const key of WEAR_CHIPS) {
+            const level = parts[key];
+            const bad = typeof level === 'number' && level < worn;
+            showChip(chips[key], options.parts !== false && !data.bicycle && bad, false, true);
+            // Below half of the warning threshold it is not "wearing", it is about to fail.
+            U.attr(chips[key], 'data-flash', bad && level < worn / 2);
+        }
+
+        /*
+            The lights.
+
+            Dipped beam is shown the whole time you are in a car, lit or not, because "are my
+            lights on" is a question you ask in the dark and an absent symbol cannot answer it.
+            Main beam and the indicators appear only while they are ON - a permanently dim
+            main-beam lamp is clutter, and a dim indicator arrow is a lie.
+        */
+        const lights = data.lights || {};
+        showChip(chips.lights, !data.bicycle, lights.on === true);
+        showChip(chips.beam, !data.bicycle && lights.high === true, true);
+
+        showChip(chips.left, !data.bicycle && lights.left === true, true);
+        showChip(chips.right, !data.bicycle && lights.right === true, true);
+        // Indicators blink. A steady arrow does not read as an indicator.
+        U.attr(chips.left, 'data-flash', lights.left === true);
+        U.attr(chips.right, 'data-flash', lights.right === true);
 
         U.show(refs.chipRow, !data.bicycle);
     }

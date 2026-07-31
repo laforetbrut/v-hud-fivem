@@ -324,7 +324,7 @@ function Settings.sanitise(input)
         out.speedometer.style = base.speedometer.style
     end
     for _, key in ipairs({ 'fuel', 'rpm', 'gear', 'engine', 'belt', 'nitro', 'harness',
-                           'altitude', 'range', 'odometer' }) do
+                           'altitude', 'range', 'odometer', 'parts' }) do
         out.speedometer[key] = out.speedometer[key] == true
     end
 

@@ -238,7 +238,34 @@
        Startup
        ------------------------------------------------------------------------------------ */
 
+    /*
+        Is the page CEF actually loaded the page on disk?
+
+        FiveM's CEF caches NUI assets by URL and does not drop them when a resource restarts.
+        The stylesheets and scripts work around that with a per-load token (see the note in
+        index.html), but index.html ITSELF is fetched by a fixed URL and has no such escape.
+        So a change to index.html - a new script in the list, a new element - can be invisible
+        after `restart v-hud`, and everything that depended on it silently does nothing.
+
+        That failure has no symptom of its own, which is the worst kind. So it is checked: if a
+        module the page is supposed to have loaded is missing, say so, loudly, with the fix.
+    */
+    function checkModules() {
+        const required = {
+            U: typeof U, S: typeof S, Status: typeof Status, Speedo: typeof Speedo,
+            Compass: typeof Compass, Toast: typeof Toast, Sound: typeof Sound,
+            Layout: typeof Layout, Menu: typeof Menu,
+        };
+
+        const missing = Object.keys(required).filter((k) => required[k] === 'undefined');
+        if (!missing.length) return;
+
+        console.error('[v-hud] missing modules:', missing.join(', '));
+        U.post('stalePage', { missing });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+        checkModules();
         Menu.bind();
         Layout.bind();
         Toast.configure();
@@ -247,6 +274,7 @@
     // DOMContentLoaded has usually already fired by the time a NUI page's scripts run, so
     // binding is also attempted immediately. Both paths are idempotent.
     if (document.readyState !== 'loading') {
+        checkModules();
         Menu.bind();
         Layout.bind();
         Toast.configure();

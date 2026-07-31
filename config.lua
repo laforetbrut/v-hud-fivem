@@ -810,6 +810,54 @@ Config.Compat = {
     nitroStateBags = { 'noslevel', 'noslevel:level', 'jimNos' },
     nitroHasBags = { 'hasnitro', 'jimHasNos' },
 
+    -- ---------------------------------------------------------------------------------
+    -- Mechanical wear, for the dashboard tell-tales
+    -- ---------------------------------------------------------------------------------
+    --
+    -- A real cluster warns you about the brakes, the coolant and the driveline. GTA tracks
+    -- none of that, so it comes from whichever mechanic script is installed - or from nowhere,
+    -- in which case those lamps simply never light.
+    --
+    -- Turn the whole thing off here if you do not run a mechanic script and want the tick a
+    -- little cheaper.
+    parts = true,
+
+    -- How often the plate-keyed callback below is re-asked, in milliseconds. Wear changes when
+    -- a mechanic works on the car, not while you drive, so this can be slow.
+    partsRefresh = 30000,
+
+    -- Vehicle STATE BAGS to read first, per part. Free, current, and no round trip - this is
+    -- how a mechanic script publishes wear when it wants other resources to see it.
+    --
+    -- The part names on the left are this HUD's; the bag names on the right are whatever your
+    -- script writes. Add yours to the list rather than replacing it: the first bag that holds
+    -- a number wins, and an unknown bag costs nothing.
+    partBags = {
+        brakes       = { 'brakes', 'jimBrakes', 'vehicleBrakes' },
+        clutch       = { 'clutch', 'jimClutch' },
+        radiator     = { 'radiator', 'jimRadiator', 'coolant' },
+        axle         = { 'axle', 'jimAxle', 'driveshaft' },
+        injector     = { 'fuel', 'injector', 'jimInjector', 'fuelPump' },
+        transmission = { 'transmission', 'jimTransmission', 'gearbox' },
+        electronics  = { 'electronics', 'battery', 'jimBattery' },
+        suspension   = { 'suspension', 'jimSuspension' },
+    },
+
+    -- Fallback: a framework callback keyed on the number plate.
+    --
+    -- qb-mechanicjob keeps its wear table server-side in `vehicleComponents[plate]` and this
+    -- is the only way in. Its parts are radiator, axle, brakes, clutch and fuel - checked
+    -- against an installed copy, not guessed.
+    --
+    -- Set to nil if your mechanic script publishes state bags only.
+    partsCallback = {
+        resource = 'qb-mechanicjob',
+        name = 'qb-mechanicjob:server:getVehicleStatus',
+    },
+
+    -- Below this percentage a part's warning lamp lights.
+    partWarning = 50,
+
     -- Answer the qb-hud events so that every stock qb resource keeps working with this HUD
     -- installed and qb-hud stopped. Turn off only if you still run qb-hud alongside, which
     -- is not a supported configuration.
@@ -1166,6 +1214,7 @@ Config.Defaults = {
         altitude = true,
         range = true,            -- remaining range, when the fuel provider can work it out
         odometer = true,         -- total distance, see Config.Odometer
+        parts = true,            -- wear lamps from the mechanic script, see Config.Compat.parts
     },
 
     compass = {

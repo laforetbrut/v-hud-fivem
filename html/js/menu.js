@@ -464,6 +464,7 @@ const Menu = (() => {
                     toggle('speedometer.nitro', S.t('speedo.nitro')),
                     toggle('speedometer.harness', S.t('speedo.harness')),
                     toggle('speedometer.altitude', S.t('speedo.altitude')),
+                    toggle('speedometer.parts', S.t('speedo.parts'), S.t('speedo.parts_help')),
                 ]),
             ];
         },

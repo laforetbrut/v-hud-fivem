@@ -123,6 +123,11 @@ function Vehicle.read(vehicle, settings)
         hasHarness = Vehicle.harness,
         lights = lights(vehicle),
         doors = doors(vehicle),
+        handbrake = GetVehicleHandbrake(vehicle) == true,
+        -- Per-part wear from whichever mechanic script is installed, or nil. Drives the
+        -- brake, coolant, driveline and battery tell-tales.
+        parts = Compat.vehicleParts(vehicle),
+        partWarning = Config.Compat.partWarning or 50,
         -- Total distance this vehicle has covered. nil when nothing is tracking it, which
         -- hides the readout rather than printing a zero on every car in the city.
         odometer = Odometer and Odometer.display(vehicle, settings.units) or nil,

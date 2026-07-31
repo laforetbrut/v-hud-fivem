@@ -50,6 +50,25 @@ All notable changes to v-hud are documented here.
   the NUI page with Web Audio rather than streamed, so there is no audio file to ship and the
   length is an exact cap. Configurable in `Config.Alerts.growl`.
 
+- **Full dashboard tell-tales** — Twenty-one warning lamps drawn as the symbols a real
+  cluster uses, so none of them need a legend: dipped beam with its rays slanting down and main
+  beam with them straight, solid triangles for the indicators, handbrake, low fuel, seatbelt,
+  door, bonnet, engine, cruise, nitrous and harness. Lamp colours are fixed rather than themed —
+  a main-beam lamp is blue in every car ever built, and a pink low-fuel light means nothing to
+  anybody. Sized to be read from a driving seat: 38x32 with a 23px glyph, and the unlit state
+  carries enough contrast to be identified before it comes on.
+- **Mechanical warning lamps** — Brakes, coolant, injector, battery, clutch, transmission,
+  axle and suspension, read from whichever mechanic script is installed. Vehicle state bags
+  first, then a plate-keyed framework callback; qb-mechanicjob's is wired up by default and was
+  checked against an installed copy. Each lamp appears only when that part is worn, and a
+  server with no mechanic script shows none of them. Configured in `Config.Compat.partBags` /
+  `partsCallback`, and the player can turn the whole set off.
+- **Stale-page detector** — FiveM's CEF caches NUI pages by URL and does not drop them on
+  `restart`. The stylesheets and scripts already work around that with a per-load token, but
+  `index.html` itself cannot, so a change to it can be invisible until the game client is
+  restarted — silently, with no symptom. The page now checks that every module it expects
+  actually loaded and prints what is missing and what to do about it.
+
 ### Fixed
 
 - **Blank speedometer cards in the settings menu** — Two independent causes. The preview
@@ -82,7 +101,8 @@ All notable changes to v-hud are documented here.
   `flex: 1` and grew to 204px tall on a 244px face with the speed printed inside it. Verified
   by measurement across all ten faces at three speeds: no overlaps, nothing escaping a face.
 - **Warning tell-tales too small to read** — 24x20 with a 13px glyph made a row of indistinct
-  smudges. Now 32x27 with a 19px glyph and a heavier stroke.
+  smudges. Now 38x32 with a 23px glyph, a heavier stroke, and an unlit state with enough
+  contrast to be identified before the lamp comes on.
 - **Door chime removed by default** — A door that reads as open is usually a broken door, and
   a chime the player cannot silence by driving properly is one that trains them to ignore
   every other warning.
@@ -146,6 +166,27 @@ All notable changes to v-hud are documented here.
   ne déclenche jamais. Synthétisé par la page NUI en Web Audio plutôt que streamé : aucun
   fichier audio à livrer et la durée est une borne exacte. Réglable dans `Config.Alerts.growl`.
 
+- **Témoins de bord complets** — Vingt et un témoins dessinés avec les symboles d'un vrai
+  tableau de bord, donc aucun n'a besoin de légende : feux de croisement aux rayons inclinés,
+  pleins phares aux rayons droits, triangles pleins pour les clignotants, frein à main, réserve
+  de carburant, ceinture, porte, capot, moteur, régulateur, nitro et harnais. Les couleurs sont
+  fixes et non thématisées : un témoin de pleins phares est bleu dans toutes les voitures du
+  monde, et une réserve de carburant rose ne veut rien dire. Dimensionnés pour être lus depuis
+  le siège conducteur : 38x32 avec un pictogramme de 23 px, et l'état éteint garde assez de
+  contraste pour être identifié avant de s'allumer.
+- **Témoins mécaniques** — Freins, refroidissement, injecteur, batterie, embrayage, boîte,
+  transmission et suspension, lus depuis le script de mécanique installé. State bags du
+  véhicule d'abord, puis un callback serveur indexé sur la plaque ; celui de qb-mechanicjob est
+  câblé par défaut et a été vérifié sur une copie installée. Chaque témoin n'apparaît que si la
+  pièce est usée, et un serveur sans script de mécanique n'en affiche aucun. Réglable dans
+  `Config.Compat.partBags` / `partsCallback`, et le joueur peut tout désactiver.
+- **Détection de page périmée** — Le CEF de FiveM met les pages NUI en cache par URL et ne les
+  libère pas au `restart`. Les feuilles de style et les scripts contournent déjà cela avec un
+  jeton par chargement, mais `index.html` lui-même ne le peut pas : une modification de ce
+  fichier peut rester invisible jusqu'au redémarrage du client, silencieusement et sans
+  symptôme. La page vérifie désormais que tous ses modules ont bien été chargés et signale ce
+  qui manque ainsi que la marche à suivre.
+
 ### Correctifs
 
 - **Cartes de compteur vides dans le menu** — Deux causes indépendantes. Les aperçus étaient
@@ -181,7 +222,8 @@ All notable changes to v-hud are documented here.
   244 px, avec la vitesse imprimée dedans. Vérifié par mesure sur les dix faces à trois
   vitesses : aucun chevauchement, rien qui déborde.
 - **Témoins d'alerte illisibles** — 24x20 avec un pictogramme de 13 px donnait une rangée de
-  taches indistinctes. Désormais 32x27 avec un pictogramme de 19 px et un trait plus épais.
+  taches indistinctes. Désormais 38x32 avec un pictogramme de 23 px, un trait plus épais et un
+  état éteint assez contrasté pour être identifié avant que le témoin s'allume.
 - **Alerte sonore de porte retirée par défaut** — Une porte signalée ouverte est le plus
   souvent une porte cassée, et une alerte qu'on ne peut pas faire taire en conduisant
   correctement apprend à ignorer toutes les autres.

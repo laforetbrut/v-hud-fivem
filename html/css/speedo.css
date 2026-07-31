@@ -391,48 +391,91 @@
    lamps are the biggest icons on the panel for exactly this reason. The dim state also carries
    more contrast now - an unlit lamp still has to be identifiable, or the player cannot tell
    which one just came on. */
+/*
+    Sized to be read at a glance from a driving seat, not to be tidy.
+
+    A real cluster's warning lamps are the biggest icons on the panel, and for the same reason:
+    they are the only thing you look at while doing something else. At 24x20 with a 13px glyph
+    these were a row of indistinct smudges - a seatbelt and a handbrake are different shapes,
+    but not at 13px over a moving road.
+*/
 .spd-chip {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 27px;
-    background: var(--c-panel);
+    width: 38px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.45);
     border: 1px solid var(--c-line-strong);
     border-radius: var(--radius);
-    color: var(--c-muted);
-    transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+    /* Unlit, but still identifiable. A lamp you cannot recognise until it comes on is a lamp
+       that tells you nothing when it does. */
+    color: rgba(255, 255, 255, 0.42);
+    transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+                background var(--t-fast) var(--ease);
 }
 
 .spd-chip svg {
-    width: 19px;
-    height: 19px;
+    width: 23px;
+    height: 23px;
     /* The glyphs are stroked, and a hairline stroke is what made them mush. */
     stroke-width: 1.9;
 }
 
+/* Parts of a symbol that are a solid body rather than a line: the headlamp housing, the
+   indicator arrows. */
+.spd-chip svg .spd-chip__solid {
+    fill: currentColor;
+    stroke: none;
+}
+
+/*
+    Lamp colours, fixed rather than themed.
+
+    A main-beam lamp is blue in every car ever built and a warning is red. These deliberately
+    do NOT follow the player's accent colour: the entire value of these symbols is that they
+    mean the same thing in every vehicle, and a pink low-fuel light means nothing to anybody.
+*/
+.spd-chip[data-lamp="green"]  { --lamp: 63, 217, 104; }
+.spd-chip[data-lamp="blue"]   { --lamp: 86, 168, 255; }
+.spd-chip[data-lamp="amber"]  { --lamp: 255, 176, 32; }
+.spd-chip[data-lamp="red"]    { --lamp: 255, 77, 77; }
+
 .spd-chip[data-on="true"] {
-    color: var(--c-health);
-    border-color: var(--c-health-a55);
+    color: rgb(var(--lamp, 63, 217, 104));
+    border-color: rgba(var(--lamp, 63, 217, 104), 0.7);
+    background: rgba(var(--lamp, 63, 217, 104), 0.16);
+    box-shadow: 0 0 12px rgba(var(--lamp, 63, 217, 104), 0.45);
+}
+
+/* The accent lamps are the two that are not a real car's: nitrous and the harness. Those do
+   follow the theme, because there is no convention to break. */
+.spd-chip[data-lamp="accent"][data-on="true"],
+.spd-chip[data-armed="true"] {
+    color: var(--c-accent);
+    border-color: var(--c-accent-a55);
+    background: var(--c-accent-a18);
     box-shadow: var(--glow);
 }
 
-/* A warning state is RED and steady. It only blinks once it is urgent - `data-flash` - so a
-   belt left unfastened while parked is visible without being nagging, and the same chip
-   demands attention the moment the car is moving. */
+/* A fault is RED and steady, whatever the lamp's resting colour. It only blinks once it is
+   urgent - `data-flash` - so a belt left unfastened while parked is visible without being
+   nagging, and the same lamp demands attention the moment the car is moving. */
 .spd-chip[data-alert="true"] {
-    color: var(--c-warning);
-    border-color: var(--c-warning-a60);
-    background: var(--c-warning-a20);
+    color: rgb(255, 90, 90);
+    border-color: rgba(255, 90, 90, 0.7);
+    background: rgba(255, 60, 60, 0.2);
+    box-shadow: 0 0 12px rgba(255, 60, 60, 0.45);
 }
 
 .spd-chip[data-flash="true"] {
     animation: spd-alert 0.8s steps(2, end) infinite;
 }
 
-.spd-chip[data-armed="true"] {
-    color: var(--c-accent);
-    border-color: var(--c-accent-a55);
+/* The indicators blink at a car's rate, not at the warning rate. */
+.spd-chip[data-chip="left"][data-flash="true"],
+.spd-chip[data-chip="right"][data-flash="true"] {
+    animation-duration: 0.9s;
 }
 
 @keyframes spd-alert {

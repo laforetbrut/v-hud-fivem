@@ -346,6 +346,19 @@ callback('close', function()
     State.closeMenu()
 end)
 
+-- The page loaded, but not all of it. See the note beside checkModules() in html/js/app.js:
+-- CEF caches index.html by URL and does not drop it on a resource restart, so a change to the
+-- script list there can be invisible until the game client itself is restarted. Printed rather
+-- than debug-logged, because the whole point is that this failure is otherwise silent.
+callback('stalePage', function(data)
+    local missing = type(data.missing) == 'table' and table.concat(data.missing, ', ') or '?'
+
+    HUD.warn(('The HUD page is running an OLD copy of html/index.html - these modules did not ' ..
+        'load: %s. FiveM caches NUI pages by URL and does not drop them on `restart`. ' ..
+        'Restart the GAME CLIENT once and it will pick up the new page. Stylesheets and ' ..
+        'scripts do not need this; only index.html itself.'):format(missing))
+end)
+
 callback('setPath', function(data)
     if type(data.path) ~= 'string' then return end
     State.setPath(data.path, data.value)
