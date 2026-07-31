@@ -1,0 +1,576 @@
+/*
+    css/speedo.css
+
+    Ten instrument clusters, all modelled on a real one.
+
+    The shared vocabulary is at the top - scale arc, tick, numeral, needle, redline, strip
+    gauge - and every face below is a layout over those parts. That is what keeps ten of them
+    coherent: a numeral is the same numeral on the truck and on the supercar, and a needle
+    behaves the same way everywhere.
+
+        minimal  classic  sport  digital  luxury  jdm  muscle  supercar  truck  retro
+*/
+
+.speedo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+}
+
+.speedo[data-on="true"] {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.spd-body {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-speed);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.spd-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* =======================================================================================
+   Shared instrument parts
+   ======================================================================================= */
+
+/* The arc the graduations hang from. Without it the ticks float and the thing stops reading
+   as a dial. */
+.spd-scale {
+    fill: none;
+    stroke: var(--c-line-strong);
+    stroke-width: 1;
+}
+
+.spd-tick {
+    stroke: var(--c-muted);
+    stroke-width: 1.2;
+    stroke-linecap: butt;
+}
+
+.spd-tick--major {
+    stroke: var(--c-text);
+    stroke-width: 2.2;
+}
+
+.spd-numeral {
+    fill: var(--c-text);
+    stroke: none;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.9;
+}
+
+.spd-facelabel {
+    fill: var(--c-muted);
+    stroke: none;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+/* The red zone. Drawn under the graduations so the numbers stay readable over it. */
+.spd-redline {
+    fill: none;
+    stroke: var(--c-rpm);
+    stroke-width: 5;
+    opacity: 0.75;
+}
+
+.spd-needle {
+    stroke: var(--c-warning);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    /* 90ms, not a spring: an instrument needle that overshoots is a toy. This is roughly the
+       damping of a real electric gauge. */
+    transition: transform 90ms linear;
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--c-warning) 60%, transparent));
+}
+
+.spd-needle--rpm    { stroke: var(--c-rpm); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--c-rpm) 60%, transparent)); }
+.spd-needle--thin   { stroke: var(--c-accent); stroke-width: 1.6; }
+.spd-needle--classic{ stroke: #b3261e; filter: none; }
+
+.spd-hub {
+    fill: var(--c-text);
+    stroke: none;
+}
+
+.spd-face {
+    fill: var(--c-panel);
+    stroke: var(--c-line);
+    stroke-width: 1;
+}
+
+.spd-bezel {
+    fill: none;
+    stroke: var(--c-line-strong);
+    stroke-width: 3;
+}
+
+.spd-panel {
+    fill: var(--c-panel);
+    stroke: var(--c-line);
+    stroke-width: 1;
+}
+
+.spd-arc-track { fill: none; stroke: var(--c-track); stroke-width: 4; stroke-linecap: round; }
+.spd-arc-fill  { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round;
+                 transition: stroke-dashoffset var(--t-fast) linear; }
+
+.spd-arc--fuel  { stroke: var(--c-fuel); }
+.spd-arc--speed { stroke: var(--c-speed); }
+
+.hud[data-glow="true"] .spd-arc-fill { filter: drop-shadow(0 0 5px currentColor); }
+
+/* Readouts ------------------------------------------------------------------------------ */
+
+.spd-centre {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.spd-centre--between { flex-direction: row; align-items: baseline; gap: 12px; }
+.spd-centre--low     { margin-top: 46%; }
+.spd-centre--muscle  { margin-top: 8%; }
+
+.spd-readout {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.spd-value {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    color: var(--c-speed);
+    font-variant-numeric: tabular-nums;
+}
+
+.spd-value--xl  { font-size: 44px; }
+.spd-value--lcd { font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 0.06em; }
+
+.spd-unit {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--c-muted);
+}
+
+.spd-gear {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--c-accent);
+    text-shadow: var(--glow);
+}
+
+.spd-range {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--c-muted);
+}
+
+.spd-range:empty { display: none; }
+
+.spd-subrow { display: flex; align-items: baseline; gap: 8px; }
+.spd-foot   { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.spd-side   { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.spd-main   { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; width: 100%; }
+
+/* Strip gauges: E-F for fuel, C-H for coolant. Both marked, like the real thing. */
+.spd-strips { display: flex; gap: 12px; width: 100%; }
+
+.spd-strip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    min-width: 74px;
+}
+
+.spd-strip__cap {
+    font-size: 8px;
+    font-weight: 800;
+    color: var(--c-muted);
+}
+
+.spd-track {
+    background: var(--c-track);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.spd-strip__track { flex: 1; height: 3px; }
+
+.spd-fill {
+    height: 100%;
+    background: var(--c-fuel);
+    box-shadow: var(--glow);
+    transition: width var(--t-fast) linear;
+}
+
+.spd-strip--temp .spd-fill { background: var(--c-thirst); }
+
+/* Chips ---------------------------------------------------------------------------------- */
+
+.spd-chips { display: flex; gap: 5px; justify-content: flex-end; }
+
+.spd-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 20px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    color: var(--c-muted);
+    transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+
+.spd-chip svg { width: 13px; height: 13px; }
+
+.spd-chip[data-on="true"] {
+    color: var(--c-health);
+    border-color: color-mix(in srgb, var(--c-health) 55%, transparent);
+    box-shadow: var(--glow);
+}
+
+.spd-chip[data-alert="true"] {
+    color: var(--c-warning);
+    border-color: color-mix(in srgb, var(--c-warning) 60%, transparent);
+    animation: spd-alert 0.8s steps(2, end) infinite;
+}
+
+.spd-chip[data-armed="true"] {
+    color: var(--c-accent);
+    border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+}
+
+@keyframes spd-alert {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+}
+
+/* Segmented rev displays ------------------------------------------------------------------ */
+
+.spd-revbar { display: flex; gap: 1.5px; height: 7px; width: 100%; }
+
+.spd-revbar__seg {
+    flex: 1;
+    background: var(--c-track);
+    border-radius: 1px;
+    transition: background 60ms linear, box-shadow 60ms linear;
+}
+
+.spd-revbar__seg[data-lit="true"]                  { background: var(--c-accent); box-shadow: var(--glow); }
+.spd-revbar__seg[data-zone="mid"][data-lit="true"] { background: var(--c-fuel); }
+.spd-revbar__seg[data-zone="red"][data-lit="true"] { background: var(--c-rpm); }
+
+.spd-revscale {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 7px;
+    font-weight: 700;
+    color: var(--c-muted);
+}
+
+.spd-body[data-limiter="true"] .spd-revbar__seg[data-zone="red"] {
+    animation: spd-alert 0.12s steps(2, end) infinite;
+}
+
+/* =======================================================================================
+   1. minimal - digital number over a graduated speed arc
+   ======================================================================================= */
+
+.spd-body[data-style="minimal"] {
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 5px;
+    width: 220px;
+    height: 118px;
+    padding: 8px 16px 10px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+}
+
+.spd-body[data-style="minimal"] .spd-svg { inset: -6px 0 auto 0; height: 96px; }
+.spd-body[data-style="minimal"] .spd-centre { margin-top: 30px; }
+.spd-body[data-style="minimal"] .spd-strip { width: 100%; }
+
+/* =======================================================================================
+   2. classic - chrome bezel, cream face, red needle
+   ======================================================================================= */
+
+.spd-body[data-style="classic"] { width: 168px; height: 168px; }
+
+.spd-body[data-style="classic"] .spd-bezel { stroke: url(#chromeGradient); stroke-width: 6; }
+.spd-body[data-style="classic"] .spd-face  { fill: #f2ece0; stroke: #2b2b2b; }
+.spd-body[data-style="classic"] .spd-scale { stroke: #6b6257; }
+.spd-body[data-style="classic"] .spd-tick  { stroke: #4a463f; }
+.spd-body[data-style="classic"] .spd-tick--major { stroke: #1f1d1a; }
+.spd-body[data-style="classic"] .spd-numeral { fill: #1f1d1a; opacity: 1; }
+.spd-body[data-style="classic"] .spd-facelabel { fill: #6b6257; }
+.spd-body[data-style="classic"] .spd-hub { fill: #2b2b2b; }
+.spd-body[data-style="classic"] .spd-arc-track { stroke: rgba(0,0,0,0.12); }
+.spd-body[data-style="classic"] .spd-arc--fuel { stroke: #8a6a2f; }
+
+.spd-body[data-style="classic"] .spd-centre { margin-top: 52%; text-shadow: none; }
+.spd-body[data-style="classic"] .spd-value { font-size: 19px; color: #1f1d1a; }
+.spd-body[data-style="classic"] .spd-unit  { color: #6b6257; }
+.spd-body[data-style="classic"] .spd-gear  { color: #b3261e; text-shadow: none; }
+
+/* =======================================================================================
+   3. sport - twin dials, tacho left, speedo right
+   ======================================================================================= */
+
+.spd-body[data-style="sport"] {
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    width: 280px;
+    height: 186px;
+    padding: 0 14px 10px;
+}
+
+.spd-body[data-style="sport"] .spd-svg { inset: 0 0 auto 0; height: 156px; }
+.spd-body[data-style="sport"] .spd-centre--between { margin-bottom: 2px; }
+.spd-body[data-style="sport"] .spd-value { font-size: 24px; }
+
+/* =======================================================================================
+   4. digital - modern cluster, rev bar over big numerals
+   ======================================================================================= */
+
+.spd-body[data-style="digital"] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    width: 246px;
+    padding: 10px 14px 12px;
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--c-bg) 94%, #000) 0%,
+        color-mix(in srgb, var(--c-bg) 76%, #000) 100%);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+}
+
+.spd-body[data-style="digital"] .spd-svg { display: none; }
+.spd-body[data-style="digital"] .spd-main { margin-top: 2px; }
+
+/* =======================================================================================
+   5. luxury - thin finely graduated ring
+   ======================================================================================= */
+
+.spd-body[data-style="luxury"] { width: 184px; height: 184px; }
+
+.spd-body[data-style="luxury"] .spd-scale { stroke: color-mix(in srgb, var(--c-accent) 40%, transparent); }
+.spd-body[data-style="luxury"] .spd-tick { stroke-width: 0.9; }
+.spd-body[data-style="luxury"] .spd-tick--major { stroke-width: 1.8; stroke: var(--c-accent); }
+.spd-body[data-style="luxury"] .spd-numeral { font-weight: 400; opacity: 0.75; }
+.spd-body[data-style="luxury"] .spd-centre { margin-top: 50%; }
+.spd-body[data-style="luxury"] .spd-value { font-size: 34px; font-weight: 300; }
+
+/* =======================================================================================
+   6. jdm - tachometer first, digital speed inset
+   ======================================================================================= */
+
+.spd-body[data-style="jdm"] { width: 192px; height: 200px; }
+
+.spd-body[data-style="jdm"] .spd-numeral { font-size: 11px; font-weight: 700; }
+.spd-body[data-style="jdm"] .spd-value { font-size: 26px; }
+
+.spd-shift {
+    position: absolute;
+    top: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px 9px;
+    border-radius: 2px;
+    background: var(--c-rpm);
+    color: #fff;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    opacity: 0;
+    transition: opacity 80ms linear;
+}
+
+.spd-shift[data-on="true"] {
+    opacity: 1;
+    animation: spd-alert 0.16s steps(2, end) infinite;
+    box-shadow: 0 0 14px var(--c-rpm);
+}
+
+/* =======================================================================================
+   7. muscle - three gauges in a chrome-rimmed panel
+   ======================================================================================= */
+
+.spd-body[data-style="muscle"] { width: 296px; height: 168px; }
+
+.spd-body[data-style="muscle"] .spd-bezel { stroke: url(#chromeGradient); stroke-width: 4; }
+.spd-body[data-style="muscle"] .spd-bezel--thin { stroke-width: 3; }
+.spd-body[data-style="muscle"] .spd-panel { fill: color-mix(in srgb, var(--c-bg) 88%, #000); }
+.spd-body[data-style="muscle"] .spd-value { font-size: 22px; }
+
+/* =======================================================================================
+   8. supercar - shift lights over a central rev ring
+   ======================================================================================= */
+
+.spd-body[data-style="supercar"] {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 208px;
+    height: 244px;
+    padding-top: 4px;
+}
+
+.spd-body[data-style="supercar"] .spd-svg { inset: 22px 0 auto 0; height: 208px; }
+.spd-body[data-style="supercar"] .spd-centre { margin-top: 74px; }
+
+.spd-lights {
+    display: flex;
+    gap: 4px;
+    z-index: 3;
+}
+
+.spd-light {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--c-track);
+    transition: background 50ms linear, box-shadow 50ms linear;
+}
+
+.spd-light[data-lit="true"]                  { background: var(--c-health); box-shadow: 0 0 8px var(--c-health); }
+.spd-light[data-zone="mid"][data-lit="true"] { background: var(--c-fuel);   box-shadow: 0 0 8px var(--c-fuel); }
+.spd-light[data-zone="red"][data-lit="true"] { background: var(--c-rpm);    box-shadow: 0 0 10px var(--c-rpm); }
+
+.spd-body[data-style="supercar"][data-limiter="true"] .spd-light {
+    animation: spd-alert 0.1s steps(2, end) infinite;
+}
+
+.spd-body[data-style="supercar"] .spd-strip { width: 140px; }
+
+/* =======================================================================================
+   9. truck - four instruments, everything legible from a high seat
+   ======================================================================================= */
+
+.spd-body[data-style="truck"] {
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 5px;
+    width: 298px;
+    height: 214px;
+    padding: 0 16px 10px;
+}
+
+.spd-body[data-style="truck"] .spd-svg { inset: 0 0 auto 0; height: 176px; }
+.spd-body[data-style="truck"] .spd-face { fill: color-mix(in srgb, var(--c-bg) 92%, #000); }
+.spd-body[data-style="truck"] .spd-numeral { font-weight: 700; }
+.spd-body[data-style="truck"] .spd-value { font-size: 22px; }
+
+/* =======================================================================================
+   10. retro - 1980s LCD bar graph
+   ======================================================================================= */
+
+.spd-body[data-style="retro"] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    width: 252px;
+    padding: 10px 14px 12px;
+    background: linear-gradient(180deg, #0a1410 0%, #060d0a 100%);
+    border: 1px solid color-mix(in srgb, var(--c-accent) 30%, transparent);
+    border-radius: var(--radius);
+}
+
+.spd-body[data-style="retro"] .spd-svg { display: none; }
+
+.spd-lcd {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.spd-lcd__ghost {
+    position: absolute;
+    right: 34px;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.spd-body[data-style="retro"] .spd-value {
+    font-size: 34px;
+    color: var(--c-accent);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+
+.spd-ladder { display: flex; gap: 2px; height: 12px; }
+
+.spd-ladder__bar {
+    flex: 1;
+    background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+    transform: skewX(-12deg);
+    transition: background 50ms linear, box-shadow 50ms linear;
+}
+
+.spd-ladder__bar[data-lit="true"] {
+    background: var(--c-accent);
+    box-shadow: 0 0 7px var(--c-accent);
+}
+
+.spd-ladderscale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 7px;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--c-accent) 60%, transparent);
+}
+
+.spd-body[data-style="retro"] .spd-gear { color: var(--c-accent); }
+.spd-body[data-style="retro"] .spd-strip { max-width: 96px; }
+
+/* =======================================================================================
+   The menu preview reuses the same faces, scaled to fit a card
+   ======================================================================================= */
+
+.spd-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 132px;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.spd-preview .spd-body {
+    transform: scale(var(--preview-scale, 0.62));
+    transform-origin: center;
+    flex: none;
+}

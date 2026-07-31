@@ -1,0 +1,119 @@
+/*
+    css/reset.css
+
+    Only what a NUI page actually needs. A full reset is dead weight here: there is no user
+    agent stylesheet worth fighting in CEF beyond the margin, the box model and the fact that
+    a NUI page must never, ever show a scrollbar or accept a click it was not given.
+*/
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    /* The page is drawn over the game. A stray selection highlight or a drag ghost is a bug
+       the player sees, so both are off everywhere and re-enabled on the two inputs that need
+       them. */
+    user-select: none;
+    -webkit-user-drag: none;
+    font-family: 'Inter', 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-text, #f8fafc);
+}
+
+/* Nothing on the page takes a click unless it says so. The HUD layer is always mounted and
+   would otherwise swallow every click in the game. */
+body {
+    pointer-events: none;
+}
+
+#menu,
+#layout {
+    pointer-events: auto;
+}
+
+img,
+svg {
+    display: block;
+    max-width: 100%;
+}
+
+svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+    margin: 0;
+}
+
+button {
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+input[type="search"],
+input[type="text"],
+textarea {
+    user-select: text;
+}
+
+h1, h2, h3, p, ul, ol {
+    margin: 0;
+    padding: 0;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+/* CEF keeps a focus ring on anything clicked, which reads as a stuck highlight over a game.
+   Focus is still visible for keyboard users through :focus-visible. */
+:focus {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--c-accent, #7dd3fc);
+    outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.28);
+}

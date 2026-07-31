@@ -1,0 +1,604 @@
+/*
+    css/menu.css
+
+    The settings panel and the layout editor.
+
+    The panel is deliberately not opaque. A player changing a colour has to see the colour
+    change on the HUD behind it, and a panel that fills the screen means every change is made
+    blind and judged only after closing.
+*/
+
+.menu {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4vh 0 4vh 4vw;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 45%, transparent 70%);
+    z-index: var(--z-menu);
+    animation: menu-in var(--t-mid) var(--ease);
+}
+
+.menu[data-out="true"] {
+    animation: menu-out var(--t-fast) var(--ease) forwards;
+}
+
+@keyframes menu-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes menu-out {
+    to { opacity: 0; }
+}
+
+.menu__panel {
+    display: flex;
+    flex-direction: column;
+    width: min(860px, 62vw);
+    height: min(760px, 92vh);
+    background: var(--c-panel);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--c-line);
+    border-radius: calc(var(--radius) + 8px);
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    animation: panel-in var(--t-mid) var(--ease);
+}
+
+@keyframes panel-in {
+    from { opacity: 0; transform: translateX(-24px) scale(0.985); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* Head ---------------------------------------------------------------------------------- */
+
+.menu__head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--c-line);
+}
+
+.menu__title { flex: 1; min-width: 0; }
+
+.menu__title h1 {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--c-text);
+}
+
+.menu__title p {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--c-muted);
+}
+
+.menu__search input {
+    width: 200px;
+    padding: 7px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--c-text);
+    transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+
+.menu__search input:focus {
+    border-color: var(--c-accent);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.menu__search input::placeholder { color: var(--c-muted); }
+
+.menu__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--c-muted);
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.menu__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--c-text);
+}
+
+/* Body ---------------------------------------------------------------------------------- */
+
+.menu__body {
+    display: grid;
+    grid-template-columns: 176px 1fr;
+    flex: 1;
+    min-height: 0;
+}
+
+.menu__tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 10px;
+    border-right: 1px solid var(--c-line);
+    overflow-y: auto;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--c-muted);
+    text-align: left;
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.tab:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--c-text);
+}
+
+.tab[data-active="true"] {
+    background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+    color: var(--c-text);
+    box-shadow: inset 2px 0 0 var(--c-accent);
+}
+
+.tab__dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+}
+
+.tab[data-active="true"] .tab__dot {
+    background: var(--c-accent);
+    opacity: 1;
+    box-shadow: 0 0 6px var(--c-accent);
+}
+
+.menu__content {
+    padding: 18px 22px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+/* Rows ---------------------------------------------------------------------------------- */
+
+.section + .section { margin-top: 26px; }
+
+.section__title {
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-accent);
+}
+
+.section__help {
+    margin-bottom: 12px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--c-muted);
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.row:last-child { border-bottom: 0; }
+
+.row[data-locked="true"] {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.row__label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--c-text);
+}
+
+.row__lock {
+    font-size: 10px;
+    color: var(--c-warning);
+}
+
+.row__help {
+    grid-column: 1 / -1;
+    margin-top: -4px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--c-muted);
+}
+
+.row__control { display: flex; align-items: center; gap: 10px; }
+
+/* Switch -------------------------------------------------------------------------------- */
+
+.switch {
+    position: relative;
+    width: 38px;
+    height: 21px;
+    flex: none;
+    background: var(--c-track);
+    border-radius: 999px;
+    transition: background var(--t-fast) var(--ease);
+}
+
+.switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 15px;
+    height: 15px;
+    background: var(--c-text);
+    border-radius: 50%;
+    transition: transform var(--t-fast) var(--ease);
+}
+
+.switch[data-on="true"] {
+    background: var(--c-accent);
+    box-shadow: var(--glow);
+}
+
+.switch[data-on="true"]::after {
+    transform: translateX(17px);
+}
+
+/* Slider -------------------------------------------------------------------------------- */
+
+.slider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slider input[type="range"] {
+    width: 150px;
+    height: 3px;
+    background: var(--c-track);
+    border-radius: 999px;
+    appearance: none;
+    cursor: pointer;
+}
+
+.slider input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 13px;
+    height: 13px;
+    background: var(--c-accent);
+    border-radius: 50%;
+    box-shadow: var(--glow);
+    cursor: grab;
+}
+
+.slider input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; }
+
+.slider__value {
+    min-width: 44px;
+    font-size: 11.5px;
+    text-align: right;
+    color: var(--c-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Segmented choice ---------------------------------------------------------------------- */
+
+.segments {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius);
+}
+
+.segment {
+    padding: 6px 11px;
+    border-radius: calc(var(--radius) - 1px);
+    font-size: 11.5px;
+    color: var(--c-muted);
+    white-space: nowrap;
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.segment:hover { color: var(--c-text); }
+
+.segment[data-active="true"] {
+    background: var(--c-accent);
+    color: var(--c-panel-solid);
+    font-weight: 600;
+}
+
+/* Colour well --------------------------------------------------------------------------- */
+
+.swatch {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--c-line-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+
+.swatch:hover { transform: scale(1.08); border-color: var(--c-text); }
+
+.swatch input[type="color"] {
+    position: absolute;
+    inset: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+}
+
+.swatch__hex {
+    font-size: 10.5px;
+    color: var(--c-muted);
+    font-family: 'Courier New', monospace;
+}
+
+/* Theme cards --------------------------------------------------------------------------- */
+
+.themes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 11px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    text-align: left;
+    transition: border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+
+.theme-card:hover { transform: translateY(-2px); border-color: var(--c-line-strong); }
+
+.theme-card[data-active="true"] {
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 1px var(--c-accent), var(--glow);
+}
+
+.theme-card__swatch {
+    display: flex;
+    height: 34px;
+    border-radius: calc(var(--radius) - 1px);
+    overflow: hidden;
+}
+
+.theme-card__swatch i { flex: 1; }
+
+.theme-card__label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+/* Speedometer picker -------------------------------------------------------------------- */
+
+.speedos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.speedo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+
+.speedo-card:hover { transform: translateY(-2px); border-color: var(--c-line-strong); }
+
+.speedo-card[data-active="true"] {
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 1px var(--c-accent);
+}
+
+.speedo-card__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-text);
+    text-align: center;
+}
+
+/* Buttons ------------------------------------------------------------------------------- */
+
+.btn {
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn--primary {
+    background: var(--c-accent);
+    color: var(--c-panel-solid);
+    box-shadow: var(--glow);
+}
+
+.btn--primary:hover { filter: brightness(1.12); }
+
+.btn--ghost {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--c-text);
+}
+
+.btn--ghost:hover { background: rgba(255, 255, 255, 0.13); }
+
+.btn--danger {
+    background: color-mix(in srgb, var(--c-warning) 20%, transparent);
+    color: var(--c-warning);
+}
+
+.btn--danger:hover { background: color-mix(in srgb, var(--c-warning) 32%, transparent); }
+
+.btn--small { padding: 5px 11px; font-size: 11px; }
+
+/* Foot ---------------------------------------------------------------------------------- */
+
+.menu__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 22px;
+    border-top: 1px solid var(--c-line);
+}
+
+.menu__meta {
+    font-size: 10.5px;
+    color: var(--c-muted);
+}
+
+.menu__actions { display: flex; gap: 8px; }
+
+.menu__empty {
+    padding: 40px 0;
+    font-size: 13px;
+    text-align: center;
+    color: var(--c-muted);
+}
+
+/* Providers table, on the Advanced tab -------------------------------------------------- */
+
+.providers {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 5px 16px;
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius);
+    font-size: 11.5px;
+}
+
+.providers dt { color: var(--c-muted); }
+.providers dd { color: var(--c-text); font-family: 'Courier New', monospace; }
+
+/* =======================================================================================
+   Layout editor
+   ======================================================================================= */
+
+.layout {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-layout);
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.layout__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 5% 5%;
+    opacity: 0;
+    transition: opacity var(--t-fast) var(--ease);
+}
+
+.layout[data-snap="true"] .layout__grid { opacity: 1; }
+
+.layout__bar {
+    position: absolute;
+    left: 50%;
+    bottom: 4vh;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    background: var(--c-panel);
+    backdrop-filter: blur(18px);
+    border: 1px solid var(--c-line);
+    border-radius: calc(var(--radius) + 6px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+.layout__hint {
+    font-size: 12px;
+    color: var(--c-muted);
+}
+
+.layout__snap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--c-muted);
+    cursor: pointer;
+}
+
+/* The draggable ghost drawn over each HUD element while the editor is open. */
+.ghost {
+    position: absolute;
+    border: 1px dashed var(--c-accent);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+    cursor: grab;
+    transition: background var(--t-fast) var(--ease);
+}
+
+.ghost:hover { background: color-mix(in srgb, var(--c-accent) 20%, transparent); }
+
+.ghost[data-dragging="true"] {
+    cursor: grabbing;
+    background: color-mix(in srgb, var(--c-accent) 28%, transparent);
+    border-style: solid;
+    box-shadow: var(--glow);
+}
+
+.ghost__label {
+    position: absolute;
+    top: -20px;
+    left: 0;
+    padding: 2px 7px;
+    background: var(--c-accent);
+    border-radius: calc(var(--radius) - 1px);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--c-panel-solid);
+    white-space: nowrap;
+}

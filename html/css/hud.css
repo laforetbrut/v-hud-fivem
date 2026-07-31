@@ -1,0 +1,640 @@
+/*
+    css/hud.css
+
+    The HUD shell: where each element sits, how it fades, and the four pieces that are not
+    gauges - the minimap frame, the street names, the money readout and the voice indicator.
+
+    Positioning is the interesting part. Every element is absolutely placed at a percentage of
+    the viewport with a horizontal anchor, so a HUD arranged at 1080p is in the same relative
+    place at 1440p and at 21:9. The anchor is what stops an element pinned to the right edge
+    from sliding off it when the window gets narrower.
+*/
+
+.hud {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-hud);
+    opacity: var(--hud-opacity);
+    transition: opacity var(--t-slow) var(--ease);
+}
+
+/* Nothing is drawn before the first settings message. Without this the HUD flashes in its
+   default layout for a frame and then jumps to the player's, on every single spawn. */
+.hud[data-ready="false"] .hud-el,
+.hud[data-ready="false"] .minimap-frame {
+    opacity: 0 !important;
+}
+
+/* Immersive mode. Everything except the speedometer fades: a driver who cannot see their
+   speed because they were not doing anything is a driver who thinks the HUD broke. */
+.hud[data-faded="true"] .hud-el:not(#el-speedo) {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hud[data-hidden="true"] .hud-el,
+.hud[data-hidden="true"] .minimap-frame {
+    opacity: 0;
+}
+
+/*
+    Positioning.
+
+    Each element carries four numbers: a percentage on each axis, and an anchor on each axis
+    saying which of its own edges that percentage refers to. The anchors are the whole trick.
+
+    A vertically top-anchored element grows DOWNWARD from a fixed line, so a taller
+    speedometer or a longer gauge column walks off the bottom of the screen. Anything that
+    sits low is bottom-anchored instead and grows upward into empty space.
+
+    --fix-x / --fix-y are the correction state.js applies after measuring: if an element still
+    ends up outside the viewport, it is nudged back in. That is the backstop for a combination
+    of theme, gauge shape and cluster that nobody anticipated.
+*/
+
+.hud-el {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    --anchor-x: 0%;
+    --anchor-y: 0%;
+    --fix-x: 0px;
+    --fix-y: 0px;
+    transform-origin: top left;
+    transform: translate(
+            calc(var(--anchor-x) + var(--fix-x)),
+            calc(var(--anchor-y) + var(--fix-y))
+        )
+        scale(var(--hud-scale));
+    transition: opacity var(--t-slow) var(--ease);
+    will-change: transform;
+}
+
+.hud-el[data-anchor="left"]   { --anchor-x: 0%;    transform-origin: top left; }
+.hud-el[data-anchor="center"] { --anchor-x: -50%;  transform-origin: top center; }
+.hud-el[data-anchor="right"]  { --anchor-x: -100%; transform-origin: top right; }
+
+.hud-el[data-anchor-y="top"]    { --anchor-y: 0%; }
+.hud-el[data-anchor-y="bottom"] { --anchor-y: -100%; }
+
+.hud-el[data-anchor="left"][data-anchor-y="bottom"]   { transform-origin: bottom left; }
+.hud-el[data-anchor="center"][data-anchor-y="bottom"] { transform-origin: bottom center; }
+.hud-el[data-anchor="right"][data-anchor-y="bottom"]  { transform-origin: bottom right; }
+
+.hud-el[data-visible="false"] {
+    opacity: 0;
+    /* Kept in the DOM rather than removed: a toggled element that is re-created loses its
+       transition and pops back in, and the layout editor needs it to exist to be dragged. */
+    pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------------------
+   Cinematic bars
+   --------------------------------------------------------------------------------------- */
+
+.cinebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: var(--cine-height, 12%);
+    background: #000;
+    transition: transform var(--t-slow) var(--ease);
+    z-index: calc(var(--z-hud) + 5);
+}
+
+.cinebar--top    { top: 0;    transform: translateY(-100%); }
+.cinebar--bottom { bottom: 0; transform: translateY(100%); }
+
+.hud[data-cinematic="true"] .cinebar--top,
+.hud[data-cinematic="true"] .cinebar--bottom {
+    transform: translateY(0);
+}
+
+/* ---------------------------------------------------------------------------------------
+   Minimap frame
+
+   The map is the game's. This is the border drawn around it, positioned to match the native
+   geometry in client/minimap.lua. The two have to agree, which is why both read the same
+   percentages from the same settings.
+   --------------------------------------------------------------------------------------- */
+
+.minimap-frame {
+    position: fixed;
+    left: calc(0.6% + var(--map-x, 0%));
+    bottom: calc(3.2% - var(--map-y, 0%));
+    width: calc(20.4% * var(--map-scale, 1));
+    height: calc(20.9% * var(--map-scale, 1));
+    border: 2px solid var(--c-accent);
+    box-shadow: var(--glow), inset 0 0 24px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transition: opacity var(--t-mid) var(--ease);
+    pointer-events: none;
+}
+
+.minimap-frame[data-on="true"] {
+    opacity: 0.85;
+}
+
+.minimap-frame[data-shape="square"] { border-radius: var(--radius); }
+.minimap-frame[data-shape="circle"] { border-radius: 50%; }
+
+/* ---------------------------------------------------------------------------------------
+   Street names
+   --------------------------------------------------------------------------------------- */
+
+.streets {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 14px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 92vw;
+}
+
+.streets[data-empty="true"] {
+    opacity: 0;
+}
+
+.streets__row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    /* min-width:0 is what lets the flex children shrink below their content width. Without it
+       a long street name pushes the row wider than the banner and the overflow spills out of
+       BOTH sides, so half the name ends up off the left edge of the screen. */
+    min-width: 0;
+    max-width: 100%;
+}
+
+.streets__row > * {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* When the banner is narrower than its content, the cross street gives up its space first and
+   the street you are actually on truncates last. Without the lopsided shrink factors both
+   ellipsise together and you end up reading "Vespu… / Pros…", which names neither road. */
+.streets__name  { flex: 0 1 auto; }
+.streets__cross { flex: 0 200 auto; }
+.streets__dir   { flex: none; }
+
+.streets__dir {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--c-accent);
+    text-shadow: var(--glow);
+}
+
+.streets__name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.streets__cross {
+    font-size: 12px;
+    color: var(--c-muted);
+}
+
+.streets__cross:not(:empty)::before {
+    content: '/ ';
+}
+
+.streets__zone {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+}
+
+.streets__zone:empty {
+    display: none;
+}
+
+.streets[data-upper="true"] .streets__name,
+.streets[data-upper="true"] .streets__cross {
+    text-transform: uppercase;
+}
+
+/* The banner sized to the minimap and sitting on its lid. The width is the same expression
+   the frame above uses, so the two cannot drift apart when the map is moved or resized. */
+.streets[data-match="true"] {
+    width: calc(20.4vw * var(--map-scale, 1) * 1.0);
+    justify-content: center;
+}
+
+/* ---------------------------------------------------------------------------------------
+   Compass
+   --------------------------------------------------------------------------------------- */
+
+.cmp-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--c-text);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.cmp-window {
+    position: relative;
+    width: 320px;
+    height: 22px;
+    overflow: hidden;
+    /* Fades both ends so a mark leaves the strip rather than being clipped mid-letter. */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+
+.cmp-strip {
+    position: absolute;
+    inset: 0;
+}
+
+.cmp-mark {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-muted);
+    transition: opacity 60ms linear;
+}
+
+.cmp-mark--major {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--c-text);
+    text-shadow: var(--glow), 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.cmp-body[data-cardinals="false"] .cmp-mark { display: none; }
+
+.cmp-pointer {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--c-accent);
+    filter: drop-shadow(0 0 5px var(--c-accent));
+}
+
+.cmp-body[data-pointer="false"] .cmp-pointer { visibility: hidden; }
+
+.cmp-degrees {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--c-accent);
+    font-variant-numeric: tabular-nums;
+}
+
+.cmp-body[data-degrees="false"] .cmp-degrees { display: none; }
+
+/* Tape ---------------------------------------------------------------------------------- */
+
+.cmp-body[data-style="tape"] .cmp-window { height: 26px; }
+
+.cmp-tape {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 2808px;                       /* 3 x 360 degrees at 2.6px each */
+    will-change: transform;
+}
+
+.cmp-tick {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 6px;
+    background: var(--c-muted);
+    transform: translateX(-50%);
+}
+
+.cmp-tick--major {
+    height: 11px;
+    background: var(--c-accent);
+    box-shadow: var(--glow);
+}
+
+.cmp-tapelabel {
+    position: absolute;
+    bottom: 0;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--c-muted);
+}
+
+.cmp-tapelabel--major {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--c-text);
+}
+
+.cmp-body[data-cardinals="false"] .cmp-tapelabel { display: none; }
+
+/* Dial ---------------------------------------------------------------------------------- */
+
+.cmp-dial { width: 74px; height: 74px; }
+
+.cmp-dialface {
+    fill: var(--c-panel);
+    stroke: var(--c-line);
+    stroke-width: 1;
+}
+
+.cmp-ring {
+    transform-origin: 50% 50%;
+    transition: transform 60ms linear;
+}
+
+.cmp-dialtick { stroke: var(--c-muted); stroke-width: 1; }
+
+.cmp-dialtick--major {
+    stroke: var(--c-text);
+    stroke-width: 1.8;
+    filter: drop-shadow(0 0 3px var(--c-accent));
+}
+
+.cmp-dialtext {
+    fill: var(--c-text);
+    stroke: none;
+    font-size: 8px;
+    font-weight: 700;
+}
+
+.cmp-body[data-cardinals="false"] .cmp-dialtext { display: none; }
+
+.cmp-needle {
+    fill: var(--c-accent);
+    stroke: none;
+    filter: drop-shadow(0 0 5px var(--c-accent));
+}
+
+/* Text ---------------------------------------------------------------------------------- */
+
+.cmp-body[data-style="text"] {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 12px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+}
+
+.cmp-cardinal {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--c-text);
+    text-shadow: var(--glow);
+}
+
+/* ---------------------------------------------------------------------------------------
+   Money
+   --------------------------------------------------------------------------------------- */
+
+.money {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.money__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+}
+
+.money__row[data-on="false"] {
+    opacity: 0;
+    transform: translateX(12px);
+    pointer-events: none;
+}
+
+.money__icon {
+    font-size: 9px;
+    line-height: 1;
+    color: var(--c-money);
+    text-shadow: var(--glow);
+}
+
+.money__row--bank .money__icon {
+    color: var(--c-accent);
+}
+
+.money__value {
+    color: var(--c-text);
+}
+
+.money__delta {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+    white-space: nowrap;
+}
+
+.money__delta[data-on="true"] {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.money__delta[data-sign="plus"]  { color: var(--c-money);   background: color-mix(in srgb, var(--c-money) 16%, transparent); }
+.money__delta[data-sign="minus"] { color: var(--c-warning); background: color-mix(in srgb, var(--c-warning) 16%, transparent); }
+
+/* ---------------------------------------------------------------------------------------
+   Voice
+   --------------------------------------------------------------------------------------- */
+
+.voice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    color: var(--c-voice);
+    transition: color var(--t-fast) var(--ease);
+}
+
+.voice__icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+}
+
+.voice[data-talking="true"] {
+    color: var(--c-accent);
+}
+
+.voice[data-talking="true"] .voice__icon {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+.voice__rings {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 14px;
+}
+
+.voice__ring {
+    width: 3px;
+    height: 5px;
+    background: currentColor;
+    opacity: 0.22;
+    border-radius: 1px;
+    transition: opacity var(--t-fast) var(--ease), height var(--t-fast) var(--ease);
+}
+
+.voice__ring[data-level="2"] { height: 9px; }
+.voice__ring[data-level="3"] { height: 14px; }
+
+.voice[data-range="1"] .voice__ring[data-level="1"],
+.voice[data-range="2"] .voice__ring[data-level="1"],
+.voice[data-range="2"] .voice__ring[data-level="2"],
+.voice[data-range="3"] .voice__ring {
+    opacity: 1;
+    box-shadow: var(--glow);
+}
+
+.voice__radio {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--c-accent);
+}
+
+.voice__radio:empty {
+    display: none;
+}
+
+.voice[data-radio="true"] .voice__radio {
+    animation: voice-radio 1.4s ease-in-out infinite;
+}
+
+@keyframes voice-radio {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+}
+
+/* ---------------------------------------------------------------------------------------
+   Vehicle extras - the indicators that are not part of the speedometer face
+   --------------------------------------------------------------------------------------- */
+
+.vext {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.vext__chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 24px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius);
+    color: var(--c-muted);
+    transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+
+.vext__chip svg {
+    width: 15px;
+    height: 15px;
+}
+
+.vext__chip[data-on="true"] {
+    color: var(--c-accent);
+    border-color: color-mix(in srgb, var(--c-accent) 55%, transparent);
+    box-shadow: var(--glow);
+}
+
+.vext__chip[data-alert="true"] {
+    color: var(--c-warning);
+    border-color: color-mix(in srgb, var(--c-warning) 60%, transparent);
+    animation: vext-alert 0.9s steps(2, end) infinite;
+}
+
+@keyframes vext-alert {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+}
+
+/* ---------------------------------------------------------------------------------------
+   Toasts - the fallback notification, used when no notification resource is installed
+   --------------------------------------------------------------------------------------- */
+
+.toasts {
+    position: fixed;
+    top: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    z-index: var(--z-toast);
+}
+
+.toast {
+    padding: 8px 16px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line);
+    border-left: 3px solid var(--c-accent);
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--c-text);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: toast-in var(--t-mid) var(--ease);
+}
+
+.toast[data-kind="success"] { border-left-color: var(--c-health); }
+.toast[data-kind="error"]   { border-left-color: var(--c-warning); }
+
+.toast[data-out="true"] {
+    animation: toast-out var(--t-mid) var(--ease) forwards;
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-out {
+    to { opacity: 0; transform: translateY(-10px); }
+}

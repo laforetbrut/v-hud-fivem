@@ -1,0 +1,205 @@
+/*
+    css/themes.css
+
+    The design system, as custom properties on :root.
+
+    Every colour, radius and gap in the HUD reads one of these. None of them are set here in
+    the sense that matters - state.js writes them from the player's settings on every change,
+    and what is written below is only the fallback for the two hundred milliseconds between
+    the page loading and the first settings message arriving.
+
+    That is the whole reason a colour picker in the menu recolours the HUD instantly with no
+    re-render: it sets one custom property and the browser repaints.
+*/
+
+:root {
+    /* Player colours. Overwritten by state.js from settings.colours. */
+    --c-accent: #7dd3fc;
+    --c-health: #4ade80;
+    --c-armor: #60a5fa;
+    --c-hunger: #fbbf24;
+    --c-thirst: #38bdf8;
+    --c-stress: #c084fc;
+    --c-oxygen: #22d3ee;
+    --c-stamina: #a3e635;
+    --c-voice: #e2e8f0;
+    --c-money: #4ade80;
+    --c-speed: #f8fafc;
+    --c-fuel: #fb923c;
+    --c-rpm: #f87171;
+    --c-warning: #ef4444;
+    --c-bg: #0b0f14;
+    --c-text: #f8fafc;
+
+    /* Derived. Computed by state.js so a translucent panel follows the chosen background
+       rather than being a hardcoded grey that clashes with every theme but one. */
+    --c-panel: rgba(11, 15, 20, 0.82);
+    --c-panel-solid: #0b0f14;
+    --c-line: rgba(248, 250, 252, 0.14);
+    --c-line-strong: rgba(248, 250, 252, 0.28);
+    --c-track: rgba(248, 250, 252, 0.12);
+    --c-muted: rgba(248, 250, 252, 0.55);
+
+    /* Shape. Two radii: --radius is what a rectangle wears and is always sane, --gauge-radius
+       is the player's own value and may be 999px, which is how a theme asks for a fully round
+       gauge without turning the settings panel into a circle. */
+    --radius: 2px;
+    --gauge-radius: 2px;
+    --gap: 8px;
+    --hud-scale: 1;
+    --hud-opacity: 1;
+
+    /* Gauge geometry. Compact mode rewrites these three and nothing else. */
+    --gauge-size: 40px;
+    --gauge-thick: 4px;
+    --gauge-font: 11px;
+
+    /* Glow, switched between none and a real shadow by the theme's `glow` flag. */
+    --glow: none;
+    --glow-strong: none;
+
+    /* Motion. A HUD that animates for a quarter of a second feels laggy; these are short on
+       purpose. */
+    --t-fast: 120ms;
+    --t-mid: 220ms;
+    --t-slow: 400ms;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* Z order, in one place so a new layer cannot be guessed wrong. */
+    --z-hud: 10;
+    --z-toast: 40;
+    --z-layout: 60;
+    --z-menu: 80;
+}
+
+/* ---------------------------------------------------------------------------------------
+   Surfaces
+
+   How a panel is filled behind its content. state.js writes --panel-blur, --panel-inset and
+   the alpha of --c-panel from settings.style.surface; the block below is what applies them,
+   in one place, to every panel-shaped thing on screen.
+
+   Listing the selectors once rather than repeating backdrop-filter in five stylesheets is
+   what makes the glass look consistent: a panel that was forgotten here is a panel that is
+   visibly not glass while everything around it is.
+   --------------------------------------------------------------------------------------- */
+
+.streets,
+.money__row,
+.money__delta,
+.voice,
+.vext__chip,
+.toast,
+.gauge[data-shape="square"],
+.gauge[data-shape="rounded"],
+.gauge[data-shape="diamond"],
+.gauge[data-shape="pill"],
+.gauge[data-shape="dot"],
+.spd-body[data-style="minimal"],
+.spd-body[data-style="bars"],
+.spd-body[data-style="digital"],
+.spd-body[data-style="sport"],
+.spd-chip {
+    backdrop-filter: var(--panel-blur, none);
+    -webkit-backdrop-filter: var(--panel-blur, none);
+}
+
+/* The glass edge: a bright hairline along the top and a soft drop below, which is what makes
+   a translucent rectangle read as a pane of glass rather than as a grey box. Applied only in
+   glass mode so the other surfaces stay flat. */
+.hud[data-surface="glass"] .streets,
+.hud[data-surface="glass"] .money__row,
+.hud[data-surface="glass"] .voice,
+.hud[data-surface="glass"] .vext__chip,
+.hud[data-surface="glass"] .toast,
+.hud[data-surface="glass"] .gauge[data-shape="square"],
+.hud[data-surface="glass"] .gauge[data-shape="rounded"],
+.hud[data-surface="glass"] .gauge[data-shape="diamond"],
+.hud[data-surface="glass"] .gauge[data-shape="pill"],
+.hud[data-surface="glass"] .gauge[data-shape="dot"],
+.hud[data-surface="glass"] .spd-body[data-style="minimal"],
+.hud[data-surface="glass"] .spd-body[data-style="bars"],
+.hud[data-surface="glass"] .spd-body[data-style="digital"],
+.hud[data-surface="glass"] .spd-body[data-style="sport"],
+.hud[data-surface="glass"] .spd-chip {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+        0 8px 26px rgba(0, 0, 0, 0.42);
+}
+
+/* A tinted accent wash across the glass, so the pink of the theme is in the pane itself and
+   not only in the gauge fills. The gradient is on a pseudo-element rather than the
+   background, because the background is what the backdrop filter reads through. */
+.hud[data-surface="glass"] .streets::before,
+.hud[data-surface="glass"] .money__row::before,
+.hud[data-surface="glass"] .voice::before,
+.hud[data-surface="glass"] .spd-body[data-style="minimal"]::before,
+.hud[data-surface="glass"] .spd-body[data-style="bars"]::before,
+.hud[data-surface="glass"] .spd-body[data-style="digital"]::before,
+.hud[data-surface="glass"] .spd-body[data-style="sport"]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--c-accent) 18%, transparent) 0%,
+        transparent 45%,
+        color-mix(in srgb, var(--c-accent) 8%, transparent) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Those panels need a stacking context for the wash to sit under their content. */
+.hud[data-surface="glass"] .streets,
+.hud[data-surface="glass"] .money__row,
+.hud[data-surface="glass"] .voice,
+.hud[data-surface="glass"] .spd-body {
+    position: relative;
+    isolation: isolate;
+}
+
+.hud[data-surface="glass"] .streets > *,
+.hud[data-surface="glass"] .money__row > *,
+.hud[data-surface="glass"] .voice > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* No surface at all: the shapes and their glow, nothing behind them. */
+.hud[data-surface="none"] .streets,
+.hud[data-surface="none"] .money__row,
+.hud[data-surface="none"] .voice,
+.hud[data-surface="none"] .vext__chip,
+.hud[data-surface="none"] .spd-chip,
+.hud[data-surface="none"] .spd-body {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+/* Compact mode. Only the three geometry values move: the layout, the colours and the shapes
+   are the player's and should not change because they asked for something smaller. */
+.hud[data-compact="true"] {
+    --gauge-size: 28px;
+    --gauge-thick: 3px;
+    --gauge-font: 9px;
+    --gap: 5px;
+}
+
+/* Glow on. Two strengths: the weak one is for a gauge track, the strong one for the value. */
+.hud[data-glow="true"],
+.menu[data-glow="true"] {
+    --glow: 0 0 6px currentColor;
+    --glow-strong: 0 0 12px currentColor, 0 0 24px currentColor;
+}
+
+/* Reduced motion. CEF honours the OS setting, and a player who asked their machine for less
+   animation should not be overruled by a HUD. */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --t-fast: 0ms;
+        --t-mid: 0ms;
+        --t-slow: 0ms;
+    }
+}
