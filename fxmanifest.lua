@@ -41,6 +41,9 @@ client_scripts {
     'client/minimap.lua',
     'client/compass.lua',
     'client/vehicle.lua',
+    -- Before client/vehicle.lua would be wrong: the odometer is read BY the vehicle reader,
+    -- but only at runtime, and this file's own loop needs State from client/settings.lua.
+    'client/odometer.lua',
     'client/stress.lua',
     'client/main.lua',
     'client/commands.lua',
@@ -51,6 +54,7 @@ server_scripts {
     'server/storage.lua',
     'server/main.lua',
     'server/stress.lua',
+    'server/odometer.lua',
     'server/admin.lua',
 }
 

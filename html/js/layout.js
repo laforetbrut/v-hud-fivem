@@ -31,39 +31,39 @@ const Layout = (() => {
         return S.t(`layout.group_${key === 'speedo' ? 'speedo' : key}`);
     }
 
-    /** Place a ghost over its element's current box. Re-measured on every open, because the
-     *  element may have changed size since the last time (a different speedometer face, a
-     *  longer street name). */
-    function measure(key) {
+    /**
+     * Put a ghost exactly where its element actually IS.
+     *
+     * Measured from the live element, never rebuilt from the stored x/y. Those two agree only
+     * for a free element at scale 1: a docked element ignores its x/y entirely and follows the
+     * minimap, a clamped element carries a --fix offset, and everything is scaled by
+     * --hud-scale. Reconstructing the position from the settings drew the grab boxes somewhere
+     * near the elements rather than on them.
+     */
+    function position(ghost, key) {
         const node = U.el(`el-${key}`);
-        if (!node) return null;
+        if (!node) return;
 
         const box = node.getBoundingClientRect();
-        return {
-            width: Math.max(box.width, MIN_GHOST),
-            height: Math.max(box.height, MIN_GHOST),
-        };
-    }
 
-    function position(ghost, key) {
-        const settings = S.settings;
-        const place = (settings.positions || {})[key];
-        if (!place) return;
+        // An element with no size right now - the speedometer on foot, a cluster with every
+        // gauge switched off - still has to be grabbable, so it gets a minimum box centred on
+        // wherever it sits.
+        const width = Math.max(box.width, MIN_GHOST);
+        const height = Math.max(box.height, MIN_GHOST);
+        const left = box.width ? box.left : box.left - (width - box.width) / 2;
+        const top = box.height ? box.top : box.top - (height - box.height) / 2;
 
-        const size = measure(key);
-        if (size) {
-            ghost.style.width = `${size.width}px`;
-            ghost.style.height = `${size.height}px`;
-        }
+        ghost.style.left = `${Math.round(left)}px`;
+        ghost.style.top = `${Math.round(top)}px`;
+        ghost.style.width = `${Math.round(width)}px`;
+        ghost.style.height = `${Math.round(height)}px`;
+        ghost.style.transform = 'none';
 
-        const anchor = place.anchor || 'left';
-        const anchorY = place.anchorY || 'top';
-        const shiftX = anchor === 'right' ? -100 : (anchor === 'center' ? -50 : 0);
-        const shiftY = anchorY === 'bottom' ? -100 : 0;
-
-        ghost.style.left = `${place.x}%`;
-        ghost.style.top = `${place.y}%`;
-        ghost.style.transform = `translate(${shiftX}%, ${shiftY}%)`;
+        // A docked element cannot be positioned by dragging until it is let go of the map, so
+        // it says which edge it is glued to.
+        const dock = node.getAttribute('data-dock') || 'free';
+        U.attr(ghost, 'data-docked', dock !== 'free');
     }
 
     /* The minimap gets a ghost too.
@@ -208,6 +208,10 @@ const Layout = (() => {
         const anchor = centreX > 0.66 ? 'right' : (centreX < 0.34 ? 'left' : 'center');
         const anchorY = centreY > 0.5 ? 'bottom' : 'top';
 
+        // The stored position is the element's ANCHOR POINT. --hud-scale grows the box away
+        // from that point rather than moving it, so the ghost's on-screen edges ARE the
+        // anchor points and no scale correction is needed: box.left for a left anchor,
+        // box.right for a right one, box.bottom for a bottom one.
         let x;
         if (anchor === 'right') x = ((left + drag.width) / width) * 100;
         else if (anchor === 'center') x = ((left + drag.width / 2) / width) * 100;

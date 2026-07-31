@@ -219,6 +219,10 @@ HARNESS = """
                 seatbelt: Math.sin(t * 0.5) > 0, cruise: false, nitro: 60, nitroActive: Math.sin(t) > 0.6,
                 harness: 20, hasHarness: true, aircraft: false, bicycle: false, driver: true,
                 lights: { on: true, high: false, left: Math.sin(t) > 0.7, right: false },
+                // The odometer climbs, so the preview shows what a real one does rather than
+                // a frozen number. A tick payload missing this hides the readout, which is
+                // correct behaviour and was briefly mistaken for a bug.
+                odometer: { value: Math.round(128450 + t * 3), unit: 'KM' },
             } : null,
         }, '*');
 

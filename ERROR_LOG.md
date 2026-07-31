@@ -249,4 +249,33 @@ transient can no longer trigger it.
 branch depends on must be re-read after it — and a watchdog that takes a destructive action
 should require the fault to persist rather than firing on a single sample.
 
+## [2026-07-31 — in game] — The HUD was flung into the corners after a server restart
+
+**Context:** Reconnecting after a server reboot.
+**Error:** Elements pinned to the extreme corners of the screen, sometimes.
+**Root cause:** The viewport clamp ran before the first settings message had been applied, so
+it measured elements sitting at their CSS defaults — `left: 50%`, `top: 50%`, zero size — and
+wrote corrections computed from positions nobody had chosen. Those corrections then survived
+the real layout. It was intermittent because it depended on whether the boot payload arrived
+before or after the first animation frame.
+**Fix:** The clamp returns immediately unless `state.ready` and settings exist; a correction
+larger than half the screen is refused as a symptom rather than applied; elements larger than
+the viewport are left to overflow; and three settle passes run after boot instead of one.
+**Prevention:** A layout correction is only meaningful once there is a layout. Anything that
+measures the DOM must refuse to run before the first real render, and a correction big enough
+to move something across the screen is a bug report, not a fix.
+
+## [2026-07-31 — in game] — Layout editor grab boxes did not sit on their elements
+
+**Context:** The layout editor, after docking was introduced.
+**Error:** The dashed boxes were near the elements rather than on them.
+**Root cause:** The ghosts were reconstructed from the stored `x`/`y` percentages. Those
+describe the element only for a free element at scale 1 — a docked element ignores them
+entirely and follows the minimap, a clamped element carries a `--fix` offset, and everything
+is scaled by `--hud-scale`.
+**Fix:** Every ghost is measured from the live element's bounding box, in pixels. A docked
+one is drawn in a different colour, because dragging it releases it from the map.
+**Prevention:** To draw something over an element, measure the element. Never rebuild its
+position from the inputs that were supposed to produce it.
+
 ---

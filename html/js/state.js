@@ -184,6 +184,13 @@ const S = (() => {
     function clampIntoView() {
         clampQueued = false;
 
+        // Nothing is positioned until the first settings message has been applied. Clamping
+        // before that measures elements sitting at their CSS defaults - left:50%, top:50%,
+        // no size - and writes corrections computed from positions nobody chose. Those
+        // corrections then survive the real layout, which is how a HUD ended up flung into
+        // the corners after a server restart.
+        if (!state.ready || !state.settings) return;
+
         const width = window.innerWidth;
         const height = window.innerHeight;
         const nodes = [];
@@ -202,6 +209,10 @@ const S = (() => {
             const box = node.getBoundingClientRect();
             if (!box.width && !box.height) continue;   // hidden, nothing to clamp
 
+            // An element bigger than the screen cannot be clamped into it, and trying pins it
+            // to an edge and leaves it there. Leave it alone and let it overflow.
+            if (box.width >= width || box.height >= height) continue;
+
             let dx = 0;
             let dy = 0;
 
@@ -210,6 +221,13 @@ const S = (() => {
 
             if (box.top < EDGE) dy = EDGE - box.top;
             else if (box.bottom > height - EDGE) dy = Math.min(0, (height - EDGE) - box.bottom);
+
+            // A correction larger than the screen is not a correction, it is a symptom: the
+            // element was measured mid-layout, or a custom property it depends on had not
+            // arrived. Refusing it means the worst case is an element slightly off the edge
+            // for one frame, instead of one thrown into a corner and left there.
+            if (Math.abs(dx) > width / 2) dx = 0;
+            if (Math.abs(dy) > height / 2) dy = 0;
 
             if (dx) node.style.setProperty('--fix-x', `${Math.round(dx)}px`);
             if (dy) node.style.setProperty('--fix-y', `${Math.round(dy)}px`);
@@ -227,12 +245,22 @@ const S = (() => {
     // change the observer could otherwise hook.
     if (typeof ResizeObserver === 'function') {
         const observer = new ResizeObserver(() => scheduleClamp());
-        document.addEventListener('DOMContentLoaded', () => {
+
+        const observeAll = () => {
             for (const key of ELEMENTS) {
                 const node = U.el(`el-${key}`);
                 if (node) observer.observe(node);
             }
-        });
+        };
+
+        // Bound both ways round. A NUI page's scripts usually run AFTER DOMContentLoaded has
+        // already fired, so waiting for that event alone leaves nothing observed - and then a
+        // speedometer swapped for a taller one never re-clamps.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', observeAll);
+        } else {
+            observeAll();
+        }
     }
 
     window.addEventListener('resize', () => scheduleClamp());
@@ -385,6 +413,15 @@ const S = (() => {
 
         state.ready = true;
         U.attr(U.el('hud'), 'data-ready', true);
+
+        // Settle passes. The first clamp runs on the next animation frame, when the gauges
+        // have been built but the browser may not have finished laying them out - a cluster
+        // that is still 0px wide measures as being nowhere near an edge. Two later passes
+        // catch the final geometry, and they are idempotent, so the cost of the extra two is
+        // two measurements on a settings change.
+        scheduleClamp();
+        setTimeout(scheduleClamp, 120);
+        setTimeout(scheduleClamp, 600);
     }
 
     /* ------------------------------------------------------------------------------------

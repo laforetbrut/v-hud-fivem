@@ -377,6 +377,7 @@ const Menu = (() => {
                     toggle('speedometer.range', S.t('speedo.style')),
                     toggle('speedometer.rpm', S.t('speedo.rpm')),
                     toggle('speedometer.gear', S.t('speedo.gear')),
+                    toggle('speedometer.odometer', S.t('speedo.odometer'), S.t('speedo.odometer_help')),
                     toggle('speedometer.engine', S.t('speedo.engine')),
                     toggle('speedometer.belt', S.t('speedo.belt')),
                     toggle('speedometer.nitro', S.t('speedo.nitro')),

@@ -19,6 +19,9 @@ ten realistic instrument clusters, four compasses and a frosted-glass default lo
 - **Ten realistic speedometers** - minimal digital, classic dial, twin sport dials, digital
   cluster, luxury ring, JDM tachometer, American muscle, supercar, truck cluster, retro LCD.
   All with numbered graduations, real needles, a redline, and an E-F fuel gauge.
+- **Odometer** - the total distance a vehicle has covered, on every cluster. GTA does not
+  keep one, so it is measured while you drive and stored against the number plate; a mileage
+  published by another resource is used instead when there is one.
 - **Built around the minimap** - the street banner is the lid of the map at exactly its
   width, the gauges stack up its right-hand edge, and on a ROUND map they follow the curve
   on an arc. All of it docks to the real map rectangle, so it tracks when the map is moved,

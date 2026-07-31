@@ -652,6 +652,17 @@
 .ghost--map[data-dragging="true"] { background: var(--c-health-a28); }
 .ghost--map .ghost__label { background: var(--c-health); }
 
+/* A docked element follows the minimap and cannot be positioned by dragging until it lets go
+   of it. Dragging one DOES release it, so the ghost says what will happen rather than
+   refusing the grab. */
+.ghost[data-docked="true"] {
+    border-style: dotted;
+    border-color: var(--c-fuel);
+    background: var(--c-accent-a08);
+}
+
+.ghost[data-docked="true"] .ghost__label { background: var(--c-fuel); }
+
 .ghost__label {
     position: absolute;
     top: -20px;

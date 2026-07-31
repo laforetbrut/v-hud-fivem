@@ -101,6 +101,9 @@ function Vehicle.read(vehicle, settings)
         harness = belt.harnessHp,
         hasHarness = Vehicle.harness,
         lights = lights(vehicle),
+        -- Total distance this vehicle has covered. nil when nothing is tracking it, which
+        -- hides the readout rather than printing a zero on every car in the city.
+        odometer = Odometer and Odometer.display(vehicle, settings.units) or nil,
         aircraft = isAircraft,
         altitude = isAircraft and math.floor(GetEntityCoords(ped).z * 0.5) or nil,
         -- A bicycle has no engine, no fuel and no gears; the NUI hides those readouts rather

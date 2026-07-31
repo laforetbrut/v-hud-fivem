@@ -270,7 +270,10 @@ Config.LayoutPresets = {
             voice   = { dock = 'map-top',   x = 0.7,  y = 71.0, anchor = 'left',   anchorY = 'bottom' },
             streets = { dock = 'free', x = 50.0, y = 3.0,  anchor = 'center', anchorY = 'top' },
             speedo  = { dock = 'free', x = 98.5, y = 94.0, anchor = 'right',  anchorY = 'bottom' },
-            compass = { dock = 'free', x = 50.0, y = 10.0, anchor = 'center', anchorY = 'top' },
+            -- 13%, not 10%. The banner above it is 47 FIXED pixels tall while this gap is a
+            -- percentage, so the clearance shrinks with the screen: 10% left three pixels at
+            -- 720p and overlapped outright below it.
+            compass = { dock = 'free', x = 50.0, y = 13.0, anchor = 'center', anchorY = 'top' },
             vehicle = { dock = 'free', x = 98.5, y = 3.0,  anchor = 'right',  anchorY = 'top' },
         },
     },
@@ -727,6 +730,41 @@ Config.Compat = {
 }
 
 -- =======================================================================================
+-- 11b. Odometer
+-- =======================================================================================
+
+-- The total distance a vehicle has covered, shown on the speedometer.
+--
+-- GTA does not track this: there is no native that answers "how far has this car been
+-- driven". So it is measured here - the client adds up the distance it travels while it is
+-- the driver, and the server stores the total per number plate in its own table.
+--
+-- If a resource that already keeps a mileage is installed, it is read instead: better one
+-- number than two that disagree. jim-mechanic keeps one per vehicle.
+Config.Odometer = {
+    enabled = true,
+
+    -- Where to read a mileage from before falling back to this resource's own counter. Each
+    -- entry is a vehicle STATE BAG name, checked in order; the first number found wins.
+    providers = { 'odometer', 'mileage', 'jimOdo' },
+
+    -- Track it here when no provider answered. Off means the readout only appears on servers
+    -- that already have a mileage resource.
+    track = true,
+    table = 'vhud_odometer',
+
+    -- Metres travelled between saves. Lower is more accurate across a crash, higher is fewer
+    -- writes; 1000 is a database row per kilometre per driver.
+    saveEvery = 1000,
+
+    -- Show the total in kilometres or miles. 'units' follows the player's speed setting.
+    unit = 'units',            -- 'units' | 'km' | 'mi'
+
+    -- Round the display to this many decimals. A trip counter wants one; a total wants none.
+    decimals = 0,
+}
+
+-- =======================================================================================
 -- 12. Refresh rates
 -- =======================================================================================
 
@@ -910,6 +948,7 @@ Config.Defaults = {
         harness = true,
         altitude = true,
         range = true,            -- remaining range, when the fuel provider can work it out
+        odometer = true,         -- total distance, see Config.Odometer
     },
 
     compass = {

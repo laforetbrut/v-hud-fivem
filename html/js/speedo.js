@@ -148,6 +148,15 @@ const Speedo = (() => {
     const gear = () => U.make('span', { class: 'spd-gear', text: 'N' });
     const range = () => U.make('span', { class: 'spd-range' });
 
+    /**
+     * The odometer window.
+     *
+     * On a real cluster this is a small recessed panel, not another glowing readout - it is
+     * a number you look up, never one you watch. Same here: quiet type, its own frame, and
+     * hidden entirely when nothing is tracking a mileage.
+     */
+    const odo = () => U.make('span', { class: 'spd-odo' });
+
     /* ------------------------------------------------------------------------------------
        The ten faces
        ------------------------------------------------------------------------------------ */
@@ -160,7 +169,7 @@ const Speedo = (() => {
            electric car puts in front of the driver, and the face the glass theme uses. */
         minimal() {
             const value = digits('spd-value');
-            const u = unit(), g = gear(), r = range();
+            const u = unit(), g = gear(), r = range(), o = odo();
             const speed = arcGauge(110, 74, 62, -78, 78, 'speed');
             const fuel = stripGauge('E', 'F', 'fuel');
 
@@ -183,9 +192,9 @@ const Speedo = (() => {
                         U.make('div', { class: 'spd-readout' }, [value, u]),
                         U.make('div', { class: 'spd-subrow' }, [g, r]),
                     ]),
-                    fuel.node,
+                    fuel.node, o,
                 ]),
-                value, unit: u, gear: g, range: r,
+                value, unit: u, gear: g, range: r, odo: o,
                 speedArc: speed.fill, fuelFill: fuel.fill,
             };
         },
@@ -195,7 +204,7 @@ const Speedo = (() => {
            20 km/h, with a fuel needle in a small window. A car from before there were screens. */
         classic() {
             const value = digits('spd-value');
-            const g = gear(), u = unit();
+            const g = gear(), u = unit(), o = odo();
 
             const speed = dial({
                 cx: 84, cy: 84, r: 68, max: MAX_KMH, step: 10, labelEvery: 20,
@@ -221,10 +230,10 @@ const Speedo = (() => {
                         ...speed.parts,
                     ]),
                     U.make('div', { class: 'spd-centre' }, [
-                        U.make('div', { class: 'spd-readout' }, [value, u]), g,
+                        U.make('div', { class: 'spd-readout' }, [value, u]), g, o,
                     ]),
                 ]),
-                value, unit: u, gear: g, speedDial: speed, fuelArc: fuel.fill,
+                value, unit: u, gear: g, odo: o, speedDial: speed, fuelArc: fuel.fill,
             };
         },
 
@@ -233,7 +242,7 @@ const Speedo = (() => {
            gear between them. The layout every sports car has used for forty years. */
         sport() {
             const value = digits('spd-value');
-            const g = gear(), u = unit(), r = range();
+            const g = gear(), u = unit(), r = range(), o = odo();
 
             const tach = dial({
                 cx: 74, cy: 78, r: 58, max: MAX_RPM, step: 0.5, labelEvery: 1,
@@ -256,9 +265,9 @@ const Speedo = (() => {
                     U.make('div', { class: 'spd-centre spd-centre--between' }, [
                         g, U.make('div', { class: 'spd-readout' }, [value, u]),
                     ]),
-                    U.make('div', { class: 'spd-foot' }, [fuel.node, r]),
+                    U.make('div', { class: 'spd-foot' }, [fuel.node, o, r]),
                 ]),
-                value, unit: u, gear: g, range: r,
+                value, unit: u, gear: g, range: r, odo: o,
                 speedDial: speed, tachDial: tach, fuelFill: fuel.fill,
             };
         },
@@ -268,7 +277,7 @@ const Speedo = (() => {
            redline picked out, fuel and coolant strips underneath. */
         digital() {
             const value = digits('spd-value spd-value--xl');
-            const u = unit(), g = gear(), r = range();
+            const u = unit(), g = gear(), r = range(), o = odo();
 
             const segments = [];
             const revbar = U.make('div', { class: 'spd-revbar' });
@@ -295,11 +304,11 @@ const Speedo = (() => {
                     revbar, scale,
                     U.make('div', { class: 'spd-main' }, [
                         U.make('div', { class: 'spd-readout' }, [value, u]),
-                        U.make('div', { class: 'spd-side' }, [g, r]),
+                        U.make('div', { class: 'spd-side' }, [g, r, o]),
                     ]),
                     U.make('div', { class: 'spd-strips' }, [fuel.node, temp.node]),
                 ]),
-                value, unit: u, gear: g, range: r,
+                value, unit: u, gear: g, range: r, odo: o,
                 revSegments: segments, fuelFill: fuel.fill, tempFill: temp.fill,
             };
         },
@@ -309,7 +318,7 @@ const Speedo = (() => {
            German saloon reading of the same instrument. Fuel sits on an inner arc. */
         luxury() {
             const value = digits('spd-value');
-            const u = unit(), g = gear(), r = range();
+            const u = unit(), g = gear(), r = range(), o = odo();
 
             const speed = dial({
                 cx: 92, cy: 92, r: 78, from: -135, to: 135, max: MAX_KMH,
@@ -327,10 +336,10 @@ const Speedo = (() => {
                     ]),
                     U.make('div', { class: 'spd-centre' }, [
                         U.make('div', { class: 'spd-readout' }, [value, u]),
-                        U.make('div', { class: 'spd-subrow' }, [g, r]),
+                        U.make('div', { class: 'spd-subrow' }, [g, r]), o,
                     ]),
                 ]),
-                value, unit: u, gear: g, range: r, speedDial: speed, fuelArc: fuel.fill,
+                value, unit: u, gear: g, range: r, odo: o, speedDial: speed, fuelArc: fuel.fill,
             };
         },
 
@@ -339,7 +348,7 @@ const Speedo = (() => {
            speed as a digital inset. How a Japanese coupe lays its cluster out. */
         jdm() {
             const value = digits('spd-value');
-            const u = unit(), g = gear();
+            const u = unit(), g = gear(), o = odo();
 
             const tach = dial({
                 cx: 96, cy: 94, r: 80, from: -130, to: 130, max: MAX_RPM,
@@ -359,11 +368,11 @@ const Speedo = (() => {
                         ...tach.parts,
                     ]),
                     U.make('div', { class: 'spd-centre spd-centre--low' }, [
-                        U.make('div', { class: 'spd-readout' }, [value, u]), g,
+                        U.make('div', { class: 'spd-readout' }, [value, u]), g, o,
                     ]),
                     shift,
                 ]),
-                value, unit: u, gear: g, tachDial: tach, fuelArc: fuel.fill, shift,
+                value, unit: u, gear: g, odo: o, tachDial: tach, fuelArc: fuel.fill, shift,
             };
         },
 
@@ -372,7 +381,7 @@ const Speedo = (() => {
            dashboard, where the instruments are separate objects sitting in a bezel. */
         muscle() {
             const value = digits('spd-value');
-            const u = unit(), g = gear();
+            const u = unit(), g = gear(), o = odo();
 
             const speed = dial({
                 cx: 148, cy: 82, r: 62, max: MAX_KMH, step: 10, labelEvery: 40, fontSize: 9,
@@ -402,10 +411,10 @@ const Speedo = (() => {
                         ...fuelDial.parts, ...speed.parts, ...tach.parts,
                     ]),
                     U.make('div', { class: 'spd-centre spd-centre--muscle' }, [
-                        U.make('div', { class: 'spd-readout' }, [value, u]), g,
+                        U.make('div', { class: 'spd-readout' }, [value, u]), g, o,
                     ]),
                 ]),
-                value, unit: u, gear: g,
+                value, unit: u, gear: g, odo: o,
                 speedDial: speed, tachDial: tach, fuelDial,
             };
         },
@@ -415,7 +424,7 @@ const Speedo = (() => {
            only number that matters. The layout of a modern mid-engined car. */
         supercar() {
             const value = digits('spd-value spd-value--xl');
-            const u = unit(), g = gear(), r = range();
+            const u = unit(), g = gear(), r = range(), o = odo();
 
             const tach = dial({
                 cx: 104, cy: 100, r: 84, from: -120, to: 120, max: MAX_RPM,
@@ -442,9 +451,9 @@ const Speedo = (() => {
                         U.make('div', { class: 'spd-readout' }, [value, u]),
                         U.make('div', { class: 'spd-subrow' }, [g, r]),
                     ]),
-                    fuel.node,
+                    fuel.node, o,
                 ]),
-                value, unit: u, gear: g, range: r,
+                value, unit: u, gear: g, range: r, odo: o,
                 tachDial: tach, revLights: lights, fuelFill: fuel.fill,
             };
         },
@@ -454,7 +463,7 @@ const Speedo = (() => {
            from a high seat. Nothing is styled that does not have to be read. */
         truck() {
             const value = digits('spd-value');
-            const u = unit(), g = gear(), r = range();
+            const u = unit(), g = gear(), r = range(), o = odo();
 
             const speed = dial({
                 cx: 84, cy: 88, r: 66, max: 200, step: 10, labelEvery: 40, fontSize: 10,
@@ -478,11 +487,11 @@ const Speedo = (() => {
                     ]),
                     U.make('div', { class: 'spd-centre spd-centre--between' }, [
                         U.make('div', { class: 'spd-readout' }, [value, u]),
-                        U.make('div', { class: 'spd-side' }, [g, r]),
+                        U.make('div', { class: 'spd-side' }, [g, r, o]),
                     ]),
                     U.make('div', { class: 'spd-strips' }, [fuel.node, temp.node]),
                 ]),
-                value, unit: u, gear: g, range: r,
+                value, unit: u, gear: g, range: r, odo: o,
                 speedDial: speed, tachDial: tach, fuelFill: fuel.fill, tempFill: temp.fill,
             };
         },
@@ -493,7 +502,7 @@ const Speedo = (() => {
         retro() {
             const value = digits('spd-value spd-value--lcd');
             const ghost = U.make('span', { class: 'spd-value spd-value--lcd spd-lcd__ghost', text: '888' });
-            const u = unit(), g = gear(), r = range();
+            const u = unit(), g = gear(), r = range(), o = odo();
 
             const bars = [];
             const ladder = U.make('div', { class: 'spd-ladder' });
@@ -527,9 +536,9 @@ const Speedo = (() => {
                 node: U.make('div', { class: 'spd-body', 'data-style': 'retro' }, [
                     U.make('div', { class: 'spd-lcd' }, [ghost, value, u]),
                     ladder, scale, revLadder,
-                    U.make('div', { class: 'spd-foot' }, [g, fuel.node, r]),
+                    U.make('div', { class: 'spd-foot' }, [g, fuel.node, o, r]),
                 ]),
-                value, unit: u, gear: g, range: r,
+                value, unit: u, gear: g, range: r, odo: o,
                 speedBars: bars, revSegments: revBars, fuelFill: fuel.fill,
             };
         },
@@ -610,6 +619,16 @@ const Speedo = (() => {
         if (target.gear) U.text(target.gear, data.gear === undefined ? 'N' : data.gear);
         if (target.range) U.text(target.range, data.range ? `${data.range} ${data.rangeUnit || 'KM'}` : '');
 
+        // The odometer. Hidden outright when nothing is tracking a mileage, rather than shown
+        // as a zero on every car in the city.
+        if (target.odo) {
+            const reading = data.odometer;
+            U.show(target.odo, !!reading);
+            if (reading) {
+                U.text(target.odo, `${U.money(reading.value, ' ')} ${reading.unit}`);
+            }
+        }
+
         // Needles.
         if (target.speedDial) target.speedDial.set(speed);
         if (target.tachDial) target.tachDial.set(revs);
@@ -666,6 +685,7 @@ const Speedo = (() => {
             unitLabel: settings.units === 'mph' ? S.t('unit.mph') : S.t('unit.kmh'),
             range: options.range && options.fuel ? data.range : null,
             rangeUnit: settings.units === 'mph' ? 'MI' : 'KM',
+            odometer: options.odometer ? data.odometer : null,
         });
 
         // An aircraft has an altimeter where a car has a gear.

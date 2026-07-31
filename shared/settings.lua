@@ -213,7 +213,8 @@ function Settings.sanitise(input)
     if not Speedometers.allowed(out.speedometer.style) then
         out.speedometer.style = base.speedometer.style
     end
-    for _, key in ipairs({ 'fuel', 'rpm', 'gear', 'engine', 'belt', 'nitro', 'harness', 'altitude', 'range' }) do
+    for _, key in ipairs({ 'fuel', 'rpm', 'gear', 'engine', 'belt', 'nitro', 'harness',
+                           'altitude', 'range', 'odometer' }) do
         out.speedometer[key] = out.speedometer[key] == true
     end
 

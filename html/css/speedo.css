@@ -216,6 +216,33 @@
 
 .spd-range:empty { display: none; }
 
+/* The odometer window. A recessed panel on a real cluster: quiet, framed, and read rather
+   than watched. Never the brightest thing on the face. */
+.spd-odo {
+    align-self: center;
+    padding: 1px 7px;
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid var(--c-line);
+    border-radius: 2px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--c-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.spd-odo:empty { display: none; }
+
+/* On the cream-faced dials it is printed on the face, not lit. */
+.spd-body[data-style="classic"] .spd-odo,
+.spd-body[data-style="muscle"] .spd-odo {
+    background: rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.28);
+    color: #3a352d;
+    text-shadow: none;
+}
+
 .spd-subrow { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
 .spd-subrow > * { flex: none; }
 
