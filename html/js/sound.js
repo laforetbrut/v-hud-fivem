@@ -178,7 +178,10 @@ const Sound = (() => {
         wake();
 
         const length = U.clamp(Number(seconds) || 3, 0.4, 10);
-        const level = U.clamp(Number(volume) === undefined ? 0.5 : Number(volume), 0, 1);
+        // Test the ARGUMENT for undefined, not its coercion. `Number(undefined)` is NaN, never
+        // undefined, so the default branch was unreachable and NaN fell through to U.clamp,
+        // which floors it at 0 - a call with no volume played in complete silence.
+        const level = U.clamp(volume === undefined ? 0.5 : volume, 0, 1);
         const now = ctx.currentTime;
 
         // Overlapping requests do not stack into a drone: a growl already playing is left to

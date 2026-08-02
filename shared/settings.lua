@@ -399,11 +399,44 @@ function Settings.applyPolicy(settings)
         end
     end
 
-    -- Then the freeform list, which is allowed to override the lot.
+    --[[
+        Then the locked paths, pinned back to the server default.
+
+        `Settings.lockedPaths()` mixes two kinds of path, and they must not be treated alike:
+
+          * paths the operator listed in Config.Policy.locked, and paths derived from a list
+            narrowed to a single entry. These genuinely mean "hold this at the default", and
+            for the narrowed lists this loop is the ONLY server-side enforcement there is -
+            style.gauge, style.surface and compass.style are validated above against the full
+            module constants rather than against the narrowed list, so removing them from this
+            loop would let a crafted payload write a value the operator took away.
+
+          * paths DERIVED from the forces just applied above - theme, speedometer.style,
+            style.<key>, colours.<key>, show.<key>. Pinning those to `base` overwrites the
+            force with the default, one statement after setting it.
+
+        The second kind is why forcedTheme, forcedSpeedometer, forcedStyle, forcedColours and
+        every 'forced'/'off' element silently did nothing at all. They are skipped here; the
+        first kind is untouched, so nothing an operator restricted becomes reachable.
+
+        lockedPaths() itself is unchanged, so the menu still draws a padlock on all of them.
+    ]]
+    local derived = {}
+
+    if policy.forcedTheme and Themes[policy.forcedTheme] then derived['theme'] = true end
+    if policy.forcedSpeedometer then derived['speedometer.style'] = true end
+    for key in pairs(policy.forcedStyle or {}) do derived['style.' .. key] = true end
+    for key in pairs(policy.forcedColours or {}) do derived['colours.' .. key] = true end
+    for key, mode in pairs(policy.elements or {}) do
+        if mode == 'forced' or mode == 'off' then derived['show.' .. key] = true end
+    end
+
     for _, path in ipairs(Settings.lockedPaths()) do
-        local forced = Settings.getPath(base, path)
-        if forced ~= nil then
-            Settings.setPath(settings, path, HUD.deepCopy(forced))
+        if not derived[path] then
+            local forced = Settings.getPath(base, path)
+            if forced ~= nil then
+                Settings.setPath(settings, path, HUD.deepCopy(forced))
+            end
         end
     end
 

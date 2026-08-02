@@ -11,7 +11,13 @@
 ]]
 
 local previous = {}
-local lastActivity = 0
+-- Seeded from the clock, not from 0. At 0 the first idle tick computed an age of "however long
+-- the game has been running", which is past any immersive delay, so the HUD faded out the
+-- instant a player stood still after connecting instead of after their chosen delay.
+--
+-- Deliberately not nil: line ~203 subtracts from this, and nil there raises inside the tick
+-- thread, which would take the whole HUD down.
+local lastActivity = GetGameTimer()
 local faded = false
 
 --- Whether `payload` differs from the last one sent. Shallow on purpose: every field in the

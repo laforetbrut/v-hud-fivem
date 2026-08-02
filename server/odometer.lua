@@ -99,7 +99,11 @@ RegisterNetEvent('vhud:server:Odometer', function(plate, metres)
     -- claiming it drove to the moon.
     local ceiling = (Config.Odometer.saveEvery or 1000) * 2 + 500
     if added > ceiling then
-        HUD.debug(('odometer: refused %d m for %s (ceiling %d)'):format(added, plate, ceiling))
+        -- %s, not %d: `added` came from a client and Lua's %d raises on a fraction, on inf and
+        -- on anything past an integer's range. A malformed value must be refused, not turned
+        -- into a server-side error by the line that refuses it. `ceiling` is the operator's and
+        -- always integral, so its %d is safe.
+        HUD.debug(('odometer: refused %s m for %s (ceiling %d)'):format(tostring(added), plate, ceiling))
         return
     end
 

@@ -277,12 +277,21 @@ local function bandFor(stress)
         if stress >= band.min and stress < band.max then return band end
     end
 
-    return Config.Stress.effects[#Config.Stress.effects]
+    -- Fall back UPWARD only.
+    --
+    -- Returning the last band unconditionally handed the most violent effect to a stress of
+    -- zero whenever the bands did not cover the value - a gap between two bands, or a floor
+    -- raised above the lowest band's min. The last band is right only for a value ABOVE it.
+    local last = Config.Stress.effects[#Config.Stress.effects]
+    return (last and stress >= last.min) and last or nil
 end
 
 CreateThread(function()
     while true do
-        local band = State.ready and bandFor(Needs.stress) or nil
+        -- Gated on Config.Stress.enabled like the gain threads above it. Without that check
+        -- this loop kept evaluating bands - and could still shake the camera and blur the
+        -- screen - on a server that had switched the whole stress mechanic off.
+        local band = Config.Stress.enabled and State.ready and bandFor(Needs.stress) or nil
 
         if not band then
             Wait(1000)

@@ -221,7 +221,10 @@ end
 --- Reads only; every decision is already in that table.
 function Vehicle.warn(data)
     if not Config.Alerts or not data or data.bicycle or not data.driver then
-        warnings.seatbelt.since, warnings.door.since = nil, nil
+        -- BOTH fields, which is what resetWarnings does. Clearing only `since` left `last` set,
+        -- and an interval of 0 - documented as "once per occurrence" - then meant "once, ever"
+        -- for anyone who had been a passenger or on a bicycle since the last chime.
+        Vehicle.resetWarnings()
         return
     end
 

@@ -432,9 +432,17 @@ function Compat.voice()
     local playerId = PlayerId()
     local talking = NetworkIsPlayerTalking(playerId)
 
+    -- The voice INDEX, 1-3, not the distance in metres.
+    --
+    -- pma-voice's proximity bag carries both. The rings on the HUD light one, two or three at a
+    -- time, so a distance of 7.0 lit all of them permanently and the indicator never moved.
+    -- `index` is preferred; `distance` stays as a fallback for a provider that publishes only
+    -- that, and `vhudVoiceMode` for one that publishes neither and fires the event instead.
     local range = 0
     local proximity = LocalPlayer.state and LocalPlayer.state['proximity']
-    if type(proximity) == 'table' and proximity.distance then
+    if type(proximity) == 'table' and tonumber(proximity.index) then
+        range = tonumber(proximity.index)
+    elseif type(proximity) == 'table' and proximity.distance then
         range = proximity.distance
     elseif type(LocalPlayer.state.vhudVoiceMode) == 'number' then
         range = LocalPlayer.state.vhudVoiceMode
@@ -673,7 +681,7 @@ local function requestPartCallback(plate)
 
     -- Fire and forget. The answer lands in the cache and the next tick picks it up; the HUD
     -- never waits on the network.
-    pcall(object.Functions.TriggerCallback, entry.name, function(status)
+    local ok = pcall(object.Functions.TriggerCallback, entry.name, function(status)
         partsCache.pending = false
         if type(status) ~= 'table' then return end
 
@@ -687,6 +695,11 @@ local function requestPartCallback(plate)
         partsCache.at = GetGameTimer()
         partsCache.values = out
     end, plate)
+
+    -- `pending` is cleared by the callback, which never runs if the call itself threw - and
+    -- the guard at the top of this function would then refuse every future request, killing
+    -- the wear tell-tales for the rest of the session with no error anywhere.
+    if not ok then partsCache.pending = false end
 end
 
 --- Per-part condition for `vehicle`, as percentages, or nil when nothing publishes any.

@@ -852,6 +852,10 @@ const Speedo = (() => {
             range: options.range && options.fuel ? data.range : null,
             rangeUnit: settings.units === 'mph' ? 'MI' : 'KM',
             odometer: options.odometer ? data.odometer : null,
+            // The operator's warning thresholds. Without this the fuel strip's reserve mark
+            // fell back to its hard-coded 25 and ignored Config.Cluster.lowFuel, so the strip
+            // turned red at a different level from the lamp beside it.
+            thresholds: data.thresholds,
         });
 
         // An aircraft has an altimeter where a car has a gear.

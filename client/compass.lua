@@ -70,6 +70,11 @@ CreateThread(function()
             if visible ~= wasVisible then
                 wasVisible = visible
                 SendNUIMessage({ action = 'compass', show = visible })
+                -- Becoming visible has to invalidate the heading cache. The message above
+                -- carries no degrees, so the page resets to 0, and if the player has not
+                -- turned since it was last sent the "only send when it moved" test below never
+                -- fires again - a compass frozen at north until you look somewhere else.
+                if visible then lastSent = -1 end
             end
 
             local degrees = bearing(settings.compass.follow)
