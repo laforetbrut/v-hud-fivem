@@ -135,6 +135,14 @@ All notable changes to v-hud are documented here.
   `qb-smallresources:HasSeatbeltOn` / `HasHarness` first, which cannot drift; events and the
   state bag remain as fallbacks, and `/hudinfo` prints which source answered.
 
+- **HUD hid for menus that cover nothing** — `nuiFocus` was one boolean: any resource holding
+  NUI focus hid the HUD, and no native says which resource that is, so a radial menu wheel and
+  a full-screen phone were indistinguishable. `Config.HideWhen.onFocus = 'auto'` now asks
+  `IsNuiFocusKeepingInput()` instead: a resource that leaves the player able to walk and drive
+  is an overlay and the HUD stays, one that takes input is a screen and the HUD hides. On top
+  of that, a per-resource policy — `when = 'show'` or `'hide'`, detection by export, event pair
+  or state bag, and `hides` to let a menu take the gauges while leaving the minimap up.
+
 ### Ajouts
 
 - **Thème par défaut Clear Glass** — Panneaux translucides composés d'un dégradé en couches,
@@ -273,5 +281,13 @@ All notable changes to v-hud are documented here.
   tick et l'emportait. Le témoin interroge désormais d'abord
   `qb-smallresources:HasSeatbeltOn` / `HasHarness`, qui ne peut pas dériver ; les événements et
   le state bag restent en secours, et `/hudinfo` indique quelle source a répondu.
+- **HUD masqué par des menus qui ne couvrent rien** — `nuiFocus` était un seul booléen :
+  n'importe quelle ressource prenant le focus NUI masquait le HUD, et aucun natif ne dit
+  laquelle, donc une roue de menu radial et un téléphone plein écran étaient indiscernables.
+  `Config.HideWhen.onFocus = 'auto'` interroge désormais `IsNuiFocusKeepingInput()` : une
+  ressource qui laisse le joueur marcher et conduire est une surcouche et le HUD reste, une
+  qui prend les commandes est un écran et le HUD s'efface. S'y ajoute une politique par
+  ressource : `when = 'show'` ou `'hide'`, détection par export, paire d'événements ou state
+  bag, et `hides` pour qu'un menu retire les jauges en laissant la minimap.
 
 ---

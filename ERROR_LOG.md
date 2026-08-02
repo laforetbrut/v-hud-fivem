@@ -486,3 +486,26 @@ trusting it. Two real bugs this session were only found because the check was ma
 first on the old code; this one was found by accident.
 
 ---
+
+## [2026-08-02 12:20] — HUD vanished for a radial menu, stayed up for other menus
+
+**Context:** Playing on a server running ox_target, qs-inventory and a radial menu.
+**Error:** The HUD disappeared when the radial menu opened, which covers almost nothing, and
+stayed on screen over some menus that do cover it.
+**Root cause:** `Config.HideWhen.nuiFocus` was one blunt boolean: ANY resource holding NUI
+focus hid the HUD. That is the only signal the game gives - `IsNuiFocused()` is global and no
+native says WHICH resource holds it - so a wheel drawn around the crosshair and a phone
+covering the screen were indistinguishable. Menus that cover the screen without taking focus
+were invisible to the check entirely.
+**Fix:** `IsNuiFocusKeepingInput()`. A resource that calls SetNuiFocusKeepInput(true) is saying
+the player can still walk, drive and shoot under it - which is the definition of an overlay
+rather than a screen. `onFocus = 'auto'` uses that, and it sorts target eyes and
+walk-while-open radial menus from phones and inventories with no per-resource configuration.
+On top of it, a per-resource list with `when = 'show' | 'hide'`, detection by export (several
+candidate names), by an open/close event pair, or by a state bag, and `hides` to narrow what a
+given menu takes away.
+**Prevention:** When a boolean cannot express the question, the answer is usually another
+native rather than a longer list of special cases. qb-hud, checked for comparison, only tests
+IsPauseMenuActive - the floor, not the model.
+
+---

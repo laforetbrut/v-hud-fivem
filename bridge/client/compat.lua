@@ -741,55 +741,185 @@ for _, name in ipairs({
     if type(fn) == 'function' then frontendChecks[#frontendChecks + 1] = fn end
 end
 
---- Whether something is on screen that the HUD should get out from under: the pause menu, a
---- loading screen, another resource's NUI, or a resource that says it is open.
+-- Does whatever holds NUI focus still let the player control the game? See the note in
+-- Compat.overlayState; this one native separates "a menu over the screen" from "an overlay you
+-- play under" without either resource having to cooperate.
+local keepsInput = _G['IsNuiFocusKeepingInput']
+if type(keepsInput) ~= 'function' then keepsInput = nil end
+
+--[[
+    Resources detected by an open/close EVENT PAIR rather than by an export.
+
+    This is the only way to know about the ones that publish nothing - a radial menu, a target
+    eye, most context menus. They take NUI focus exactly like a phone does, and there is no
+    native that says WHICH resource holds it, so without a signal from the resource itself the
+    HUD cannot tell "a menu covering the whole screen" from "a wheel drawn around the crosshair".
+
+    That is the entire reason the HUD used to vanish for a radial menu: any focus at all hid it.
+]]
+local eventOpen = {}
+
+for _, entry in ipairs((Config.HideWhen or {}).resources or {}) do
+    if entry.openEvent then
+        AddEventHandler(entry.openEvent, function() eventOpen[entry.resource] = true end)
+        RegisterNetEvent(entry.openEvent)
+    end
+    if entry.closeEvent then
+        AddEventHandler(entry.closeEvent, function() eventOpen[entry.resource] = false end)
+        RegisterNetEvent(entry.closeEvent)
+    end
+end
+
+--- Is `entry`'s resource open right now? true, false, or nil for "cannot say".
 ---
---- None of this reaches into another resource. It reads the pause menu from the game, focus
---- from the client, and asks each configured resource a question it already answers.
-function Compat.overlayOpen()
+--- Three detection methods, tried in order of reliability. A resource may provide any of them,
+--- and one that provides none simply never answers - which is what `onFocus` is for.
+local function resourceOpen(entry)
+    if not started(entry.resource) then return nil end
+
+    -- 1. An export it already publishes. Current by definition, nothing to keep in sync.
+    --
+    -- `export` may be one name or several candidates: inventories and phones all publish an
+    -- "am I open" boolean but none of them agree on what to call it, so listing the plausible
+    -- names costs nothing and saves the operator from having to grep the resource.
+    if entry.export and overlayChecked[entry.resource] ~= false then
+        local names = type(entry.export) == 'table' and entry.export or { entry.export }
+        local answered = false
+
+        for _, name in ipairs(names) do
+            local ok, open = pcall(function()
+                return exports[entry.resource][name](exports[entry.resource])
+            end)
+            if ok then
+                answered = true
+                if type(open) == 'boolean' then
+                    overlayChecked[entry.resource] = true
+                    return open
+                end
+            end
+        end
+
+        -- None of the candidates exist on this build. Stop asking: this runs on the HUD tick,
+        -- and a pcall that always fails is a pcall that always costs.
+        if not answered then overlayChecked[entry.resource] = false end
+    end
+
+    -- 2. The open/close events it fires.
+    if eventOpen[entry.resource] ~= nil then return eventOpen[entry.resource] end
+
+    -- 3. A state bag it sets.
+    if entry.stateBag then
+        local value = LocalPlayer.state and LocalPlayer.state[entry.stateBag]
+        if type(value) == 'boolean' then return value end
+    end
+
+    return nil
+end
+
+--[[
+    What the HUD should get out from under, as { hud = bool, minimap = bool }.
+
+    The order below is the whole policy, and it is deliberately "a specific answer beats a
+    general one":
+
+      1. The game's own screens. Not negotiable - there is no reading of "keep my speedometer
+         over the pause menu" that is correct.
+      2. Any configured resource that is open and says `when = 'show'`. This WINS over
+         everything below, and it is how a radial menu stops hiding the HUD.
+      3. Any configured resource that is open and says `when = 'hide'`.
+      4. NUI focus held by something nobody has configured - the catch-all, decided by
+         `Config.HideWhen.onFocus`.
+
+    Nothing here reaches into another resource. It reads the game's own state, focus from the
+    client, and asks each configured resource a question it already answers.
+]]
+function Compat.overlayState()
     local hide = Config.HideWhen
+    local both = { hud = true, minimap = true }
+    local neither = { hud = false, minimap = false }
 
     if hide.pauseMenu and (IsPauseMenuActive() or GetIsLoadingScreenActive()) then
         lastOverlay = GetGameTimer()
-        return true
+        return both
     end
 
     if hide.frontend then
         for i = 1, #frontendChecks do
             if frontendChecks[i]() then
                 lastOverlay = GetGameTimer()
-                return true
+                return both
             end
         end
     end
 
-    -- Focus held by anything that is not this resource's own menu.
-    if hide.nuiFocus and IsNuiFocused() and not (State and (State.menuOpen or State.layoutMode)) then
-        lastOverlay = GetGameTimer()
-        return true
-    end
+    -- One pass over the configured resources, collecting both answers, because a 'show' entry
+    -- has to beat a 'hide' entry no matter which order they were written in.
+    local keepVisible = false
+    local wanted = nil
 
     for _, entry in ipairs(hide.resources or {}) do
-        if overlayChecked[entry.resource] ~= false and started(entry.resource) then
-            local ok, open = pcall(function()
-                return exports[entry.resource][entry.export](exports[entry.resource])
-            end)
-
-            if not ok then
-                -- No such export on this build. Stop asking.
-                overlayChecked[entry.resource] = false
+        if resourceOpen(entry) == true then
+            if entry.when == 'show' then
+                keepVisible = true
             else
-                overlayChecked[entry.resource] = true
-                if open == true then
-                    lastOverlay = GetGameTimer()
-                    return true
-                end
+                -- The UNION of what every open entry takes away: whatever any one of them
+                -- hides, hides. Combining with `and` instead was an intersection, so one
+                -- narrowed entry could keep the minimap on screen under a phone that wanted
+                -- the whole thing gone.
+                wanted = wanted or { hud = false, minimap = false }
+
+                -- `hides` narrows what an entry takes away. Absent means everything.
+                local narrow = type(entry.hides) == 'table' and entry.hides or nil
+                wanted.hud = wanted.hud or not (narrow and narrow.hud == false)
+                wanted.minimap = wanted.minimap or not (narrow and narrow.minimap == false)
             end
+        end
+    end
+
+    -- A resource that asked to stay visible is on screen, so nothing else gets to hide the HUD
+    -- underneath it. Without this rule a radial menu opened over an inventory would flicker.
+    if keepVisible then return neither end
+    if wanted then
+        lastOverlay = GetGameTimer()
+        return wanted
+    end
+
+    --[[
+        Focus held by something nobody configured, and not this resource's own menu.
+
+        'auto' asks the game a question that turns out to separate the two cases almost
+        perfectly, with no per-resource setup at all: does the thing holding focus KEEP GAME
+        INPUT ALIVE?
+
+        A resource that calls SetNuiFocusKeepInput(true) is saying the player can still walk,
+        drive and shoot while it is up - which is the definition of an overlay you play under.
+        qb-target does it, and so does qb-radialmenu in its walk-while-open mode. A phone or an
+        inventory does not: you cannot drive from your inventory, so it takes input as well as
+        focus, and it should take the screen too.
+
+        So: input kept -> stay visible. Input taken -> hide.
+    ]]
+    local mode = hide.onFocus or 'auto'
+    local unknownFocus = IsNuiFocused() and not (State and (State.menuOpen or State.layoutMode))
+
+    if unknownFocus and mode ~= 'show' then
+        local playable = mode == 'auto' and keepsInput and keepsInput()
+        if not playable then
+            lastOverlay = GetGameTimer()
+            return both
         end
     end
 
     -- A short tail, so the HUD does not flash back for one frame between two menus.
-    return (GetGameTimer() - lastOverlay) < (hide.linger or 0)
+    if (GetGameTimer() - lastOverlay) < (hide.linger or 0) then return both end
+    return neither
+end
+
+--- The old single answer, kept because it is what most callers want: is anything hiding the
+--- HUD itself. The minimap asks `Compat.overlayState().minimap` instead, so an operator can
+--- keep the map up under a menu that only covers the middle of the screen.
+function Compat.overlayOpen()
+    return Compat.overlayState().hud
 end
 
 -- ---------------------------------------------------------------------------------------

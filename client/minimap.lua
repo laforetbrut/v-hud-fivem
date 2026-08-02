@@ -224,7 +224,10 @@ local function shouldShow(settings, inVehicle)
     -- The game already hides the radar in its own pause menu, but not for another resource's
     -- phone or inventory - and a minimap poking out from under a phone is the same complaint
     -- as a speedometer over it.
-    if Compat.overlayOpen() then return false end
+    -- The minimap's own answer, not the HUD's: an operator can let a menu hide the gauges and
+    -- the speedometer while leaving the map up, which is what you want for anything that only
+    -- covers the middle of the screen.
+    if Compat.overlayState().minimap then return false end
     if settings.cinematic and Config.Cinematic.hideMinimap then return false end
     if not settings.show.minimap then return false end
     if settings.minimap.hide then return false end

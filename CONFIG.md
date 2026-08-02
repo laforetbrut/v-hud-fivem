@@ -139,19 +139,49 @@ colour picker with no code change:
 
 ## Getting out of the way
 
+A HUD over somebody's phone is in the way. A HUD that vanishes because a radial menu drew a
+wheel around the crosshair is broken. `Config.HideWhen` is where you draw that line.
+
+**Why it needs configuring:** when a resource opens a menu it calls `SetNuiFocus`. The HUD can
+see that *something* took focus, but FiveM has no native that says *which* resource has it — a
+phone covering the screen and a target eye drawing a dot look identical from here.
+
+**The catch-all rule** decides what happens for a menu you have not listed:
+
 ```lua
-Config.HideWhen = {
-    pauseMenu = true,   -- the GTA pause menu, the map screen, the loading screen
-    nuiFocus  = true,   -- any other resource holding NUI focus
-    resources = {
-        { resource = 'v-phone', export = 'IsOpen' },
-        -- add your own: a resource and a boolean export it already publishes
-    },
+Config.HideWhen.onFocus = 'auto'   -- 'auto' | 'hide' | 'show'
+```
+
+| Value | Behaviour |
+|---|---|
+| `'auto'` | **Default, and needs no setup.** Asks the game whether the thing holding focus kept *game input* alive. Input kept → you can still walk and drive under it, so it is an overlay and the HUD stays. Input taken → it is a screen and the HUD hides. This sorts target eyes and walk-while-open radial menus from phones and inventories with no per-resource work. |
+| `'hide'` | Step aside for any focus at all. Safest, and the most annoying. |
+| `'show'` | Never hide on focus alone — only the game's screens and the listed resources hide it. Closest to qb-hud. |
+
+**Per resource**, checked before the catch-all. A specific answer always beats a general one:
+
+```lua
+Config.HideWhen.resources = {
+    { resource = 'v-phone', export = { 'IsOpen', 'isOpen' } },   -- hides everything
+    { resource = 'qb-radialmenu', when = 'show',                 -- never hides the HUD
+      openEvent  = 'qb-radialmenu:client:onRadialmenuOpen',
+      closeEvent = 'qb-radialmenu:client:onRadialmenuClose' },
+    { resource = 'qb-menu', when = 'hide',                       -- takes the gauges only
+      hides = { hud = true, minimap = false } },
 }
 ```
 
-Nothing here reaches into another resource. It asks a question that resource already answers,
-and a missing export is recorded once and never asked again.
+Three ways to detect a resource, any one of them: an `export` (a name, or several candidates —
+the first that answers wins), an `openEvent`/`closeEvent` pair, or a `stateBag`. A resource
+that is not started, or whose export does not exist on your build, is skipped silently — a
+wrong entry here can never break anything.
+
+The order things are decided in:
+
+1. The game's own screens (`pauseMenu`, `frontend`) — always hide.
+2. A listed resource that is open with `when = 'show'` — **always stay up**, beats everything below.
+3. A listed resource that is open with `when = 'hide'` — hide what its `hides` names.
+4. Focus held by something unlisted — whatever `onFocus` says.
 
 ## Sharing
 

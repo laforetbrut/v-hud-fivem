@@ -14,23 +14,51 @@
     two ends. An empty Policy.locked means the player owns everything, which is how it ships;
     adding a path takes exactly that path away and nothing else.
 
-    Sections, in order:
-        1  Language
-        2  Opening the menu
-        3  Where settings are stored
-        4  Server policy: what is locked, what is offered, who may administer
-        5  Job and gang overrides
-        6  Admin presets
-        6b Layout presets
-        7  Status gauges - add your own here
-        8  Money
-        8b Notifications - and why qb-core, not the HUD, owns them
-        9  Stress
-        10 Cinematic mode
-        11 Compatibility: what this resource uses if it finds it
-        12 Refresh rates
-        13 Extra themes
-        14 Defaults - the starting point for every player
+    ---------------------------------------------------------------------------------------
+    HOW TO READ THIS FILE
+    ---------------------------------------------------------------------------------------
+
+    Nothing here has to be changed. It runs correctly as shipped on a stock QBCore server, and
+    every section explains what it costs to change and what breaks if you get it wrong.
+
+    Each setting is written as: what it does, then WHY it defaults to what it does. When the
+    reason is a bug that was actually hit, the comment says so - those are the settings where
+    a plausible-looking change will cost you an evening.
+
+    ---------------------------------------------------------------------------------------
+    THE FIVE THINGS OWNERS CHANGE FIRST
+    ---------------------------------------------------------------------------------------
+
+        Config.Locale                     the language                       (section 1)
+        Config.Policy.forcedTheme         one look for everybody             (section 4)
+        Config.Policy.elements            remove a gauge server-wide         (section 4)
+        Config.HideWhen                   when the HUD steps aside for menus (section 10b)
+        Config.Defaults                   what a new player starts with      (section 14)
+
+    ---------------------------------------------------------------------------------------
+    SECTIONS, IN ORDER
+    ---------------------------------------------------------------------------------------
+
+        1   Language
+        2   Opening the menu
+        3   Where settings are stored
+        4   Server policy: what is locked, what is offered, who may administer
+        5   Job and gang overrides
+        6   Admin presets
+        6b  Layout presets
+        7   Status gauges - add your own here
+        8   Money
+        8b  Notifications - and why qb-core, not the HUD, owns them
+        9   Stress
+        10  Cinematic mode
+        10a Compatibility: what this resource uses if it finds it
+        10a-ter Cluster thresholds - when the warning lamps light
+        10a-bis Driving warnings - the sounds
+        10b When the HUD gets out of the way  <- read this one if a menu misbehaves
+        11b Odometer
+        12  Refresh rates
+        13  Extra themes
+        14  Defaults - the starting point for every player
 ]]
 
 Config = {}
@@ -1000,12 +1028,59 @@ Config.Alerts = {
 -- 10b. When the HUD gets out of the way
 -- =======================================================================================
 
--- A HUD drawn over somebody's phone, inventory or pause menu is a HUD in the way. None of
--- this touches the other resource: it asks, or it watches a signal the other resource already
--- publishes, and hides itself.
+--[[
+    A HUD drawn over somebody's phone is in the way. A HUD that vanishes because a radial menu
+    drew a small wheel around the crosshair is broken. This section is where you draw that line,
+    and it is worth five minutes because every server has a different set of menus.
+
+    ---------------------------------------------------------------------------------------
+    WHY THIS NEEDS CONFIGURING AT ALL
+    ---------------------------------------------------------------------------------------
+
+    When a resource opens a menu it calls `SetNuiFocus(true, true)`. The HUD can see that
+    SOMETHING took focus - but FiveM has no native that says WHICH resource has it. A phone
+    covering the whole screen and a target eye drawing a dot look identical from here.
+
+    So a resource has to be identified some other way, and there are three:
+
+        export      the resource publishes a boolean, e.g. exports['v-phone']:IsOpen()
+        events      it fires one event when it opens and another when it closes
+        stateBag    it sets a flag on LocalPlayer.state
+
+    Anything that offers none of the three falls to the catch-all rule, `onFocus`.
+
+    ---------------------------------------------------------------------------------------
+    THE ORDER THINGS ARE DECIDED IN
+    ---------------------------------------------------------------------------------------
+
+        1. The game's own screens              -> always hide      (pauseMenu, frontend)
+        2. A listed resource with when='show'  -> always STAY UP   (wins over everything below)
+        3. A listed resource with when='hide'  -> hide
+        4. Focus held by something unlisted    -> whatever `onFocus` says
+
+    A specific answer always beats a general one. That is what lets you say "hide for
+    everything, except the radial menu".
+
+    ---------------------------------------------------------------------------------------
+    THE THREE THINGS PEOPLE ACTUALLY WANT
+    ---------------------------------------------------------------------------------------
+
+    "Hide the HUD for absolutely every menu, no exceptions."
+        onFocus = 'hide'   and remove the `when = 'show'` entries below.
+
+    "Never hide the HUD for anything except the pause menu, like qb-hud does."
+        onFocus = 'show'   and set every entry below to `when = 'show'`, or empty the list.
+
+    "Hide for the big ones, keep it up for the small ones."   <- how it ships
+        onFocus = 'hide'   and mark the small ones `when = 'show'`.
+]]
 Config.HideWhen = {
-    -- The GTA pause menu, the map screen and the loading screen. There is no reason to draw
-    -- a speedometer over a menu the game itself put up.
+    -- ---------------------------------------------------------------------------------
+    -- The game's own screens
+    -- ---------------------------------------------------------------------------------
+
+    -- The GTA pause menu, the map screen and the loading screen. There is no reading of
+    -- "keep my speedometer over the pause menu" that is correct, so leave this on.
     pauseMenu = true,
 
     -- The game's other full-screen prompts, which the pause menu check does NOT cover because
@@ -1013,28 +1088,122 @@ Config.HideWhen = {
     -- Alt+F4, and the character switch fly-over.
     frontend = true,
 
-    -- ANY other resource holding NUI focus. That is the general answer to "a menu is open":
-    -- the phone, the inventory, a shop, a job menu. They take focus, this steps aside.
-    --
-    -- Turn it off if a resource on your server takes focus without covering anything (some
-    -- radial menus do) and you would rather keep the HUD up underneath it.
-    nuiFocus = true,
+    -- ---------------------------------------------------------------------------------
+    -- The catch-all rule
+    -- ---------------------------------------------------------------------------------
 
-    -- Resources that publish their own "am I open" export. Checked in addition to the focus
-    -- rule, because a phone that keeps the game controls live does not always hold focus.
+    -- What to do when SOMETHING has NUI focus and it is not one of the resources listed
+    -- below - a menu on your server that nobody has told the HUD about.
     --
-    -- Each entry is a resource and a boolean export on it. A resource that is not started, or
-    -- that does not publish the export, is skipped - nothing here can error.
+    --   'auto'   DEFAULT, and it needs no setup. Ask the game whether the thing holding focus
+    --            also kept GAME INPUT alive:
+    --
+    --              input kept  -> the player can still walk, drive and shoot under it, so it
+    --                             is an overlay, not a screen. The HUD stays.
+    --              input taken -> you cannot play under it, so it is a screen. The HUD hides.
+    --
+    --            That one question sorts a target eye and a walk-while-open radial menu (both
+    --            call SetNuiFocusKeepInput) from a phone or an inventory (which do not),
+    --            without either resource having to publish anything. It is why the HUD no
+    --            longer disappears for a radial menu on a server nobody has configured.
+    --
+    --   'hide'   step aside for ANY focus. The old behaviour. Safest, and the most annoying:
+    --            a small menu blanks the HUD until you list it below.
+    --
+    --   'show'   never hide on focus alone. The HUD then only ever hides for the game's own
+    --            screens and for the resources listed below. Closest to how qb-hud behaves.
+    onFocus = 'auto',
+
+    -- ---------------------------------------------------------------------------------
+    -- Per resource
+    -- ---------------------------------------------------------------------------------
+
+    --[[
+        One entry per menu you care about. Fields:
+
+          resource    the folder name, exactly as it appears in resources/
+          when        'hide' (default) or 'show'
+          hides       optional, and only meaningful with when='hide'. Narrows WHAT goes away:
+                          hides = { hud = true, minimap = false }
+                      keeps the minimap up while the gauges and the speedometer step aside.
+                      Absent means everything hides.
+
+        And ONE of these, to detect it:
+
+          export      = 'IsOpen'                  a boolean export the resource publishes
+          export      = { 'IsOpen', 'isOpen' }    several candidates; the first that answers
+                                                  wins. Inventories all publish this and none
+                                                  of them agree on the name, so guessing a few
+                                                  is cheaper than grepping.
+          openEvent   = '...'                     fired when it opens
+          closeEvent  = '...'                     fired when it closes   (use both together)
+          stateBag    = 'inv_busy'                a boolean on LocalPlayer.state
+
+        A resource that is not started, or whose export does not exist on your build, is
+        skipped silently - a wrong entry here can never break anything, it just does nothing.
+
+        YOU PROBABLY DO NOT NEED TO ADD ANYTHING. With `onFocus = 'auto'` above, a menu that
+        takes focus is handled correctly without being listed. This list is for the two cases
+        auto cannot see:
+
+          * a resource that covers the screen WITHOUT taking NUI focus (rare, but some phones
+            keep the controls live so you can walk while texting)
+          * a resource that takes focus and input in a way that gets auto's answer wrong
+
+        TO ADD ONE: grep the resource folder for `exports(` and look for an open/closed
+        boolean. If it publishes none, grep for `TriggerEvent(` near where it opens and closes
+        and use the event pair.
+    ]]
     resources = {
-        { resource = 'v-phone', export = 'IsOpen' },
-        { resource = 'qb-phone', export = 'IsOpen' },
-        { resource = 'lb-phone', export = 'IsOpen' },
-        { resource = 'qb-inventory', export = 'IsInventoryOpen' },
-        { resource = 'ox_inventory', export = 'getInventoryOpen' },
+        -- Phones and inventories: these cover the screen, so they hide everything.
+        --
+        -- Several export names per resource because forks rename them, and a name that does
+        -- not exist costs one failed call, once, and is then never tried again.
+        { resource = 'v-phone',      export = { 'IsOpen', 'isOpen' } },
+        { resource = 'qb-phone',     export = { 'IsOpen', 'isOpen' } },
+        { resource = 'lb-phone',     export = { 'IsOpen', 'isOpen' } },
+        { resource = 'gksphone',     export = { 'IsOpen', 'isOpen' } },
+        { resource = 'qb-inventory', export = { 'IsInventoryOpen', 'isInventoryOpen' } },
+        { resource = 'ox_inventory', export = { 'getInventoryOpen', 'inventoryOpen' } },
+        { resource = 'qs-inventory', export = { 'inInventory', 'isInventoryOpen', 'IsOpen' },
+          stateBag = 'inv_busy' },
+        { resource = 'origen_inventory', export = { 'isInventoryOpen', 'IsOpen' } },
+
+        -- The radial menu draws a wheel around the crosshair. `auto` already keeps the HUD up
+        -- for it when it runs in walk-while-open mode; this entry makes it explicit for the
+        -- mode where it does not, because a wheel is never a reason to blank a speedometer.
+        --
+        -- It publishes no export, so it is detected by the two events it already fires.
+        {
+            resource = 'qb-radialmenu',
+            when = 'show',
+            openEvent = 'qb-radialmenu:client:onRadialmenuOpen',
+            closeEvent = 'qb-radialmenu:client:onRadialmenuClose',
+        },
+
+        -- Target eyes are handled by `auto` - both qb-target and ox_target call
+        -- SetNuiFocusKeepInput, so the HUD already stays up for them and no entry is needed.
+        -- If you set onFocus = 'hide' and want them exempted anyway, add:
+        --     { resource = 'ox_target', when = 'show', stateBag = 'hasOxTarget' },
+
+        -- An example of the narrowed form. Uncommented, this would let a context menu take the
+        -- gauges away while leaving the map on screen.
+        -- {
+        --     resource = 'qb-menu',
+        --     when = 'hide',
+        --     hides = { hud = true, minimap = false },
+        --     openEvent = 'qb-menu:client:openMenu',
+        --     closeEvent = 'qb-menu:client:closeMenu',
+        -- },
     },
 
-    -- How long the HUD stays hidden after the thing that hid it went away. A short tail stops
-    -- the HUD flashing back for one frame between two menus.
+    -- ---------------------------------------------------------------------------------
+    -- Timing
+    -- ---------------------------------------------------------------------------------
+
+    -- How long the HUD stays hidden after the thing that hid it went away, in milliseconds.
+    -- A short tail stops the HUD flashing back for one frame between two menus that open one
+    -- after the other. Set to 0 if you want it back instantly.
     linger = 250,
 }
 
