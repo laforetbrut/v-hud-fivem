@@ -155,6 +155,12 @@ function Vehicle.read(vehicle, settings)
         -- brake, coolant, driveline and battery tell-tales.
         parts = Compat.vehicleParts(vehicle),
         partWarning = Config.Compat.partWarning or 50,
+        -- The thresholds the lamps light at, so the NUI never has to invent one.
+        thresholds = {
+            lowFuel = Config.Cluster.lowFuel or 25,
+            lowFuelCritical = Config.Cluster.lowFuelCritical or 8,
+            engineFault = Config.Cluster.engineFault or 25,
+        },
         -- Total distance this vehicle has covered. nil when nothing is tracking it, which
         -- hides the readout rather than printing a zero on every car in the city.
         odometer = Odometer and Odometer.display(vehicle, settings.units) or nil,

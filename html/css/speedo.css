@@ -349,25 +349,44 @@
 
 .spd-strips > .spd-strip { flex: 1; }
 
+/* The E and F marks. Bright enough to be read against a moving road: at --c-muted they were
+   grey-on-grey and the strip looked like a decorative line rather than a gauge. */
 .spd-strip__cap {
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 800;
-    color: var(--c-muted);
+    color: rgba(255, 255, 255, 0.72);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 
 .spd-track {
-    background: var(--c-track);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 999px;
     overflow: hidden;
 }
 
-.spd-strip__track { flex: 1; height: 3px; }
+/*
+    Three pixels of track was the whole problem with the fuel gauge.
+
+    A 3px bar with a translucent fill, over a road that is itself moving and roughly the same
+    brightness, is invisible in exactly the situation it matters - which is any of them. Six
+    pixels with a dark trough and a lit edge reads at a glance, and it is still a strip rather
+    than a bar chart.
+*/
+.spd-strip__track { flex: 1; height: 6px; }
 
 .spd-fill {
     height: 100%;
     background: var(--c-fuel);
-    box-shadow: var(--glow);
+    box-shadow: 0 0 6px var(--c-fuel), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     transition: width var(--t-fast) linear;
+}
+
+/* Under the reserve mark the fill goes red, whatever colour the player picked for fuel. The
+   strip has no numbers, so this is the only way it can say "low" rather than just "short". */
+.spd-strip[data-low="true"] .spd-fill {
+    background: rgb(255, 90, 90);
+    box-shadow: 0 0 8px rgba(255, 90, 90, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .spd-strip--temp .spd-fill { background: var(--c-thirst); }

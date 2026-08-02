@@ -225,6 +225,20 @@ Config.Tick.defaultRate = 60
 
 Every entry is offered to the player; removing one removes the choice.
 
+## Warning lamp thresholds
+
+When the cluster's lamps come on. Separate from `Config.Alerts`, which is about sounds.
+
+```lua
+Config.Cluster = {
+    lowFuel         = 25,   -- reserve light, as a percentage of the tank
+    lowFuelCritical = 8,    -- below this it blinks instead of sitting steady
+    engineFault     = 25,   -- engine health below this lights the engine lamp red
+}
+```
+
+`Config.Compat.partWarning` (default 50) does the same job for the mechanical wear lamps.
+
 ## Warning sounds
 
 Three of them, all under `Config.Alerts`, and all silent for a player who turned HUD sounds

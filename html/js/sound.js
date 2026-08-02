@@ -84,38 +84,87 @@ const Sound = (() => {
         source.stop(at + length);
     }
 
-    /** One rumble: a low oscillator whose pitch wanders, which is what turns a hum into a
-     *  stomach. */
+    /*
+        The rumble.
+
+        A sine at 60Hz is a hum, not a stomach - which is what the first attempt sounded like.
+        Three things make it read as a gut:
+
+          * a SAWTOOTH, not a sine. The harmonics are what a resonant filter has to bite on;
+            a pure tone has nothing to sweep through and stays a drone.
+          * a resonant lowpass that sweeps up and back down across the burst. That sweep is the
+            "rolling" quality, and it is doing most of the work here.
+          * amplitude modulation at a few hertz, detuned per burst, so the sound churns instead
+            of holding steady.
+
+        The pitch is also lower than before, 30-46Hz rather than 52-78: a stomach is felt more
+        than heard, and the higher it sits the more it sounds like machinery.
+    */
     function rumble(at, length, volume) {
         const osc = ctx.createOscillator();
-        osc.type = 'sine';
+        osc.type = 'sawtooth';
 
-        const base = 52 + Math.random() * 26;
+        const base = 30 + Math.random() * 16;
         osc.frequency.setValueAtTime(base, at);
-        // Three or four pitch waypoints across the burst. A straight tone reads as a machine.
-        const steps = 3 + Math.floor(Math.random() * 2);
+        const steps = 3 + Math.floor(Math.random() * 3);
         for (let i = 1; i <= steps; i += 1) {
             osc.frequency.linearRampToValueAtTime(
-                base * (0.62 + Math.random() * 0.85),
+                base * (0.7 + Math.random() * 0.7),
                 at + (length * i) / steps,
             );
         }
 
+        // The sweep. Up into the low mids and back down, which is the churn.
         const low = ctx.createBiquadFilter();
         low.type = 'lowpass';
-        low.frequency.value = 420;
+        low.Q.value = 6 + Math.random() * 4;
+        low.frequency.setValueAtTime(90, at);
+        low.frequency.exponentialRampToValueAtTime(280 + Math.random() * 220, at + length * 0.45);
+        low.frequency.exponentialRampToValueAtTime(80, at + length);
 
         const gain = ctx.createGain();
         gain.gain.setValueAtTime(0, at);
-        gain.gain.linearRampToValueAtTime(volume, at + length * 0.18);
-        gain.gain.setValueAtTime(volume, at + length * 0.7);
+        gain.gain.linearRampToValueAtTime(volume, at + length * 0.22);
+        gain.gain.setValueAtTime(volume, at + length * 0.62);
         gain.gain.linearRampToValueAtTime(0, at + length);
+
+        // The churn: a slow tremolo on top of the envelope.
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 3.2 + Math.random() * 4.5;
+        const lfoDepth = ctx.createGain();
+        lfoDepth.gain.value = volume * 0.55;
+        lfo.connect(lfoDepth);
+        lfoDepth.connect(gain.gain);
+        lfo.start(at);
+        lfo.stop(at + length);
 
         osc.connect(low);
         low.connect(gain);
         gain.connect(master);
         osc.start(at);
         osc.stop(at + length);
+    }
+
+    /** A liquid "bloop": a fast downward pitch sweep. Two or three of these per burst are what
+     *  stop the sound being a machine and make it a gut. */
+    function bloop(at, volume) {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+
+        const from = 150 + Math.random() * 190;
+        osc.frequency.setValueAtTime(from, at);
+        osc.frequency.exponentialRampToValueAtTime(45 + Math.random() * 25, at + 0.09);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, at);
+        gain.gain.linearRampToValueAtTime(volume, at + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.13);
+
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(at);
+        osc.stop(at + 0.16);
     }
 
     /**
@@ -151,8 +200,14 @@ const Sound = (() => {
             const span = Math.min((length / bursts) * 0.85, length - (at - now) - 0.05);
             if (span <= 0.05) continue;
 
-            rumble(at, span, 0.85);
-            gurgle(at + span * 0.2, Math.min(span * 0.6, 0.5), 0.5);
+            rumble(at, span, 0.8);
+            gurgle(at + span * 0.2, Math.min(span * 0.6, 0.5), 0.35);
+
+            // One or two liquid blips inside the burst, at random offsets.
+            const blips = 1 + Math.floor(Math.random() * 2);
+            for (let b = 0; b < blips; b += 1) {
+                bloop(at + span * (0.15 + Math.random() * 0.6), 0.32);
+            }
         }
     }
 

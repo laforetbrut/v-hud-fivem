@@ -34,6 +34,11 @@ const Menu = (() => {
     function row(label, control, help, path, stacked) {
         const locked = path ? S.isLocked(path) : false;
 
+        // `label` may be a string or a node - the Elements tab passes a node so it can put the
+        // gauge's own icon beside the name. The search index needs the text either way.
+        const isNode = label && typeof label === 'object' && label.nodeType === 1;
+        const text = isNode ? (label.textContent || '') : String(label == null ? '' : label);
+
         const children = [
             U.make('div', { class: 'row__label' }, [
                 label,
@@ -48,7 +53,7 @@ const Menu = (() => {
             class: 'row',
             'data-locked': locked,
             'data-stacked': stacked ? 'true' : 'false',
-            'data-search': `${label} ${help || ''}`.toLowerCase(),
+            'data-search': `${text} ${help || ''}`.toLowerCase(),
         }, children);
     }
 
@@ -307,10 +312,47 @@ const Menu = (() => {
             // not exist on this server, and a row for it is a row about nothing.
             const removed = U.asArray(S.choices().removed);
 
+            // Each row carries the gauge's OWN icon.
+            //
+            // Without it the tab is a list of words, and a player looking at a symbol on screen
+            // has no way to tell which switch turns that symbol off - which is exactly the
+            // complaint "I can't remove this thing and I don't know what it is". The icon comes
+            // from the same Config.Status definition that draws the gauge, so a custom gauge an
+            // operator added gets its own icon here with no extra work.
+            const icons = {};
+            for (const status of (S.statik.statuses || [])) {
+                if (status.icon) icons[status.key] = [{ d: status.icon, fill: false }];
+            }
+
+            // The speedometer's own switches get their tell-tale symbol, so the row that turns
+            // the nitrous lamp off carries the nitrous lamp. `seatbelt` is called `belt` on the
+            // cluster; the rest match by name.
+            for (const [key, lamp] of Object.entries({
+                nitro: 'nitro', harness: 'harness', engine: 'engine', seatbelt: 'belt',
+            })) {
+                if (!icons[key]) {
+                    const parts = Speedo.lampIcon(lamp);
+                    if (parts) icons[key] = parts;
+                }
+            }
+
+            const label = (key) => {
+                const parts = icons[key];
+                const text = U.make('span', { text: S.t(`element.${key}`) });
+                if (!parts) return text;
+                return U.make('span', { class: 'element-label' }, [
+                    U.svg('svg', { class: 'element-label__icon', viewBox: '0 0 24 24' },
+                        parts.map((p) => U.svg('path', {
+                            d: p.d, class: p.fill ? 'element-label__solid' : '',
+                        }))),
+                    text,
+                ]);
+            };
+
             return [
                 section(S.t('tab.elements'), S.t('elements.help'),
                     keys.filter((key) => !removed.includes(key))
-                        .map((key) => toggle(`show.${key}`, S.t(`element.${key}`)))),
+                        .map((key) => toggle(`show.${key}`, label(key)))),
             ];
         },
 
@@ -465,6 +507,22 @@ const Menu = (() => {
                     toggle('speedometer.harness', S.t('speedo.harness')),
                     toggle('speedometer.altitude', S.t('speedo.altitude')),
                     toggle('speedometer.parts', S.t('speedo.parts'), S.t('speedo.parts_help')),
+                ]),
+
+                // What every lamp under the cluster means. A row of warning symbols is only
+                // obvious to somebody who already drives, and there is nowhere on a HUD to put
+                // a caption - so the captions live here.
+                section(S.t('speedo.legend'), S.t('speedo.legend_help'), [
+                    U.make('div', { class: 'legend' }, Speedo.legend().map((lamp) => {
+                        // Lit, so the colour is visible: an unlit row of grey icons says
+                        // nothing about which ones are warnings and which are confirmations.
+                        U.show(lamp.node, true);
+                        U.attr(lamp.node, 'data-on', true);
+                        return U.make('div', { class: 'legend__item' }, [
+                            lamp.node,
+                            U.make('span', { class: 'legend__text', text: S.t(`lamp.${lamp.key}`) }),
+                        ]);
+                    })),
                 ]),
             ];
         },

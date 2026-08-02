@@ -115,7 +115,7 @@ const Speedo = (() => {
             U.make('div', { class: 'spd-track spd-strip__track' }, [fill]),
             U.make('span', { class: 'spd-strip__cap', text: labelRight }),
         ]);
-        return { node, fill };
+        return { node, fill, strip: node };
     }
 
     /** A quarter-arc fuel gauge tucked inside a dial, the way a real cluster does it. */
@@ -280,7 +280,7 @@ const Speedo = (() => {
                     fuel.node, o,
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
-                speedArc: speed.fill, fuelFill: fuel.fill,
+                speedArc: speed.fill, fuelFill: fuel.fill, fuelStrip: fuel.strip,
             };
         },
 
@@ -348,7 +348,7 @@ const Speedo = (() => {
                     U.make('div', { class: 'spd-foot' }, [fuel.node, o, r]),
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
-                speedDial: speed, tachDial: tach, fuelFill: fuel.fill,
+                speedDial: speed, tachDial: tach, fuelFill: fuel.fill, fuelStrip: fuel.strip,
             };
         },
 
@@ -389,7 +389,7 @@ const Speedo = (() => {
                     U.make('div', { class: 'spd-strips' }, [fuel.node, temp.node]),
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
-                revSegments: segments, fuelFill: fuel.fill, tempFill: temp.fill,
+                revSegments: segments, fuelFill: fuel.fill, fuelStrip: fuel.strip, tempFill: temp.fill,
             };
         },
 
@@ -540,7 +540,7 @@ const Speedo = (() => {
                     fuel.node, o,
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
-                tachDial: tach, revLights: lights, fuelFill: fuel.fill,
+                tachDial: tach, revLights: lights, fuelFill: fuel.fill, fuelStrip: fuel.strip,
             };
         },
 
@@ -578,7 +578,7 @@ const Speedo = (() => {
                     U.make('div', { class: 'spd-strips' }, [fuel.node, temp.node]),
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
-                speedDial: speed, tachDial: tach, fuelFill: fuel.fill, tempFill: temp.fill,
+                speedDial: speed, tachDial: tach, fuelFill: fuel.fill, fuelStrip: fuel.strip, tempFill: temp.fill,
             };
         },
 
@@ -625,7 +625,7 @@ const Speedo = (() => {
                     U.make('div', { class: 'spd-foot' }, [g, fuel.node, o, r]),
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
-                speedBars: bars, revSegments: revBars, fuelFill: fuel.fill,
+                speedBars: bars, revSegments: revBars, fuelFill: fuel.fill, fuelStrip: fuel.strip,
             };
         },
     };
@@ -799,7 +799,13 @@ const Speedo = (() => {
         setArc(target.fuelArc, fuel / 100);
 
         // Strips.
-        if (target.fuelFill) target.fuelFill.style.width = `${U.round(fuel, 1)}%`;
+        if (target.fuelFill) {
+            target.fuelFill.style.width = `${U.round(fuel, 1)}%`;
+            // The strip has no numbers, so the only way it can say "low" rather than merely
+            // "short" is to change colour at the reserve mark.
+            const mark = (data.thresholds && data.thresholds.lowFuel) || 25;
+            if (target.fuelStrip) U.attr(target.fuelStrip, 'data-low', fuel <= mark);
+        }
         // Coolant is not a value the game exposes, so it is derived from engine health: a
         // healthy engine sits at operating temperature, a wrecked one runs hot. Honest enough
         // for a gauge whose only job is to look alive and warn about a dying engine.
@@ -892,15 +898,21 @@ const Speedo = (() => {
             `data.engine` is the engine's HEALTH, not whether it is turning over. Reading only
             that meant a switched-off car in perfect condition sat there with a green lamp.
         */
+        const limits = data.thresholds || {};
         const running = data.engineOn !== false;
         showChip(chips.engine, options.engine && !data.bicycle,
-            running && data.engine > 60, data.engine < 25);
+            running && data.engine > 60, data.engine < (limits.engineFault === undefined ? 25 : limits.engineFault));
 
         // The handbrake, and the low-fuel lamp at the reserve mark. Both appear only when they
         // have something to say, which is the whole point of a warning lamp.
         showChip(chips.brake, !data.bicycle && data.handbrake === true, false, true);
-        showChip(chips.fuel, options.fuel && !data.bicycle && data.fuel <= 15, false, true);
-        U.attr(chips.fuel, 'data-flash', data.fuel <= 5);
+
+        // The reserve light. The threshold is the operator's, not a number invented here -
+        // servers with a fast fuel drain want it earlier than servers without one.
+        const lowFuel = limits.lowFuel === undefined ? 25 : limits.lowFuel;
+        const criticalFuel = limits.lowFuelCritical === undefined ? 8 : limits.lowFuelCritical;
+        showChip(chips.fuel, options.fuel && !data.bicycle && data.fuel <= lowFuel, false, true);
+        U.attr(chips.fuel, 'data-flash', data.fuel <= criticalFuel);
 
         /*
             Mechanical wear, from whichever mechanic script is installed.
@@ -948,6 +960,29 @@ const Speedo = (() => {
         U.attr(root, 'data-on', false);
     }
 
-    return { setStyle, update, hide, preview, settlePreviews, FACES };
+    /**
+     * Every tell-tale this cluster can show, as { key, lamp, node }, in dashboard order.
+     *
+     * The menu draws a legend from this. Symbols are only self-explanatory to somebody who
+     * already drives; "I do not understand what these icons mean" is a fair complaint about a
+     * row of warning lamps, and the answer is to say what each one is somewhere you can look
+     * it up rather than to replace the symbols with words on the cluster itself.
+     */
+    function legend() {
+        return CHIP_ORDER.map((key) => ({
+            key,
+            lamp: CHIP_LAMPS[key] || 'green',
+            node: chip(key),
+        }));
+    }
+
+    /** The path data for a tell-tale, so the settings menu can put the same symbol beside the
+     *  switch that controls it. Returns null for a key that has no lamp. */
+    function lampIcon(key) {
+        const parts = CHIP_ICONS[key];
+        return parts ? parts.map((p) => ({ d: p.d, fill: !!p.fill })) : null;
+    }
+
+    return { setStyle, update, hide, preview, settlePreviews, legend, lampIcon, FACES };
 
 })();

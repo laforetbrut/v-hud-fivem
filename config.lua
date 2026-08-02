@@ -890,6 +890,26 @@ Config.Compat = {
 }
 
 -- =======================================================================================
+-- 10a-ter. Cluster thresholds
+-- =======================================================================================
+
+-- When the speedometer's warning lamps come on. Separate from Config.Alerts, which is about
+-- SOUNDS; these are purely what lights up.
+Config.Cluster = {
+    -- The low-fuel lamp, as a percentage of the tank. 25 is roughly where a real reserve light
+    -- comes on. Raise it if your server's fuel drain is fast, lower it if players complain the
+    -- lamp is on half the time.
+    lowFuel = 25,
+
+    -- Below this, the lamp blinks instead of sitting steady: you are not low, you are about to
+    -- stop.
+    lowFuelCritical = 8,
+
+    -- Engine health below this lights the engine lamp red.
+    engineFault = 25,
+}
+
+-- =======================================================================================
 -- 10a-bis. Driving warnings
 -- =======================================================================================
 
@@ -959,8 +979,11 @@ Config.Alerts = {
         rearm = 3,
 
         -- Total length of the growl, in seconds. Capped at 10 by the page.
-        seconds = 3.5,
-        volume = 0.5,
+        seconds = 3.0,
+
+        -- Quiet on purpose. This is a body noise, not an alarm: it should sit under the engine
+        -- and the radio and be something you notice, not something that interrupts you.
+        volume = 0.22,
 
         -- Hunger and thirst can both cross at once. This is the gap enforced between any two
         -- growls, in milliseconds, so that is one sound and not two on top of each other.

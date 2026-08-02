@@ -467,3 +467,22 @@ offers a way. A local copy kept in sync by events inherits every gap in the othe
 event discipline, and those gaps are invisible until someone reports the symptom.
 
 ---
+
+## [2026-08-01 01:15] — My own Lua compile check passed every broken file
+
+**Context:** Verifying edits to locales/fr.lua.
+**Error:** A genuine syntax error (an unescaped apostrophe inside a single-quoted string)
+shipped through a check that reported "all lua compiles".
+**Root cause:** The check was `load(src, name) is None`. Lua's `load` returns `nil, message`
+on failure, and lupa hands that pair back as a TUPLE - which is never `None`, so every file
+passed regardless of whether it compiled. The check had been reporting success for the whole
+session without testing anything.
+**Fix:** The boolean now comes from Lua itself: `local f, err = load(...) if f then return
+true, "" end return false, err`. FiveM's backtick hash literals are stripped first, since they
+are a Cfx extension standard Lua rejects and would otherwise be reported as failures.
+**Prevention:** A test harness that cannot fail is worse than no harness - it converts "not
+checked" into "checked and fine". Prove a new check catches a deliberately broken input before
+trusting it. Two real bugs this session were only found because the check was made to fail
+first on the old code; this one was found by accident.
+
+---
