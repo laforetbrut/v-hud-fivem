@@ -1,0 +1,61 @@
+name: Feature request / Demande de fonctionnalité
+description: Something the HUD should do and does not. / Quelque chose que le HUD devrait faire et ne fait pas.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two things this project deliberately will not do, so you do not spend time writing them up:
+
+        - **Take a setting away from players.** Whatever an operator configures, players keep the
+          ability to move every element and to choose the minimap shape. Both are enforced in code.
+        - **Reach into another resource.** v-hud asks a resource a question it already answers, or
+          watches a signal it already publishes. It never patches somebody else's file.
+
+        Deux choses que ce projet refuse par principe, pour ne pas vous faire écrire pour rien :
+
+        - **Retirer un réglage aux joueurs.** Quoi que configure un opérateur, les joueurs gardent
+          la possibilité de déplacer chaque élément et de choisir la forme de la minimap. Les deux
+          sont garantis dans le code.
+        - **Modifier une autre ressource.** v-hud pose à une ressource une question qu'elle répond
+          déjà, ou observe un signal qu'elle publie déjà. Il ne patche jamais le fichier d'autrui.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is the problem? / Quel est le problème ?
+      description: Describe what you are trying to do, not the solution you have in mind. A good problem statement usually has a simpler fix than the one it came with. / Décrivez ce que vous essayez de faire, pas la solution que vous imaginez. Un problème bien posé a souvent une solution plus simple que celle qui l'accompagne.
+      placeholder: |
+        On my server, medics need to see a patient's status but everyone else should not.
+        Right now I can only turn a gauge on or off for everybody.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would it look like? / À quoi cela ressemblerait-il ?
+      description: A config block, a menu control, a command — whatever fits. / Un bloc de config, un contrôle dans le menu, une commande.
+      render: lua
+    validations:
+      required: false
+
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who is it for? / Pour qui ?
+      options:
+        - Players / Les joueurs
+        - Server owners / Les propriétaires de serveur
+        - Developers building on v-hud / Les développeurs qui s'appuient sur v-hud
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Can it already be done? / Est-ce déjà possible ?
+      description: Check Config.Policy, Config.JobOverrides, Config.Status and the exports in API.md first. Say what you found. / Regardez Config.Policy, Config.JobOverrides, Config.Status et les exports dans API.md. Dites ce que vous avez trouvé.
+    validations:
+      required: false

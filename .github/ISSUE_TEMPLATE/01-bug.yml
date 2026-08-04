@@ -1,0 +1,136 @@
+name: Bug report / Rapport de bug
+description: Something in the HUD is broken. / Quelque chose ne fonctionne pas dans le HUD.
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before you file / Avant de poster**
+
+        - Update to the latest release first — the bug may already be fixed. / Mettez à jour vers la dernière version : le bug est peut-être déjà corrigé.
+        - Search the existing issues. / Cherchez dans les issues existantes.
+        - Run `/hudinfo` in game and paste the output below. It names every resource this HUD detected, and most reports are answered by that one block. / Tapez `/hudinfo` en jeu et collez la sortie plus bas. Elle nomme chaque ressource détectée, et la plupart des rapports se règlent avec ce seul bloc.
+        - **If a change to the HUD did not appear after `restart v-hud`:** FiveM caches NUI pages by URL. Stylesheets and scripts are cache-busted per page load, but `html/index.html` cannot be, so a change to that one file needs a full game-client restart. That is not a bug. / **Si un changement n'apparaît pas après `restart v-hud`** : FiveM met les pages NUI en cache par URL. Les feuilles de style et les scripts sont rafraîchis à chaque chargement, mais pas `html/index.html` : une modification de ce fichier demande un redémarrage complet du client. Ce n'est pas un bug.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks / Vérifications
+      options:
+        - label: I am on the latest release of v-hud. / Je suis sur la dernière version de v-hud.
+          required: true
+        - label: I searched the existing issues. / J'ai cherché dans les issues existantes.
+          required: true
+        - label: I read the relevant part of README.md / CONFIG.md. / J'ai lu la partie concernée du README / CONFIG.
+          required: true
+        - label: I tested with only v-hud and my framework started, or I say below why I could not. / J'ai testé avec seulement v-hud et mon framework démarrés, ou j'explique plus bas pourquoi je n'ai pas pu.
+          required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: v-hud version
+      description: The `version` line in `fxmanifest.lua`. / La ligne `version` dans `fxmanifest.lua`.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Framework
+      options:
+        - qb-core
+        - qbx_core (Qbox)
+        - Other / Autre
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the HUD? / Quelle partie du HUD ?
+      options:
+        - Status gauges (health, armour, hunger, thirst, stress) / Jauges de statut
+        - Speedometer / Compteur
+        - Warning tell-tales / Témoins d'alerte
+        - Minimap / Minimap
+        - Compass or street names / Boussole ou noms de rue
+        - Settings menu / Menu de réglages
+        - Layout editor (moving elements) / Éditeur de disposition
+        - Themes and colours / Thèmes et couleurs
+        - Server policy (Config.Policy) / Politique serveur
+        - Saving and loading settings / Sauvegarde et chargement
+        - Sounds / Sons
+        - Something else / Autre chose
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens, and what should happen instead / Ce qui se passe, et ce qui devrait se passer
+      placeholder: |
+        The seatbelt lamp stays green after I take the belt off.
+        It should turn red.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / Étapes pour reproduire
+      description: Numbered, from a fresh connect. A bug nobody can reproduce is a bug nobody can fix. / Numérotées, depuis une connexion propre. Un bug non reproductible n'est pas corrigeable.
+      placeholder: |
+        1. Get in any car
+        2. Press B to fasten the seatbelt — the lamp goes green
+        3. Press B again to take it off
+        4. The lamp stays green
+    validations:
+      required: true
+
+  - type: textarea
+    id: hudinfo
+    attributes:
+      label: Output of /hudinfo
+      description: Paste the whole block. It is the fastest way to answer most reports. / Collez le bloc entier. C'est le moyen le plus rapide de répondre.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output / Sortie console
+      description: F8 client console and the server console. Include the lines before the error, not only the error. / Console client F8 et console serveur. Incluez les lignes avant l'erreur, pas seulement l'erreur.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Related resources / Ressources liées
+      description: The inventory, phone, target, radial menu, fuel, seatbelt and mechanic scripts you run. Most HUD bugs are an interaction with one of these. / L'inventaire, le téléphone, le target, le menu radial, le carburant, la ceinture et la mécanique que vous utilisez. La plupart des bugs de HUD sont une interaction avec l'un d'eux.
+      placeholder: "qs-inventory, v-phone, ox_target, rcore_fuel, qb-smallresources"
+    validations:
+      required: false
+
+  - type: input
+    id: resolution
+    attributes:
+      label: Screen resolution / Résolution d'écran
+      description: Only needed for a layout or positioning problem. / Seulement pour un problème de disposition ou de position.
+      placeholder: "2560x1080 (ultrawide)"
+    validations:
+      required: false
+
+  - type: textarea
+    id: modified
+    attributes:
+      label: Have you modified v-hud? / Avez-vous modifié v-hud ?
+      description: Say which files. A modified copy is fine, but the fix may not apply to it unchanged. / Dites quels fichiers. Une copie modifiée n'est pas un problème, mais le correctif peut ne pas s'y appliquer tel quel.
+      placeholder: "No / Non — or: config.lua and html/css/themes.css"
+    validations:
+      required: false

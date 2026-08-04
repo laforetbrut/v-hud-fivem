@@ -1,0 +1,21 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or setup help / Question ou aide à l'installation
+    url: https://github.com/laforetbrut/v-hud-fivem/discussions
+    about: "Not sure it is a bug? Ask in Discussions. / Pas sûr que ce soit un bug ? Posez la question dans Discussions."
+
+  - name: Server owner's guide / Guide du propriétaire de serveur
+    url: https://github.com/laforetbrut/v-hud-fivem/blob/main/CONFIG.md
+    about: "Every setting in config.lua, what it does and what it costs. / Chaque réglage de config.lua, ce qu'il fait et ce qu'il coûte."
+
+  - name: Writing a theme / Écrire un thème
+    url: https://github.com/laforetbrut/v-hud-fivem/blob/main/THEMES.md
+    about: "Drop a file in themes/ and it appears in the menu. / Déposez un fichier dans themes/ et il apparaît dans le menu."
+
+  - name: Exports and events / Exports et événements
+    url: https://github.com/laforetbrut/v-hud-fivem/blob/main/API.md
+    about: "Building on v-hud from another resource. / S'appuyer sur v-hud depuis une autre ressource."
+
+  - name: Report a security problem / Signaler un problème de sécurité
+    url: https://github.com/laforetbrut/v-hud-fivem/security/advisories/new
+    about: "Privately, never in a public issue. / En privé, jamais dans une issue publique."

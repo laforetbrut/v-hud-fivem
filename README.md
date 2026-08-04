@@ -7,8 +7,10 @@ ten realistic instrument clusters, four compasses and a frosted-glass default lo
 
 ## Features
 
-- **Clear Glass default theme** - translucent panels with a real backdrop blur, hot pink
-  accent, Vice City palette. Four more ship with it: square minimalist, Miami, neon, modern.
+- **Clear Glass default theme** - translucent panels built from a layered gradient, a lit
+  edge and a drop shadow rather than `backdrop-filter`, which FiveM's CEF composites over the
+  finished frame and renders as a solid black box. Hot pink accent, Vice City palette. Four
+  more ship with it: square minimalist, Miami, neon, modern.
 - **Everything is movable** - a drag editor with snap-to-grid, six layout presets, and
   per-element sliders. Positions are a percentage of the screen, so they survive a
   resolution change. Elements anchored near an edge grow away from it, and the HUD clamps
@@ -181,9 +183,10 @@ par défaut en verre dépoli.
 
 ## Caractéristiques
 
-- **Thème par défaut Clear Glass** - panneaux translucides avec un vrai flou d'arrière-plan,
-  accent rose vif, palette Vice City. Quatre autres livrés avec : carré minimaliste, Miami,
-  néon, modern.
+- **Thème par défaut Clear Glass** - panneaux translucides composés d'un dégradé en couches,
+  d'une arête éclairée et d'une ombre portée plutôt que de `backdrop-filter`, que le CEF de
+  FiveM compose par-dessus l'image finie et rend en carré noir opaque. Accent rose vif,
+  palette Vice City. Quatre autres livrés avec : carré minimaliste, Miami, néon, modern.
 - **Tout est déplaçable** - un éditeur par glisser-déposer avec grille aimantée, six
   dispositions prédéfinies, et des curseurs par élément. Les positions sont un pourcentage
   de l'écran : elles survivent à un changement de résolution. Un élément proche d'un bord

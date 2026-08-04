@@ -1,0 +1,53 @@
+name: Documentation / Documentation
+description: Something in the docs is wrong, missing, or misleading. / Quelque chose dans la doc est faux, absent ou trompeur.
+title: "[docs] "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A comment that describes behaviour the code no longer has counts as a bug here, not as a
+        nitpick. It costs the next reader an hour.
+
+        Un commentaire qui décrit un comportement que le code n'a plus est traité ici comme un bug,
+        pas comme un détail. Il coûte une heure au lecteur suivant.
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where? / Où ?
+      options:
+        - README.md
+        - CONFIG.md (server owner's guide / guide du propriétaire)
+        - THEMES.md (writing a theme / écrire un thème)
+        - API.md (exports and events / exports et événements)
+        - CHANGELOG.md
+        - Comments inside config.lua / Commentaires dans config.lua
+        - Comments elsewhere in the code / Commentaires ailleurs dans le code
+        - The settings menu wording in game / Les libellés du menu en jeu
+    validations:
+      required: true
+
+  - type: input
+    id: section
+    attributes:
+      label: Which section or line? / Quelle section ou ligne ?
+      placeholder: "CONFIG.md, 'Getting out of the way'"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong? / Qu'est-ce qui ne va pas ?
+      description: If the docs say one thing and the code does another, say which one you believe is correct. / Si la doc dit une chose et le code une autre, dites laquelle vous pensez juste.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording / Formulation proposée
+      description: Optional, and welcome in either language. / Facultatif, et bienvenu dans l'une ou l'autre langue.
+    validations:
+      required: false

@@ -1,0 +1,89 @@
+name: Compatibility / Compatibilité
+description: v-hud does not read a resource you run — fuel, seatbelt, mechanic, inventory, a menu that hides the HUD wrongly. / v-hud ne lit pas une ressource que vous utilisez.
+title: "[compat] "
+labels: ["compatibility", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Most compatibility problems are **configuration, not code**. `Config.Compat` and
+        `Config.HideWhen` are built to be pointed at a new resource without touching a line of Lua,
+        and CONFIG.md explains how. Read that first — you may not need this issue at all.
+
+        La plupart des problèmes de compatibilité sont de la **configuration, pas du code**.
+        `Config.Compat` et `Config.HideWhen` sont faits pour être pointés vers une nouvelle
+        ressource sans toucher au Lua, et CONFIG.md explique comment. Lisez-le d'abord.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of resource? / Quel type de ressource ?
+      options:
+        - Fuel / Carburant
+        - Seatbelt or harness / Ceinture ou harnais
+        - Mechanic (part wear, nitrous) / Mécanique (usure, nitro)
+        - Inventory / Inventaire
+        - Phone / Téléphone
+        - A menu that hides the HUD when it should not / Un menu qui cache le HUD à tort
+        - A menu that does NOT hide the HUD when it should / Un menu qui ne cache PAS le HUD alors qu'il devrait
+        - Voice / Voix
+        - Notifications
+        - Framework / Core
+        - Something else / Autre chose
+    validations:
+      required: true
+
+  - type: input
+    id: resource
+    attributes:
+      label: Resource name and version / Nom et version de la ressource
+      description: The folder name exactly as it appears in your resources directory. / Le nom du dossier exactement tel qu'il apparaît dans resources.
+      placeholder: "qs-inventory 2.4.1"
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link to the resource / Lien vers la ressource
+      description: GitHub, Tebex, or the docs. Paid resources are fine — a link to their public documentation is enough. / GitHub, Tebex ou la doc. Les ressources payantes ne posent pas de problème : un lien vers leur documentation publique suffit.
+      placeholder: "https://..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: publishes
+    attributes:
+      label: What does it publish? / Que publie-t-elle ?
+      description: |
+        This is the part that decides whether it can be supported. Grep the resource for `exports(`
+        and for `TriggerEvent(` around what you care about, and paste what you find: an export name,
+        an event pair, or a state bag name.
+
+        C'est ce qui décide si la prise en charge est possible. Cherchez `exports(` et `TriggerEvent(`
+        dans la ressource, et collez ce que vous trouvez : un nom d'export, une paire d'événements
+        ou un nom de state bag.
+      render: lua
+      placeholder: |
+        exports('IsOpen', isOpen)
+        TriggerEvent('qs-inventory:client:open')
+    validations:
+      required: false
+
+  - type: textarea
+    id: hudinfo
+    attributes:
+      label: Output of /hudinfo
+      description: It names what v-hud detected, and often shows the resource is being found but answering nothing. / Elle indique ce que v-hud a détecté, et montre souvent que la ressource est trouvée mais ne répond rien.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What did you already try in config.lua? / Qu'avez-vous déjà essayé dans config.lua ?
+      description: The entry you added and what happened. / L'entrée ajoutée et ce qui s'est passé.
+      render: lua
+    validations:
+      required: false
