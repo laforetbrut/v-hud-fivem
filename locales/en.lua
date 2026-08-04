@@ -296,6 +296,7 @@ Locales.en = {
     ['share.invalid'] = 'That is not a v-hud code',
     ['advanced.version'] = 'Version',
     ['advanced.author'] = 'Developed by',
+    ['advanced.about_title'] = 'About',
     ['advanced.about'] = 'v-hud. Developed by vyrriox.',
 
     -- Compass cardinals, kept short on purpose

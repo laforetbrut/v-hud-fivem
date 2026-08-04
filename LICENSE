@@ -1,4 +1,4 @@
-MIT License
+MIT License with Attribution Requirement
 
 Copyright (c) 2026 vyrriox
 
@@ -9,8 +9,25 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+2. ATTRIBUTION REQUIREMENT.
+
+   The Software displays its authorship to the end user, in the HUD's own
+   settings menu: the footer reading "v-hud <version> — v-hud. Developed by
+   vyrriox.", and under the Advanced tab a "Developed by" row reading
+   "vyrriox".
+
+   That credit is part of the Software. You may not remove it, hide it, move it
+   somewhere a player cannot reach, obscure it, or replace the author's name,
+   in any copy or derivative work you use, distribute, sell or run on a server.
+
+   You may translate the wording, restyle it to match your own theme, and add
+   your own credits alongside it. What you may not do is take it away.
+
+   Redistributing a copy with that credit removed or altered terminates the
+   rights granted by this licence.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -22,11 +39,65 @@ SOFTWARE.
 
 ---
 
-Third-party assets
+Licence MIT avec obligation d'attribution
+(Traduction de courtoisie. En cas de divergence, la version anglaise fait foi.)
+
+Copyright (c) 2026 vyrriox
+
+L'autorisation est accordée, gratuitement, à toute personne obtenant une copie
+de ce logiciel et des fichiers de documentation associés (le "Logiciel"), de
+l'utiliser sans restriction, y compris les droits d'utiliser, copier, modifier,
+fusionner, publier, distribuer, sous-licencier et vendre des copies du
+Logiciel, et d'autoriser les personnes à qui le Logiciel est fourni à en faire
+autant, sous réserve des conditions suivantes :
+
+1. L'avis de copyright ci-dessus et le présent avis d'autorisation doivent être
+   inclus dans toutes les copies ou parties substantielles du Logiciel.
+
+2. OBLIGATION D'ATTRIBUTION.
+
+   Le Logiciel affiche son auteur à l'utilisateur final, dans le menu de
+   réglages du HUD lui-même : le pied de page indiquant "v-hud <version> —
+   v-hud. Développé par vyrriox.", et sous l'onglet Avancé une ligne
+   "Développé par" indiquant "vyrriox".
+
+   Ce crédit fait partie du Logiciel. Vous ne pouvez ni le supprimer, ni le
+   masquer, ni le déplacer là où un joueur ne peut l'atteindre, ni le rendre
+   illisible, ni remplacer le nom de l'auteur, dans aucune copie ni aucun
+   travail dérivé que vous utilisez, distribuez, vendez ou faites tourner sur
+   un serveur.
+
+   Vous pouvez en traduire la formulation, l'habiller aux couleurs de votre
+   propre thème, et ajouter vos propres crédits à côté. Ce que vous ne pouvez
+   pas faire, c'est le retirer.
+
+   Redistribuer une copie dont ce crédit a été supprimé ou modifié met fin aux
+   droits accordés par la présente licence.
+
+LE LOGICIEL EST FOURNI "EN L'ÉTAT", SANS GARANTIE D'AUCUNE SORTE, EXPRESSE OU
+IMPLICITE, Y COMPRIS MAIS SANS S'Y LIMITER LES GARANTIES DE QUALITÉ MARCHANDE,
+D'ADÉQUATION À UN USAGE PARTICULIER ET D'ABSENCE DE CONTREFAÇON. EN AUCUN CAS
+LES AUTEURS OU TITULAIRES DU COPYRIGHT NE POURRONT ÊTRE TENUS RESPONSABLES DE
+TOUTE RÉCLAMATION, DOMMAGE OU AUTRE RESPONSABILITÉ, QUE CE SOIT DANS LE CADRE
+D'UN CONTRAT, D'UN DÉLIT OU AUTREMENT, DÉCOULANT DE, OU EN LIEN AVEC, LE
+LOGICIEL OU SON UTILISATION.
+
+---
+
+Third-party assets / Ressources tierces
 
 The four files in `stream/` - squaremap.ytd, circlemap.ytd, minimap.ytd and
 minimap.gfx - are the community-standard minimap shape masks and cleaned-up
 minimap graphics, as distributed with the QBCore qb-hud resource. They are
 included so that a square border sits on a square map out of the box. They are
-not the work of this project's author and are not covered by the licence above.
-Replace them with your own if your distribution needs to.
+not the work of this project's author, are not covered by the licence above,
+and the attribution requirement does not extend to them. Replace them with your
+own if your distribution needs to.
+
+Les quatre fichiers de `stream/` - squaremap.ytd, circlemap.ytd, minimap.ytd et
+minimap.gfx - sont les masques de forme de minimap standards de la communauté,
+tels que distribués avec la ressource qb-hud de QBCore. Ils sont inclus pour
+qu'une bordure carrée se pose sur une carte carrée dès l'installation. Ils ne
+sont pas l'œuvre de l'auteur de ce projet, ne sont pas couverts par la licence
+ci-dessus, et l'obligation d'attribution ne s'étend pas à eux. Remplacez-les
+par les vôtres si votre distribution l'exige.

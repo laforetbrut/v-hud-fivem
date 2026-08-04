@@ -183,6 +183,38 @@ The order things are decided in:
 3. A listed resource that is open with `when = 'hide'` — hide what its `hides` names.
 4. Focus held by something unlisted — whatever `onFocus` says.
 
+## Which framework you are on
+
+Detected at runtime, in this order: **qb-core**, **qbx_core**, **es_extended** (ESX),
+**ox_core**. The first whose resource is started *and* whose handshake answers is used;
+anything else runs standalone, which is a supported configuration rather than a failure —
+settings still save to the client's own storage, stress is simply not persisted, and nothing
+errors.
+
+```lua
+Config.Compat.forceFramework = 'qb-core'   -- skip detection; nil means detect
+```
+
+Set it on a server that has two installed — a qb-core server keeping `es_extended` around for
+one legacy script would otherwise be decided by start order.
+
+**What actually differs.** Everything below is a property of the framework, not a gap in the
+HUD, and `/hudinfo` prints which one answered:
+
+| | qb-core / qbx_core | es_extended | ox_core |
+|---|---|---|---|
+| Job | yes | yes | first group |
+| Job type | `job.type` | job **grade** stands in | group rank |
+| Gang | yes | **none** — `gang:name` overrides never match | **none** |
+| Hunger / thirst | player metadata | **`esx_status`**, read directly | player metadata |
+| Stress | player metadata | not a concept; the HUD keeps its own | player metadata |
+| Notifications | framework | `esx:showNotification` | **HUD toast** (ox ships none) |
+| Commands in chat suggestions | yes | yes | plain `RegisterCommand` |
+| Settings key | `citizenid` | `identifier` | `stateId` |
+
+Nothing above needs configuring. It is here so that a missing gang override or a differently
+styled notification reads as expected rather than as a bug.
+
 ## Sharing
 
 ```lua
@@ -376,6 +408,38 @@ le menu : ceci est votre plafond, pas une surcharge.
   faim ou de soif. Rester à 4 % est silencieux ; remanger au-dessus de `threshold + rearm`
   puis redescendre redéclenche ; remonter ne déclenche jamais. Le son est synthétisé par la
   page NUI : aucun fichier audio à livrer, et `seconds` est une durée exacte.
+
+## Sur quel framework vous êtes
+
+Détecté à l'exécution, dans cet ordre : **qb-core**, **qbx_core**, **es_extended** (ESX),
+**ox_core**. Le premier dont la ressource est démarrée *et* dont la poignée de main répond est
+retenu ; tout le reste tourne en standalone, ce qui est une configuration prise en charge et
+non un échec : les réglages se sauvegardent toujours côté client, le stress n'est simplement
+pas persisté, et rien ne lève d'erreur.
+
+```lua
+Config.Compat.forceFramework = 'qb-core'   -- court-circuite la détection ; nil = détecter
+```
+
+À poser sur un serveur qui en a deux installés : un serveur qb-core qui garde `es_extended`
+pour un script hérité serait sinon départagé par l'ordre de démarrage.
+
+**Ce qui diffère réellement.** Tout ce qui suit est une propriété du framework, pas un manque
+du HUD, et `/hudinfo` indique lequel a répondu :
+
+| | qb-core / qbx_core | es_extended | ox_core |
+|---|---|---|---|
+| Métier | oui | oui | premier groupe |
+| Type de métier | `job.type` | le **grade** en tient lieu | rang du groupe |
+| Gang | oui | **aucun** — les surcharges `gang:nom` ne matchent jamais | **aucun** |
+| Faim / soif | métadonnées joueur | **`esx_status`**, lu directement | métadonnées joueur |
+| Stress | métadonnées joueur | pas un concept ; le HUD garde le sien | métadonnées joueur |
+| Notifications | framework | `esx:showNotification` | **toast du HUD** (ox n'en a pas) |
+| Suggestions de chat | oui | oui | `RegisterCommand` simple |
+| Clé de sauvegarde | `citizenid` | `identifier` | `stateId` |
+
+Rien de tout cela ne demande de configuration. C'est écrit ici pour qu'une surcharge de gang
+sans effet ou une notification d'un autre style se lise comme attendu, et non comme un bug.
 
 ## Le reste
 

@@ -44,6 +44,42 @@ RegisterNetEvent('vhud:client:UpdateNeeds', function(hunger, thirst)
     Needs.thirst = tonumber(thirst) or Needs.thirst
 end)
 
+--[[
+    ESX keeps hunger and thirst in esx_status, not in the player object.
+
+    esx_status is a client-side module that ticks its own values and broadcasts them; there is
+    no metadata table to read and no server event to wait for. So it is listened to directly.
+
+    Its scale is 0-1000000, not 0-100. `percent` is present on modern builds and already a
+    percentage; `val` is the raw counter. Both are handled because forks differ, and a value
+    over 100 is taken as the raw scale - a percentage cannot exceed it.
+
+    On a qb-core server this listener simply never fires.
+]]
+for _, event in ipairs({ 'esx_status:onTick', 'esx_status:update' }) do
+    AddEventHandler(event, function(statuses)
+        if type(statuses) ~= 'table' then return end
+
+        for _, status in pairs(statuses) do
+            local name = type(status) == 'table' and (status.name or status.getName) or nil
+            local raw = type(status) == 'table' and (status.percent or status.val) or nil
+            local value = tonumber(raw)
+
+            if type(name) == 'string' and value then
+                if value > 100 then value = value / 10000 end
+                value = HUD.clamp(value, 0, 100, nil)
+
+                if value then
+                    if name == 'hunger' then Needs.hunger = value
+                    elseif name == 'thirst' then Needs.thirst = value
+                    elseif name == 'stress' then Needs.stress = value
+                    else Needs.custom[name] = value end
+                end
+            end
+        end
+    end)
+end
+
 RegisterNetEvent('vhud:client:UpdateStress', function(stress)
     Needs.stress = HUD.clamp(stress, 0, 100, Needs.stress)
 end)

@@ -573,6 +573,18 @@ const Menu = (() => {
                     sharePanel(),
                 ]),
                 section('Compatibility', null, [table]),
+
+                // About. The authorship row is part of the Software under the licence's
+                // attribution clause - see LICENSE. It may be translated and restyled, and
+                // your own credits may sit beside it; it may not be removed.
+                section(S.t('advanced.about_title'), S.t('advanced.about'), [
+                    U.make('dl', { class: 'providers' }, [
+                        U.make('dt', { text: S.t('advanced.version') }),
+                        U.make('dd', { text: String(S.statik.version || '') }),
+                        U.make('dt', { text: S.t('advanced.author') }),
+                        U.make('dd', { text: 'vyrriox' }),
+                    ]),
+                ]),
                 section(S.t('advanced.reset_all'), null, [
                     U.make('div', { class: 'menu__actions' }, [
                         button(S.t('advanced.reset_all'), 'danger', () => {

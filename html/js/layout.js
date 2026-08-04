@@ -246,6 +246,10 @@ const Layout = (() => {
         if (!drag) return;
         U.attr(drag.ghost, 'data-dragging', false);
         drag = null;
+
+        // Send the final position now rather than waiting out the coalescing delay. The moves
+        // during a drag are merged into one message; letting go is when it is owed.
+        S.flushPost();
     }
 
     /* ------------------------------------------------------------------------------------
@@ -259,6 +263,10 @@ const Layout = (() => {
         // Idempotent, because the close path can reach here from three directions and each
         // one used to post `layoutMode` and earn another "layout saved" toast.
         if (!!on === open) return;
+
+        // Whatever direction the close came from, nothing may be left sitting in the
+        // coalescing buffer: closing the editor is the last chance to send it.
+        if (!on) S.flushPost();
 
         open = !!on;
         overlay.hidden = !open;

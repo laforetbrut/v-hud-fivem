@@ -128,7 +128,42 @@ const S = (() => {
         }
 
         applySettings(state.settings);
+        queuePost(changes);
+    }
+
+    /* ------------------------------------------------------------------------------------
+       Telling Lua
+
+       The screen updates on every change, immediately - that is the feedback the player is
+       looking at. The MESSAGE to Lua does not have to.
+
+       Dragging an element fires pointermove sixty to a hundred and twenty times a second, and
+       each one used to be its own NUI callback carrying one path. The last value in a burst
+       is the only one that matters, so they are merged and sent once the pointer settles.
+
+       `flushPost` is called when a drag ends, so a change is never left only on the page.
+       ------------------------------------------------------------------------------------ */
+
+    const POST_DELAY = 120;          // ms of quiet before a burst is sent
+    let pending = null;
+    let pendingTimer = null;
+
+    function flushPost() {
+        if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+        if (!pending) return;
+
+        const changes = pending;
+        pending = null;
         U.post('setPaths', { changes });
+    }
+
+    function queuePost(changes) {
+        pending = pending || {};
+        // Later values win, which is what "the last position of the drag" means.
+        Object.assign(pending, changes);
+
+        if (pendingTimer) clearTimeout(pendingTimer);
+        pendingTimer = setTimeout(flushPost, POST_DELAY);
     }
 
     /* ------------------------------------------------------------------------------------
@@ -213,6 +248,9 @@ const S = (() => {
 
     const EDGE = 6;                  // px of breathing room at each screen edge
     let clampQueued = false;
+    // Signature of everything that can move or resize an element. See the end of
+    // applySettings: a change that does not touch it skips the settle passes.
+    let lastGeometry = null;
 
     function clampIntoView() {
         clampQueued = false;
@@ -238,6 +276,19 @@ const S = (() => {
             nodes.push(node);
         }
 
+        /*
+            Measure EVERY element first, then write. Never interleave.
+
+            A `getBoundingClientRect` after a style write forces the browser to lay the page
+            out again, synchronously, before it can answer. Reading and writing inside one
+            loop therefore costs one forced reflow PER ELEMENT - and this runs up to three
+            times per settings message, so dragging a slider was paying for a dozen of them a
+            frame. That is what the HUD "refreshing" on every change actually was.
+
+            Split in two, the whole pass costs exactly one layout.
+        */
+        const corrections = [];
+
         for (const node of nodes) {
             const box = node.getBoundingClientRect();
             if (!box.width && !box.height) continue;   // hidden, nothing to clamp
@@ -262,15 +313,57 @@ const S = (() => {
             if (Math.abs(dx) > width / 2) dx = 0;
             if (Math.abs(dy) > height / 2) dy = 0;
 
+            if (dx || dy) corrections.push([node, dx, dy]);
+        }
+
+        for (const [node, dx, dy] of corrections) {
             if (dx) node.style.setProperty('--fix-x', `${Math.round(dx)}px`);
             if (dy) node.style.setProperty('--fix-y', `${Math.round(dy)}px`);
         }
     }
 
+    /*
+        Queue one clamp for the next frame.
+
+        The guard is a latch, and a latch needs a way out. requestAnimationFrame does not fire
+        while the page is not being composited - the game minimised, alt-tabbed, or the HUD
+        hidden under a menu - so a clamp queued at that moment never ran, `clampQueued` stayed
+        true, and every later call returned immediately. The clamp was then dead for the rest
+        of the session, silently, and the HUD stopped correcting itself back on screen.
+
+        So a timer runs alongside as the escape. Whichever arrives first does the work and
+        clears the latch; the other finds nothing queued and returns.
+    */
     function scheduleClamp() {
         if (clampQueued) return;
         clampQueued = true;
-        requestAnimationFrame(clampIntoView);
+
+        const run = () => { if (clampQueued) clampIntoView(); };
+        requestAnimationFrame(run);
+        setTimeout(run, 250);
+    }
+
+    /* ------------------------------------------------------------------------------------
+       The last frame the game sent
+
+       Kept so that anything which REBUILDS a display can paint it immediately instead of
+       waiting for the next tick. Both slots existed and were never written; they are what
+       makes a settings change look instant rather than like a reload.
+       ------------------------------------------------------------------------------------ */
+
+    /** Store the tick payload. Called by app.js on every tick, before it renders. */
+    function remember(data) {
+        if (data) state.tick = data;
+    }
+
+    /** Re-apply the last payload to the gauges and the cluster. Safe to call at any time:
+     *  with no tick yet it does nothing, and every renderer it calls is idempotent. */
+    function repaint() {
+        const data = state.tick;
+        if (!data || !state.settings) return;
+
+        Status.update(data, state.settings);
+        if (data.vehicle) Speedo.update(data.vehicle, state.settings);
     }
 
     // Re-clamp when an element's own content changes size. ResizeObserver is what makes this
@@ -444,17 +537,52 @@ const S = (() => {
         Speedo.setStyle(settings.speedometer ? settings.speedometer.style : 'minimal');
         Compass.setStyle(settings.compass ? settings.compass.style : 'bar');
 
+        /*
+            Repaint what was just rebuilt, now, from the last payload the game sent.
+
+            A gauge shape or a speedometer face is REBUILT here and left empty, because the
+            values only arrive on the tick. At 30fps that is 33ms of blank dial after every
+            change - and since a change is exactly when the player is looking at the thing
+            they changed, it reads as the HUD flickering rather than as one dropped frame.
+
+            The tick is remembered by app.js on the way past, so this costs one extra apply of
+            data already in memory: no message, no network, no measurement.
+        */
+        repaint();
+
         state.ready = true;
         U.attr(U.el('hud'), 'data-ready', true);
 
-        // Settle passes. The first clamp runs on the next animation frame, when the gauges
-        // have been built but the browser may not have finished laying them out - a cluster
-        // that is still 0px wide measures as being nowhere near an edge. Two later passes
-        // catch the final geometry, and they are idempotent, so the cost of the extra two is
-        // two measurements on a settings change.
-        scheduleClamp();
-        setTimeout(scheduleClamp, 120);
-        setTimeout(scheduleClamp, 600);
+        /*
+            Settle passes, but only when the GEOMETRY moved.
+
+            The first clamp runs on the next animation frame, when the gauges have been built
+            but the browser may not have finished laying them out - a cluster still 0px wide
+            measures as nowhere near an edge. Two later passes catch the final geometry.
+
+            They used to run on every settings message. Dragging a colour picker sends one per
+            frame, and nothing about a colour can move an element, so the HUD was re-measuring
+            and re-nudging itself continuously while the player scrubbed a hue. That is the
+            other half of the "it refreshes every time I change something" feeling.
+
+            The signature below lists everything that can change an element's size or place.
+            A change to anything else skips the passes entirely.
+        */
+        const geometry = JSON.stringify([
+            settings.scale, settings.compact, settings.positions,
+            settings.minimap, settings.style && settings.style.gauge,
+            settings.style && settings.style.direction, settings.style && settings.style.gap,
+            settings.style && settings.style.corner, settings.style && settings.style.icons,
+            settings.style && settings.style.values, settings.speedometer && settings.speedometer.style,
+            settings.compass && settings.compass.style, settings.show, settings.streets,
+        ]);
+
+        if (geometry !== lastGeometry) {
+            lastGeometry = geometry;
+            scheduleClamp();
+            setTimeout(scheduleClamp, 120);
+            setTimeout(scheduleClamp, 600);
+        }
     }
 
     /* ------------------------------------------------------------------------------------
@@ -486,7 +614,7 @@ const S = (() => {
         get settings() { return state.settings; },
         get statik() { return state.statik; },
         t, choices, isLocked, get, set, setMany, applySettings, boot,
-        setMapAspect, scheduleClamp,
+        setMapAspect, scheduleClamp, remember, repaint, flushPost,
         ELEMENTS,
     };
 

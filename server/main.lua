@@ -205,10 +205,15 @@ CreateThread(function()
     if not Config.Compat.qbHudCallback or qbHudRunning() then return end
 
     Wait(1500)
-    local core = Bridge.core()
-    if not core or not core.Functions or not core.Functions.CreateCallback then return end
 
-    pcall(core.Functions.CreateCallback, 'hud:server:getMenu', function(_, cb)
+    -- Read through Bridge.field: a plain `core.Functions` raises on ox_core, whose core
+    -- object is an exports table and which throws on an export that does not exist. This
+    -- shim answers a callback qb-hud owned, so nil here just means there is nothing to shim.
+    local functions = Bridge.field(Bridge.core(), 'Functions')
+    local create = functions and functions.CreateCallback
+    if not create then return end
+
+    pcall(create, 'hud:server:getMenu', function(_, cb)
         cb(Settings.default())
     end)
 end)

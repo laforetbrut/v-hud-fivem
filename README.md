@@ -1,9 +1,10 @@
 # v-hud
 
-A fully customisable HUD for QBCore. Every player owns their own HUD: every element can be
-moved by dragging it, recoloured, reshaped, resized or switched off, and the server owner
-decides which of those freedoms to leave open. Ships with five themes, twelve gauge shapes,
-ten realistic instrument clusters, four compasses and a frosted-glass default look.
+A fully customisable HUD for FiveM, built for QBCore and running on ESX and ox_core too.
+Every player owns their own HUD: every element can be moved by dragging it, recoloured,
+reshaped, resized or switched off, and the server owner decides which of those freedoms to
+leave open. Ships with five themes, twelve gauge shapes, ten realistic instrument clusters,
+four compasses and a frosted-glass default look.
 
 ## Features
 
@@ -52,7 +53,7 @@ Everything below is detected at runtime and optional. Nothing is required.
 
 | Capability | Detected |
 |---|---|
-| Framework | qb-core, qbx_core |
+| Framework | qb-core, qbx_core, es_extended (ESX), ox_core — first one detected wins, `Config.Compat.forceFramework` overrides. Anything else runs standalone. |
 | Gets out of the way of | the GTA pause menu, any resource holding NUI focus, and anything publishing an "am I open" export — v-phone, qb-phone, lb-phone, qb-inventory, ox_inventory (`Config.HideWhen`) |
 | Fuel | rcore_fuel (with range/litres), qb-fuel, LegacyFuel, ps-fuel, cdn-fuel, lc_fuel, x-fuel, okokGasStation, Renewed-Fuel, ox_fuel, native fallback |
 | Voice | pma-voice, saltychat, mumble-voip |
@@ -62,6 +63,11 @@ Everything below is detected at runtime and optional. Nothing is required.
 | Sounds | interact-sound |
 | Storage | oxmysql (optional) |
 
+**What differs by framework.** On ESX there is no gang, so `gang:name` overrides never match,
+and the job GRADE stands in for the job type; hunger and thirst come from `esx_status` rather
+than from player metadata. On ox_core, groups stand in for jobs and notifications use the
+HUD's own toasts, since ox_core ships none. Everything else behaves identically.
+
 Run `/hudinfo` in game to print what was actually detected.
 
 ## Installation
@@ -70,7 +76,7 @@ Run `/hudinfo` in game to print what was actually detected.
 2. Stop `qb-hud` - move it out of `[qb]` or remove its `ensure`. Two HUDs fight over the
    minimap, the menu key and the `/cash` command. v-hud answers every event qb-hud handled,
    so no other resource needs editing.
-3. `ensure v-hud` after `qb-core` (if the folder it sits in is already ensured, nothing to add).
+3. `ensure v-hud` after your framework (if the folder it sits in is already ensured, nothing to add).
 4. Optional: `setr hud_locale "fr"` for French. It follows `qb_locale` otherwise.
 5. Optional: install [oxmysql](https://github.com/overextended/oxmysql) and settings follow
    the character across machines. Without it, settings stay per machine. The table is
@@ -162,10 +168,17 @@ colour picker with no code change. Add a theme in `Config.ExtraThemes`. Every qb
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE) — do what you like with it, keep the copyright notice.
+MIT with an attribution requirement. See [LICENSE](LICENSE). Use it, change it, sell it, ship
+it on a paid server — with one condition:
+
+**Leave the credit in.** The HUD names its author in its own settings menu: the footer, and a
+"Developed by" row under the Advanced tab. You may translate it, restyle it to match your
+theme, and put your own credits next to it. You may not remove it, hide it, or replace the
+name. Redistributing a copy with that credit stripped ends the licence.
 
 The four files in `stream/` are the community-standard minimap masks as shipped with QBCore's
-qb-hud. They are not the author's work and are noted separately in the licence file.
+qb-hud. They are not the author's work, are noted separately in the licence file, and the
+attribution requirement does not cover them.
 
 ## Credits
 
@@ -175,11 +188,17 @@ Author: vyrriox
 
 # v-hud (Version Française)
 
-Un HUD entièrement personnalisable pour QBCore. Chaque joueur possède son HUD : chaque
-élément se déplace à la souris, se recolore, change de forme, de taille, ou se désactive, et
-le propriétaire du serveur décide lesquelles de ces libertés laisser ouvertes. Livré avec
-cinq thèmes, douze formes de jauges, dix compteurs réalistes, quatre boussoles et un thème
-par défaut en verre dépoli.
+Un HUD entièrement personnalisable pour FiveM, conçu pour QBCore et fonctionnant aussi sur
+ESX et ox_core. Chaque joueur possède son HUD : chaque élément se déplace à la souris, se
+recolore, change de forme, de taille, ou se désactive, et le propriétaire du serveur décide
+lesquelles de ces libertés laisser ouvertes. Livré avec cinq thèmes, douze formes de jauges,
+dix compteurs réalistes, quatre boussoles et un thème par défaut en verre dépoli.
+
+**Ce qui diffère selon le framework** : sur ESX il n'y a pas de gang (les surcharges
+`gang:nom` ne s'appliquent donc jamais) et le grade de métier prend la place du type ; la faim
+et la soif viennent d'`esx_status`. Sur ox_core, les groupes tiennent lieu de métiers et les
+notifications passent par les toasts du HUD, faute de système propre. Tapez `/hudinfo` en jeu
+pour voir ce qui a été détecté.
 
 ## Caractéristiques
 
@@ -284,11 +303,18 @@ touche pas une autre en silence.
 
 ## Licence
 
-MIT. Voir [LICENSE](LICENSE). Faites-en ce que vous voulez, gardez la mention de copyright.
+MIT avec obligation d'attribution. Voir [LICENSE](LICENSE). Utilisez-le, modifiez-le,
+vendez-le, faites-le tourner sur un serveur payant — à une condition :
+
+**Laissez le crédit.** Le HUD nomme son auteur dans son propre menu de réglages : en pied de
+page, et sur une ligne « Développé par » dans l'onglet Avancé. Vous pouvez le traduire,
+l'habiller aux couleurs de votre thème, et mettre vos propres crédits à côté. Vous ne pouvez
+pas le supprimer, le masquer ni remplacer le nom. Redistribuer une copie dont ce crédit a été
+retiré met fin à la licence.
 
 Les quatre fichiers de `stream/` sont les masques de minimap standards de la communauté,
-livrés avec qb-hud de QBCore. Ils ne sont pas l'œuvre de l'auteur et sont mentionnés à part
-dans le fichier de licence.
+livrés avec qb-hud de QBCore. Ils ne sont pas l'œuvre de l'auteur, sont mentionnés à part dans
+le fichier de licence, et l'obligation d'attribution ne les couvre pas.
 
 ## Credits
 

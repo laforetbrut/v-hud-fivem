@@ -19,3 +19,6 @@ Thumbs.db
 # Python bytecode from tools/
 __pycache__/
 *.pyc
+
+# Local QA harnesses - never pushed
+tests/

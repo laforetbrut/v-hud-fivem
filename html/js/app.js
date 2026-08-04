@@ -22,6 +22,9 @@
         const settings = S.settings;
         if (!settings) return;
 
+        // Remembered so a rebuild can repaint itself immediately. See S.repaint().
+        S.remember(data);
+
         const hud = U.el('hud');
         U.attr(hud, 'data-hidden', data.show === false);
         U.attr(hud, 'data-faded', data.faded === true);

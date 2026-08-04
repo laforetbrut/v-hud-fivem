@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'v-hud'
 author 'vyrriox'
-description 'A fully player-configurable HUD for qb-core: movable elements, four themes, ten speedometers, compass, street names, compact and immersive modes.'
-version '1.0.0'
+description 'A fully player-configurable HUD for qb-core, qbx_core, ESX and ox_core: movable elements, five themes, ten speedometers, twenty-one dashboard tell-tales, compass, street names, compact and immersive modes.'
+version '1.0.1'
 
 -- No hard dependency on purpose. qb-core, oxmysql, qb-fuel, LegacyFuel, ps-fuel, cdn-fuel,
 -- pma-voice, saltychat and interact-sound are ALL detected at runtime and all optional.

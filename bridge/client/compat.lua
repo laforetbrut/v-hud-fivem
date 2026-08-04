@@ -29,10 +29,55 @@ Compat.provider = {
     framework = nil,
 }
 
+--[[
+    Is `resource` running?
+
+    Cached, because this sits on the HUD tick. The overlay check alone asks it once per
+    configured resource per frame, and GetResourceState builds a fresh Lua string every call -
+    so a dozen of them, sixty times a second, is a dozen strings a frame to answer a question
+    whose answer changes when somebody types `ensure` in the console.
+
+    The cache is dropped whenever any resource starts or stops, so it can never go stale: the
+    events below are the only way the answer can change.
+]]
+local resourceState = {}
+
 local function started(resource)
     if not resource or resource == '' then return false end
+
+    local known = resourceState[resource]
+    if known ~= nil then return known end
+
     local state = GetResourceState(resource)
-    return state == 'started' or state == 'starting'
+    local running = state == 'started' or state == 'starting'
+
+    -- A resource still 'starting' has not published its exports yet, so that answer is NOT
+    -- cached: the next call has to look again or the HUD would decide a fuel script is
+    -- unusable purely because it asked half a second too early.
+    if state ~= 'starting' then resourceState[resource] = running end
+
+    return running
+end
+
+AddEventHandler('onClientResourceStart', function(name) resourceState[name] = nil end)
+AddEventHandler('onClientResourceStop', function(name) resourceState[name] = nil end)
+
+--[[
+    Read a field from the framework object without raising.
+
+    Not paranoia: ox_core's "core object" IS its exports table, and in FiveM indexing an
+    export that does not exist RAISES rather than returning nil. So every `object.Functions`
+    written for qb-core's shape is a crash on an ox_core server - which is exactly how
+    Compat.notify came to throw on every message there.
+
+    Any code that reaches into the framework object for a qb-specific field must go through
+    this. Anything framework-SPECIFIC belongs in that framework's adapter instead.
+]]
+local function field(object, name)
+    if type(object) ~= 'table' then return nil end
+    local ok, value = pcall(function() return object[name] end)
+    if not ok then return nil end
+    return value
 end
 
 --- Call `method` on `resource`'s export table, returning nil instead of raising when the
@@ -57,19 +102,132 @@ local core
 
 --- The qb-core object, or nil on a server that has none. Cached after the first successful
 --- call. qbx_core publishes the same export, so both answer here without a branch.
+--[[
+    Which framework the CLIENT is talking to.
+
+    Four are handled, and the shape each one hands back differs enough that the difference is
+    absorbed here rather than leaked to callers. Everything above this file sees one thing:
+    `Compat.playerData()` returning a qb-core-shaped table with `job`, `gang`, `metadata` and
+    `items`, or an empty table.
+
+    Set Config.Compat.forceFramework to skip detection on a server that has two installed.
+]]
+local CLIENT_FRAMEWORKS = {
+    {
+        resources = { 'qb-core', 'qbx_core' },
+        get = function(resource)
+            -- One protected call, and the RESULT of it. The previous form called the export
+            -- twice - `pcall(...) and exports[resource]:GetCoreObject()` - and the second call
+            -- was outside the pcall, so a framework that answers once and then throws would
+            -- take the HUD down instead of degrading.
+            local ok, object = pcall(function() return exports[resource]:GetCoreObject() end)
+            return (ok and type(object) == 'table') and object or nil
+        end,
+        data = function(object)
+            if not (object.Functions and object.Functions.GetPlayerData) then return nil end
+            local ok, data = pcall(object.Functions.GetPlayerData)
+            return (ok and type(data) == 'table') and data or nil
+        end,
+        notify = function(object, message, kind)
+            if not (object.Functions and object.Functions.Notify) then return false end
+            return pcall(object.Functions.Notify, message, kind) == true
+        end,
+    },
+    {
+        resources = { 'es_extended' },
+        get = function(resource)
+            local ok, object = pcall(function() return exports[resource]:getSharedObject() end)
+            if ok and type(object) == 'table' then return object end
+
+            -- Older ESX answers only the event.
+            local fetched
+            pcall(function() TriggerEvent('esx:getSharedObject', function(o) fetched = o end) end)
+            return type(fetched) == 'table' and fetched or nil
+        end,
+        --[[
+            ESX's PlayerData has `job` but no `gang`, no `metadata` and an `inventory` array
+            rather than `items`. It is reshaped into the qb-core form here so that every
+            caller - the harness check, the job overrides, the custom status gauges - keeps
+            working unchanged.
+
+            Hunger and thirst are NOT in here on ESX: esx_status owns them and pushes them
+            client-side, so client/stress.lua listens for its event directly.
+        ]]
+        data = function(object)
+            local ok, data = pcall(object.GetPlayerData)
+            if not ok or type(data) ~= 'table' then return nil end
+
+            local job = data.job or {}
+            return {
+                citizenid = data.identifier,
+                job = { name = job.name or '', type = job.grade_name or '',
+                        label = job.label, grade = job.grade },
+                gang = { name = '' },
+                metadata = data.metadata or {},
+                items = data.inventory or {},
+                money = { cash = data.money, bank = data.accounts and data.accounts.bank },
+            }
+        end,
+        notify = function(object, message, kind)
+            local types = { primary = 'info', success = 'success', error = 'error' }
+            local level = types[kind] or 'info'
+
+            if object.ShowNotification then
+                if pcall(object.ShowNotification, message, level) then return true end
+            end
+            -- Older ESX forks publish nothing and only answer the event.
+            return pcall(TriggerEvent, 'esx:showNotification', message, level) == true
+        end,
+    },
+    {
+        resources = { 'ox_core' },
+        get = function(resource)
+            local ok = pcall(function() return exports[resource]:GetPlayerData() end)
+            return ok and exports[resource] or nil
+        end,
+        data = function(object)
+            local ok, data = pcall(function() return object:GetPlayerData() end)
+            if not ok or type(data) ~= 'table' then return nil end
+
+            local groups = data.groups or {}
+            local name, grade = '', ''
+            for group, rank in pairs(groups) do name, grade = group, tostring(rank) break end
+
+            return {
+                citizenid = data.stateId or data.charId,
+                job = { name = name, type = grade },
+                gang = { name = '' },
+                metadata = data.metadata or {},
+                items = {},
+            }
+        end,
+        -- ox_core ships no notification system. Returning false sends the message to the
+        -- HUD's own themed toast, which is the right answer on this framework rather than a
+        -- compromise - and it must be an explicit `false`, not an absent function, so nobody
+        -- reintroduces a shape test to work it out.
+        notify = function() return false end,
+    },
+}
+
+local frameworkEntry
+
 function Compat.core()
     if core then return core end
 
-    for _, resource in ipairs({ 'qb-core', 'qbx_core' }) do
-        if started(resource) then
-            local ok, object = pcall(function()
-                return exports[resource]:GetCoreObject()
-            end)
-            if ok and type(object) == 'table' then
-                core = object
-                Compat.provider.framework = resource
-                HUD.debug('framework:', resource)
-                return core
+    local forced = Config.Compat.forceFramework
+
+    for _, entry in ipairs(CLIENT_FRAMEWORKS) do
+        for _, resource in ipairs(entry.resources) do
+            local wanted = (not forced) or forced == resource
+            if wanted and started(resource) then
+                local object = entry.get(resource)
+                if object then
+                    core = object
+                    frameworkEntry = entry
+                    Compat.provider.framework = resource
+                    HUD.debug('framework:', resource)
+                    return core
+                end
             end
         end
     end
@@ -77,14 +235,14 @@ function Compat.core()
     return nil
 end
 
---- Player data, or an empty table. Callers treat a missing field as "not known yet" rather
---- than as zero, so an empty table here is a safe answer during the login window.
+--- Player data, in the qb-core shape whatever the framework, or an empty table. Callers treat
+--- a missing field as "not known yet" rather than as zero, so an empty table is a safe answer
+--- during the login window.
 function Compat.playerData()
     local object = Compat.core()
-    if not object or not object.Functions or not object.Functions.GetPlayerData then return {} end
+    if not object or not frameworkEntry then return {} end
 
-    local ok, data = pcall(object.Functions.GetPlayerData)
-    return (ok and type(data) == 'table') and data or {}
+    return frameworkEntry.data(object) or {}
 end
 
 -- ---------------------------------------------------------------------------------------
@@ -242,9 +400,18 @@ function Compat.notify(message, kind, forced, duration)
             return
         end
     else
+        --[[
+            The framework's own notification system, through the adapter that was detected.
+
+            Dispatching on the ENTRY rather than sniffing the object's shape matters here.
+            ox_core's "core object" is its exports table, and in FiveM indexing an export that
+            does not exist RAISES - so the old `object.Functions and ...` test, written for
+            qb-core, threw on every notification on an ox_core server rather than falling
+            through to the toast.
+        ]]
         local object = Compat.core()
-        if object and object.Functions and object.Functions.Notify then
-            if pcall(object.Functions.Notify, message, kind) then return end
+        if object and frameworkEntry and frameworkEntry.notify then
+            if frameworkEntry.notify(object, message, kind) then return end
         end
     end
 
@@ -356,13 +523,31 @@ end
 function Compat.hasItem(item)
     if not item then return false end
 
-    -- The framework's own player data is the cheapest read and covers qb-inventory,
-    -- ps-inventory and every fork that keeps writing PlayerData.items.
+    --[[
+        The framework's own player data is the cheapest read and covers qb-inventory,
+        ps-inventory and every fork that keeps writing PlayerData.items.
+
+        The count field is named differently per framework and the default matters:
+
+          qb-core   `amount`
+          ESX       `count`
+
+        This used to read `(entry.amount or 1) > 0`, which defaults a MISSING count to one -
+        i.e. to "held". On ESX that is backwards twice over: `amount` is never present, so the
+        default always won, and ESX's inventory array traditionally carries every item
+        DEFINITION with `count = 0` rather than only what the player holds. The harness ring
+        would therefore light permanently on an ESX server.
+
+        Defaulting to zero also matches what this function is documented to do: it fails
+        CLOSED, because a ring that lights for an item nobody has is worse than one that never
+        lights at all.
+    ]]
     local data = Compat.playerData()
     if type(data.items) == 'table' then
         for _, entry in pairs(data.items) do
-            if type(entry) == 'table' and entry.name == item and (entry.amount or 1) > 0 then
-                return true
+            if type(entry) == 'table' and entry.name == item then
+                local held = tonumber(entry.amount or entry.count) or 0
+                if held > 0 then return true end
             end
         end
     end
@@ -650,23 +835,62 @@ local function normalisePart(value, maxValue)
     return HUD.clamp(number, 0, 100, nil)
 end
 
+--[[
+    Wear from the vehicle's own state bags.
+
+    Two costs used to be paid every single tick and neither bought anything:
+
+      * every candidate bag name was read, for every part, on every call. Eight parts with
+        two or three candidates each is over twenty state-bag reads a frame, and a state bag
+        read is not free.
+      * a fresh table was allocated each call and thrown away whenever nothing answered,
+        which on a server with no mechanic script is every call forever.
+
+    So the bag that answered for each part is remembered per vehicle. After the first pass it
+    is one read per part that actually has one, and none at all for the parts that do not.
+    The memo is dropped when the vehicle changes.
+
+    Wear moves when a mechanic works on the car, not while you drive, so a refresh interval
+    rather than a per-frame sweep is the honest cadence anyway.
+]]
+local bagMemo = { vehicle = 0, found = nil, at = 0 }
+
 local function readPartBags(vehicle)
     local state = DoesEntityExist(vehicle) and Entity(vehicle).state
     if not state then return nil end
 
-    local out, found = {}, false
-    for part, bags in pairs(Config.Compat.partBags or {}) do
-        for _, bag in ipairs(bags) do
-            local value = normalisePart(state[bag])
-            if value then
-                out[part] = value
-                found = true
-                break
+    local now = GetGameTimer()
+    local refresh = Config.Compat.partsRefresh or 30000
+
+    -- A different vehicle, or long enough that a mechanic could have changed something:
+    -- forget which bag answered and look again.
+    if bagMemo.vehicle ~= vehicle or (now - bagMemo.at) > refresh then
+        bagMemo.vehicle, bagMemo.found, bagMemo.at = vehicle, nil, now
+
+        for part, bags in pairs(Config.Compat.partBags or {}) do
+            for _, bag in ipairs(bags) do
+                if normalisePart(state[bag]) then
+                    bagMemo.found = bagMemo.found or {}
+                    bagMemo.found[part] = bag
+                    break
+                end
             end
         end
     end
 
-    return found and out or nil
+    -- No bag on this vehicle answered. Nothing to allocate, nothing to read.
+    if not bagMemo.found then return nil end
+
+    local out, any = {}, false
+    for part, bag in pairs(bagMemo.found) do
+        local value = normalisePart(state[bag])
+        if value then
+            out[part] = value
+            any = true
+        end
+    end
+
+    return any and out or nil
 end
 
 local function requestPartCallback(plate)
@@ -674,14 +898,18 @@ local function requestPartCallback(plate)
     if not entry or partsCache.pending then return end
     if not started(entry.resource) then return end
 
-    local object = Compat.core()
-    if not object or not object.Functions or not object.Functions.TriggerCallback then return end
+    -- Read through `field`: a plain `object.Functions` raises on ox_core, whose core object is
+    -- an exports table. TriggerCallback is a qb-core concept, so nil here simply means this
+    -- server has no callback to ask and the wear lamps stay dark.
+    local functions = field(Compat.core(), 'Functions')
+    local trigger = functions and functions.TriggerCallback
+    if not trigger then return end
 
     partsCache.pending = true
 
     -- Fire and forget. The answer lands in the cache and the next tick picks it up; the HUD
     -- never waits on the network.
-    local ok = pcall(object.Functions.TriggerCallback, entry.name, function(status)
+    local ok = pcall(trigger, entry.name, function(status)
         partsCache.pending = false
         if type(status) ~= 'table' then return end
 

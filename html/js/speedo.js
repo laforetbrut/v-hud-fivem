@@ -875,9 +875,19 @@ const Speedo = (() => {
         // The seatbelt is shown the whole time you are driving, not only once you are already
         // going fast enough for it to matter. Green fastened, red unfastened, and it only
         // flashes above 40 - so the state is always readable and the nagging is not constant.
+        /*
+            Shown to PASSENGERS too, not only to the driver.
+
+            A passenger can buckle - qb-smallresources' toggle has no driver check - and the
+            ejection logic throws unbelted passengers through the windscreen exactly like the
+            driver. Hiding the lamp from them meant the one seat that most needs telling had
+            no way to see whether the belt was on.
+
+            The belt state itself is the local player's own, so a passenger sees their own
+            belt, not the driver's.
+        */
         const belted = data.seatbelt === true;
-        showChip(chips.belt, options.belt && !data.bicycle && data.driver,
-            belted, !belted, false);
+        showChip(chips.belt, options.belt && !data.bicycle, belted, !belted, false);
         U.attr(chips.belt, 'data-flash', !belted && data.speed > 40);
 
         // A door, bonnet or boot left open. Two separate warnings: a door you drive away with

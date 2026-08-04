@@ -773,6 +773,36 @@ Config.Compat = {
     -- Skip fuel detection and use this resource name. nil means detect.
     forceFuel = nil,
 
+    -- ---------------------------------------------------------------------------------
+    -- Framework
+    -- ---------------------------------------------------------------------------------
+    --
+    -- Detected automatically, in this order: qb-core, qbx_core, es_extended, ox_core. The
+    -- first one whose resource is started AND whose handshake answers is used, and anything
+    -- else runs standalone - settings still save to the client's own storage, stress is not
+    -- persisted, and nothing errors.
+    --
+    -- Set this to a resource name to skip detection on a server that has two installed, for
+    -- example a qb-core server keeping es_extended around for one legacy script:
+    --
+    --     forceFramework = 'qb-core',
+    --
+    -- WHAT DIFFERS BETWEEN THEM, so you know what to expect:
+    --
+    --   qb-core / qbx_core   everything works: jobs, gangs, metadata, notifications,
+    --                        chat suggestions on the commands.
+    --
+    --   es_extended (ESX)    no gang, so Config.JobOverrides keys of the form 'gang:name'
+    --                        never match. The job GRADE is exposed where qb-core exposes the
+    --                        job type, which is the closest equivalent to key an override on.
+    --                        Hunger and thirst come from esx_status rather than from player
+    --                        metadata; the HUD listens to it directly.
+    --
+    --   ox_core              groups instead of jobs: the first group is reported as the job
+    --                        name and its rank as the type. No notification system of its
+    --                        own, so HUD notifications use the HUD's own toast.
+    forceFramework = nil,
+
     -- Milliseconds between fuel reads. Fuel moves slowly and an export call is not free.
     fuelInterval = 2000,
 
@@ -788,7 +818,11 @@ Config.Compat = {
     forceVoice = nil,
 
     -- Notifications. The first one started is used; 'native' draws the HUD's own toast.
-    notify = { 'qb-core', 'ox_lib', 'okokNotify', 'native' },
+    --
+    -- ox_core is deliberately absent: it ships no notification system, so a server running it
+    -- falls through to 'native' and gets the HUD's own themed toast. That is the right answer
+    -- on that framework rather than a compromise.
+    notify = { 'qb-core', 'es_extended', 'ox_lib', 'okokNotify', 'native' },
     forceNotify = nil,
 
     -- Menu sound effects, played through interact-sound when it is installed. Silent when it
@@ -964,6 +998,17 @@ Config.Alerts = {
         -- A frontend sound: the name, then the sound SET it belongs to.
         sound = 'Beep_Red',
         set = 'DLC_HEIST_HACKING_SNAKE_SOUNDS',
+
+        -- Warn PASSENGERS too, not only the driver.
+        --
+        -- On by default because a passenger can buckle - qb-smallresources' toggle has no
+        -- driver check - and the ejection logic throws unbelted passengers through the
+        -- windscreen exactly like the driver. It is a warning they can act on.
+        --
+        -- The belt TELL-TALE is always shown to passengers regardless of this; the switch is
+        -- only about the sound. The door chime stays the driver's either way: a passenger
+        -- cannot pull over.
+        passengers = true,
     },
 
     -- OFF, and it should stay off on most servers.

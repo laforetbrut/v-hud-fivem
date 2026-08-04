@@ -299,6 +299,7 @@ Locales.fr = {
     ['share.invalid'] = 'Ce n\'est pas un code v-hud',
     ['advanced.version'] = 'Version',
     ['advanced.author'] = 'Développé par',
+    ['advanced.about_title'] = 'À propos',
     ['advanced.about'] = 'v-hud. Développé par vyrriox.',
 
     -- Points cardinaux, volontairement courts

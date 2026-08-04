@@ -284,6 +284,9 @@ const Status = (() => {
     const ARC_MAX_TILT = 18;         // how far down the arc may be rotated to clear the banner
     const DEG = 180 / Math.PI;
     let lastArcSignature = '';
+    // The visible-gauge key set, kept separately so the tick can rule the arc out without
+    // measuring anything. See the note in layoutArc.
+    let lastArcKeys = null;
 
     /** Place every visible gauge on the circle around the map. */
     function layoutArc(force) {
@@ -294,15 +297,33 @@ const Status = (() => {
             if (refs.root.getAttribute('data-hidden') !== 'true') visible.push(refs);
         }
 
+        /*
+            The cheap gate comes FIRST, and that is the whole point of this block.
+
+            This function is called at the end of every update(), which has just finished
+            writing to the DOM. Measuring here forces the browser to lay the page out
+            synchronously before it can answer - so reading the box before deciding whether
+            there was any work to do cost one forced reflow per tick, sixty times a second,
+            to almost always conclude that nothing had changed.
+
+            The set of visible gauges is readable without measuring anything. When it has not
+            changed there is nothing to re-space, so nothing is measured.
+
+            A change in the MAP's size or place does need a re-space and is not visible in
+            that key set - it arrives instead through setArc() on a settings change and
+            through the ResizeObserver below, both of which pass force = true.
+        */
+        const keys = visible.map((r) => r.definition.key).join();
+        if (!force && keys === lastArcKeys) return;
+
         const box = listNode.getBoundingClientRect();
         if (!box.width || !box.height) return;
 
-        // Re-place only when the set of visible gauges or the map size actually changed:
-        // this runs off the tick, and writing six positions per frame is six layouts.
         // box.top is part of the signature because the downward tilt below is limited by how
         // much screen is left under the map: moving the map re-decides the layout.
-        const signature = `${visible.map((r) => r.definition.key).join()}|${Math.round(box.width)}x${Math.round(box.height)}@${Math.round(box.top)}`;
+        const signature = `${keys}|${Math.round(box.width)}x${Math.round(box.height)}@${Math.round(box.top)}`;
         if (!force && signature === lastArcSignature) return;
+        lastArcKeys = keys;
         lastArcSignature = signature;
 
         const cx = box.width / 2;
@@ -362,6 +383,25 @@ const Status = (() => {
         U.cssVar(document.documentElement, '--arc-overshoot', `${Math.max(0, U.round(-topY, 1))}px`);
     }
 
+    /*
+        Watch the gauge list's own box.
+
+        Since the tick stopped measuring, a map that is resized, rescaled or reshaped has no
+        other way of telling the arc to re-space itself. ResizeObserver fires only when the
+        box genuinely changes, so this costs nothing while the map sits still - which is the
+        whole session, apart from the moment a player drags the size slider.
+
+        Armed once and left armed; observing the same node twice is a no-op in the spec, but
+        the flag keeps it obvious.
+    */
+    let listObserved = false;
+
+    function observeList() {
+        if (listObserved || !listNode || typeof ResizeObserver !== 'function') return;
+        listObserved = true;
+        new ResizeObserver(() => layoutArc(true)).observe(listNode);
+    }
+
     /** Turn arc mode on or off. Called from state.js when the dock or the map shape changes. */
     function setArc(on) {
         if (!listNode) listNode = U.el('status-list');
@@ -369,6 +409,12 @@ const Status = (() => {
 
         U.attr(listNode, 'data-arc', !!on);
         lastArcSignature = '';
+        lastArcKeys = null;
+
+        // The map's own box is what the arc is drawn around, and the tick no longer measures
+        // it. This is what notices a map that was resized, rescaled or reshaped - the one
+        // change the visible-gauge gate cannot see.
+        observeList();
 
         if (!on) {
             // Hand the gauges back to flex: an inline left/top would survive the class change

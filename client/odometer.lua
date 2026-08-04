@@ -72,7 +72,25 @@ function Odometer.metres(vehicle)
     return (totals[plate] or 0) + (pending[plate] or 0)
 end
 
---- Metres formatted for the speedometer, in the unit the operator chose.
+--[[
+    Metres formatted for the speedometer, in the unit the operator chose.
+
+    Called on every tick, so the two easy allocations are worth removing:
+
+    The format string was rebuilt from pieces on every call ('%.' .. decimals .. 'f'), which
+    is two string concatenations a frame to produce the same handful of characters. The
+    operator's `decimals` cannot change at runtime, so it is built once.
+
+    THE RETURNED TABLE IS DELIBERATELY STILL ALLOCATED FRESH, and must stay that way.
+
+    Reusing one would look like an easy second saving and would silently break the odometer.
+    The tick dedupe in client/main.lua keeps the last payload BY REFERENCE, so a sub-table
+    mutated in place would be compared against itself: `same()` would report no change and
+    the mileage would never reach the screen again. The allocation is the price of that
+    comparison working, and it is a cheap one.
+]]
+local formatCache = nil
+
 function Odometer.display(vehicle, playerUnits)
     local metres = Odometer.metres(vehicle)
     if not metres then return nil end
@@ -81,10 +99,13 @@ function Odometer.display(vehicle, playerUnits)
     if unit == 'units' then unit = playerUnits == 'mph' and 'mi' or 'km' end
 
     local value = unit == 'mi' and (metres / 1609.344) or (metres / 1000.0)
-    local decimals = Config.Odometer.decimals or 0
+
+    if not formatCache then
+        formatCache = '%.' .. (Config.Odometer.decimals or 0) .. 'f'
+    end
 
     return {
-        value = tonumber(string.format('%.' .. decimals .. 'f', value)),
+        value = tonumber(string.format(formatCache, value)),
         unit = unit == 'mi' and 'MI' or 'KM',
     }
 end

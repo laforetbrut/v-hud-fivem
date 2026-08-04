@@ -32,7 +32,7 @@ body:
     attributes:
       label: v-hud version
       description: The `version` line in `fxmanifest.lua`. / La ligne `version` dans `fxmanifest.lua`.
-      placeholder: "1.0.0"
+      placeholder: "1.0.1"
     validations:
       required: true
 
@@ -43,6 +43,9 @@ body:
       options:
         - qb-core
         - qbx_core (Qbox)
+        - es_extended (ESX)
+        - ox_core
+        - Standalone (no framework / aucun framework)
         - Other / Autre
     validations:
       required: true

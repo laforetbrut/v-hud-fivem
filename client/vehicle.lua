@@ -220,7 +220,7 @@ end
 --- Sound the belt and door warnings for `data`, the table `Vehicle.read` just returned.
 --- Reads only; every decision is already in that table.
 function Vehicle.warn(data)
-    if not Config.Alerts or not data or data.bicycle or not data.driver then
+    if not Config.Alerts or not data or data.bicycle then
         -- BOTH fields, which is what resetWarnings does. Clearing only `since` left `last` set,
         -- and an interval of 0 - documented as "once per occurrence" - then meant "once, ever"
         -- for anyone who had been a passenger or on a bicycle since the last chime.
@@ -231,14 +231,22 @@ function Vehicle.warn(data)
     local now = GetGameTimer()
     local fast = data.speed > (Config.Alerts.speed or 40)
     local doorState = data.doors or {}
+    local driving = data.driver == true
 
     local doorOpen = doorState.door == true
     if Config.Alerts.includeBootAndBonnet then
         doorOpen = doorOpen or doorState.bonnet == true or doorState.boot == true
     end
 
-    chime('seatbelt', fast and data.seatbelt ~= true, now)
-    chime('door', fast and doorOpen, now)
+    -- The belt warning is actionable from a passenger seat: they can buckle, and they are
+    -- thrown through the windscreen if they do not. A switch rather than a decision, because
+    -- a chime nobody can silence is the fastest way to make players mute the HUD.
+    local beltSeats = driving
+        or (Config.Alerts.seatbelt and Config.Alerts.seatbelt.passengers) == true
+
+    -- The door warning stays the driver's. A passenger cannot pull over.
+    chime('seatbelt', beltSeats and fast and data.seatbelt ~= true, now)
+    chime('door', driving and fast and doorOpen, now)
 end
 
 --- Forget both warnings. Called on leaving a vehicle, so getting back in starts the grace
