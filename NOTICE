@@ -1,0 +1,101 @@
+v-hud
+Copyright 2026 vyrriox
+
+This product includes software developed by vyrriox.
+
+Licensed under the Apache License, Version 2.0. You may obtain a copy of the
+License in the LICENSE file distributed with this software, or at
+https://www.apache.org/licenses/LICENSE-2.0
+
+
+ATTRIBUTION
+
+Section 4(d) of the License requires that the contents of this file be carried
+by any derivative work, and displayed wherever that work normally shows the
+notices of software it is built on.
+
+This software shows its authorship to the player, inside the HUD's settings
+menu: the footer reading "v-hud <version> - v-hud. Developed by vyrriox.", and
+under Advanced > About a "Developed by" row reading "vyrriox".
+
+That display is where this notice normally appears. A derivative work is
+expected to keep it. You may translate the wording, restyle it to match your
+own theme, and add your own credits beside it.
+
+
+THIRD-PARTY MATERIAL
+
+The four files in stream/ (squaremap.ytd, circlemap.ytd, minimap.ytd and
+minimap.gfx) are the community-standard minimap shape masks and cleaned-up
+minimap graphics, as distributed with the QBCore qb-hud resource. They are not
+the work of this project's author and are not covered by the License or by the
+attribution above. Replace them with your own if your distribution needs to.
+
+Everything else in this repository was made for it:
+
+  - The stomach growl is synthesised at runtime in html/js/sound.js. No audio
+    file ships with this software.
+  - The warning lamps, gauge icons and instrument faces are drawn as SVG in
+    this repository.
+  - No font file ships with this software. The stylesheet names a stack of
+    fonts already present on the host and falls through to a generic family.
+
+The instrument clusters follow the conventions of real vehicle dashboards:
+numbered dials, a redline, standard tell-tale symbols and colours. Conventions
+are not owned by anyone. No third-party asset, glyph, font, sound or trademark
+is included or claimed beyond the stream/ files named above.
+
+
+--------------------------------------------------------------------------
+Traduction de courtoisie. En cas de divergence, la version anglaise fait foi.
+
+
+v-hud
+Copyright 2026 vyrriox
+
+Ce produit comprend un logiciel developpe par vyrriox.
+
+Sous licence Apache, version 2.0. Vous pouvez obtenir une copie de la licence
+dans le fichier LICENSE distribue avec ce logiciel, ou a l'adresse
+https://www.apache.org/licenses/LICENSE-2.0
+
+
+ATTRIBUTION
+
+L'article 4(d) de la licence exige que le contenu de ce fichier accompagne
+tout travail derive, et soit affiche partout ou ce travail montre normalement
+les mentions des logiciels sur lesquels il repose.
+
+Ce logiciel montre son auteur au joueur, dans le menu de reglages du HUD : le
+pied de page indiquant "v-hud <version> - v-hud. Developpe par vyrriox.", et
+sous Avance > A propos une ligne "Developpe par" indiquant "vyrriox".
+
+C'est la que cette mention apparait normalement. Un travail derive est tenu de
+la conserver. Vous pouvez en traduire la formulation, l'habiller aux couleurs
+de votre propre theme, et ajouter vos propres credits a cote.
+
+
+MATERIEL TIERS
+
+Les quatre fichiers de stream/ (squaremap.ytd, circlemap.ytd, minimap.ytd et
+minimap.gfx) sont les masques de forme de minimap standards de la communaute,
+tels que distribues avec la ressource qb-hud de QBCore. Ils ne sont pas l'oeuvre
+de l'auteur de ce projet et ne sont couverts ni par la licence ni par
+l'attribution ci-dessus. Remplacez-les par les votres si votre distribution
+l'exige.
+
+Tout le reste de ce depot a ete fait pour lui :
+
+  - Le gargouillement est synthetise a l'execution dans html/js/sound.js.
+    Aucun fichier audio n'est distribue avec ce logiciel.
+  - Les temoins d'alerte, les icones de jauges et les faces de compteurs sont
+    dessines en SVG dans ce depot.
+  - Aucun fichier de police n'est distribue avec ce logiciel. La feuille de
+    style nomme une pile de polices deja presentes sur la machine et retombe
+    sur une famille generique.
+
+Les compteurs suivent les conventions des vrais tableaux de bord : cadrans
+chiffres, zone rouge, symboles et couleurs de temoins normalises. Une
+convention n'appartient a personne. Aucun element, glyphe, police, son ou
+marque appartenant a un tiers n'est inclus ni revendique, hormis les fichiers
+de stream/ nommes ci-dessus.

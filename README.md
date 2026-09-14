@@ -168,17 +168,15 @@ colour picker with no code change. Add a theme in `Config.ExtraThemes`. Every qb
 
 ## Licence
 
-MIT with an attribution requirement. See [LICENSE](LICENSE). Use it, change it, sell it, ship
-it on a paid server — with one condition:
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-**Leave the credit in.** The HUD names its author in its own settings menu: the footer, and a
-"Developed by" row under the Advanced tab. You may translate it, restyle it to match your
-theme, and put your own credits next to it. You may not remove it, hide it, or replace the
-name. Redistributing a copy with that credit stripped ends the licence.
+Under section 4(d) of the licence, a derivative work must carry the contents of `NOTICE`. The
+HUD names its author in its own settings menu, in the footer and under Advanced > About, and
+that is where the notice is expected to stay. You may translate it, restyle it to match your
+theme, and add your own credits beside it.
 
 The four files in `stream/` are the community-standard minimap masks as shipped with QBCore's
-qb-hud. They are not the author's work, are noted separately in the licence file, and the
-attribution requirement does not cover them.
+qb-hud. They are not the author's work and are noted separately in `NOTICE`.
 
 ## Credits
 
@@ -303,18 +301,16 @@ touche pas une autre en silence.
 
 ## Licence
 
-MIT avec obligation d'attribution. Voir [LICENSE](LICENSE). Utilisez-le, modifiez-le,
-vendez-le, faites-le tourner sur un serveur payant — à une condition :
+Licence Apache 2.0. Voir [LICENSE](LICENSE) et [NOTICE](NOTICE).
 
-**Laissez le crédit.** Le HUD nomme son auteur dans son propre menu de réglages : en pied de
-page, et sur une ligne « Développé par » dans l'onglet Avancé. Vous pouvez le traduire,
-l'habiller aux couleurs de votre thème, et mettre vos propres crédits à côté. Vous ne pouvez
-pas le supprimer, le masquer ni remplacer le nom. Redistribuer une copie dont ce crédit a été
-retiré met fin à la licence.
+Selon l'article 4(d) de la licence, un travail dérivé doit reprendre le contenu de `NOTICE`.
+Le HUD nomme son auteur dans son propre menu de réglages, en pied de page et sous Avancé > À
+propos, et c'est là que la mention doit rester. Vous pouvez la traduire, l'habiller aux
+couleurs de votre thème, et ajouter vos propres crédits à côté.
 
 Les quatre fichiers de `stream/` sont les masques de minimap standards de la communauté,
-livrés avec qb-hud de QBCore. Ils ne sont pas l'œuvre de l'auteur, sont mentionnés à part dans
-le fichier de licence, et l'obligation d'attribution ne les couvre pas.
+livrés avec qb-hud de QBCore. Ils ne sont pas l'œuvre de l'auteur et sont mentionnés à part
+dans `NOTICE`.
 
 ## Credits
 
