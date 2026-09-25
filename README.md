@@ -6,6 +6,8 @@ reshaped, resized or switched off, and the server owner decides which of those f
 leave open. Ships with seven themes, twelve gauge shapes, ten realistic instrument clusters,
 four compasses and a frosted-glass default look.
 
+Latest release: [v1.0.2](https://github.com/laforetbrut/v-hud-fivem/releases/tag/v1.0.2).
+
 ## Features
 
 - **Clear Glass default theme** - translucent panels built from a layered gradient, a lit
@@ -200,6 +202,8 @@ Author: vyrriox
 ---
 
 # v-hud (Version Française)
+
+Dernière version : [v1.0.2](https://github.com/laforetbrut/v-hud-fivem/releases/tag/v1.0.2).
 
 Un HUD entièrement personnalisable pour FiveM, conçu pour QBCore et fonctionnant aussi sur
 ESX et ox_core. Chaque joueur possède son HUD : chaque élément se déplace à la souris, se

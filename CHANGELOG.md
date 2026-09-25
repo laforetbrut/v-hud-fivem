@@ -6,6 +6,10 @@ All notable changes to v-hud are documented here.
 
 ## Unreleased
 
+---
+
+## [1.0.2] - 2026-09-25
+
 ### Added
 
 - GPS route distance on the minimap, refreshed only when the displayed distance changes.
