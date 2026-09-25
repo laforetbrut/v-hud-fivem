@@ -31,7 +31,7 @@ Config.ExtraThemes = {
 Then make it selectable:
 
 ```lua
-Config.Policy.themes = { 'glass', 'square', 'miami', 'neon', 'modern', 'midnight' }
+Config.Policy.themes = { 'glass', 'square', 'miami', 'neon', 'modern', 'apex', 'heritage', 'midnight' }
 ```
 
 `restart v-hud`. It is in the picker.

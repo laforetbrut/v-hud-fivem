@@ -263,6 +263,31 @@ CreateThread(function()
     end
 end)
 
+-- The route belongs to the game GPS. Read its measured road length at a relaxed interval;
+-- the HUD never creates or changes a waypoint, and sends only a changed display value.
+CreateThread(function()
+    local lastMetres = nil
+
+    while true do
+        Wait(500)
+
+        local metres = nil
+        if State.settings and GetGpsBlipRouteFound() then
+            local length = GetGpsBlipRouteLength()
+            if length and length >= 0 then
+                -- Two decimals below 1 km keep the last streets useful without flicker.
+                local step = length < 1000 and 10 or 100
+                metres = math.floor(length / step + 0.5) * step
+            end
+        end
+
+        if metres ~= lastMetres then
+            lastMetres = metres
+            SendNUIMessage({ action = 'route', metres = metres })
+        end
+    end
+end)
+
 -- The expanded map, left on, is unrecoverable from the player's side: there is no key that
 -- closes it and no setting that mentions it. So it is watched. If it is on while this
 -- resource is not in the middle of a shape change, it gets closed.

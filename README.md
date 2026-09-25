@@ -3,15 +3,15 @@
 A fully customisable HUD for FiveM, built for QBCore and running on ESX and ox_core too.
 Every player owns their own HUD: every element can be moved by dragging it, recoloured,
 reshaped, resized or switched off, and the server owner decides which of those freedoms to
-leave open. Ships with five themes, twelve gauge shapes, ten realistic instrument clusters,
+leave open. Ships with seven themes, twelve gauge shapes, ten realistic instrument clusters,
 four compasses and a frosted-glass default look.
 
 ## Features
 
 - **Clear Glass default theme** - translucent panels built from a layered gradient, a lit
   edge and a drop shadow rather than `backdrop-filter`, which FiveM's CEF composites over the
-  finished frame and renders as a solid black box. Hot pink accent, Vice City palette. Four
-  more ship with it: square minimalist, Miami, neon, modern.
+  finished frame and renders as a solid black box. Hot pink accent, Vice City palette. Six
+  more ship with it: square minimalist, Miami, neon, modern, Apex and Heritage.
 - **Everything is movable** - a drag editor with snap-to-grid, six layout presets, and
   per-element sliders. Positions are a percentage of the screen, so they survive a
   resolution change. Elements anchored near an edge grow away from it, and the HUD clamps
@@ -22,6 +22,9 @@ four compasses and a frosted-glass default look.
 - **Ten realistic speedometers** - minimal digital, classic dial, twin sport dials, digital
   cluster, luxury ring, JDM tachometer, American muscle, supercar, truck cluster, retro LCD.
   All with numbered graduations, real needles, a redline, and an E-F fuel gauge.
+- **Sharper digital instruments** - the minimal and digital faces now have larger speed
+  numerals, a clear accent edge and more legible graduations. Apex pairs the digital cluster
+  with an amber motorsport palette; Heritage pairs the classic dial with warm enamel tones.
 - **Odometer** - the total distance a vehicle has covered, on every cluster. GTA does not
   keep one, so it is measured while you drive and stored against the number plate; a mileage
   published by another resource is used instead when there is one.
@@ -34,6 +37,8 @@ four compasses and a frosted-glass default look.
 - **Minimap control** - square or circle, resizable, hideable, vehicle-only mode, and
   draggable in the layout editor like everything else. Moves the real game minimap, so blips
   move with it. Ships the shape masks, so a square border sits on a square map.
+- **GPS distance** - a small readout on the minimap shows kilometres along the active game
+  route, updates as it changes and disappears when the route or radar is gone.
 - **No money on screen** - a cash readout parked in a corner all session is the first thing
   most players switch off, so it is not drawn at all, and neither is the "you gained $50"
   banner. `/cash` and `/bank` answer once, as a toast, and go away.
@@ -189,7 +194,7 @@ Author: vyrriox
 Un HUD entièrement personnalisable pour FiveM, conçu pour QBCore et fonctionnant aussi sur
 ESX et ox_core. Chaque joueur possède son HUD : chaque élément se déplace à la souris, se
 recolore, change de forme, de taille, ou se désactive, et le propriétaire du serveur décide
-lesquelles de ces libertés laisser ouvertes. Livré avec cinq thèmes, douze formes de jauges,
+lesquelles de ces libertés laisser ouvertes. Livré avec sept thèmes, douze formes de jauges,
 dix compteurs réalistes, quatre boussoles et un thème par défaut en verre dépoli.
 
 **Ce qui diffère selon le framework** : sur ESX il n'y a pas de gang (les surcharges
@@ -203,7 +208,8 @@ pour voir ce qui a été détecté.
 - **Thème par défaut Clear Glass** - panneaux translucides composés d'un dégradé en couches,
   d'une arête éclairée et d'une ombre portée plutôt que de `backdrop-filter`, que le CEF de
   FiveM compose par-dessus l'image finie et rend en carré noir opaque. Accent rose vif,
-  palette Vice City. Quatre autres livrés avec : carré minimaliste, Miami, néon, modern.
+  palette Vice City. Six autres livrés avec : carré minimaliste, Miami, néon, modern, Apex
+  et Heritage.
 - **Tout est déplaçable** - un éditeur par glisser-déposer avec grille aimantée, six
   dispositions prédéfinies, et des curseurs par élément. Les positions sont un pourcentage
   de l'écran : elles survivent à un changement de résolution. Un élément proche d'un bord
@@ -215,11 +221,16 @@ pour voir ce qui a été détecté.
   cluster numérique, anneau luxe, compte-tours JDM, muscle américaine, supercar, cadrans
   poids lourd, LCD rétro. Tous avec graduations chiffrées, vraies aiguilles, zone rouge et
   jauge d'essence E-F.
+- **Compteurs numériques plus lisibles** - chiffres de vitesse agrandis, accent plus net et
+  graduations renforcées. Apex associe le compteur numérique à une palette de course ambre ;
+  Heritage associe le cadran classique à des tons émaillés chauds.
 - **Boussole et noms de rue** - quatre styles de boussole (barre, ruban, cadran, texte),
   bandeau rue + rue transversale + quartier qui peut prendre la largeur de la minimap et se
   poser dessus.
 - **Contrôle de la minimap** - carrée ou ronde, déplaçable, redimensionnable, masquable,
   mode véhicule uniquement. Déplace la vraie minimap du jeu : les blips suivent.
+- **Distance GPS** - une pastille sur la minimap affiche les kilomètres de l'itinéraire actif
+  du jeu et disparaît quand le trajet ou le radar est masqué.
 - **Mode immersif** - le HUD s'efface quand il ne se passe rien et revient dès que quelque
   chose bouge. Mode compact, bandes cinématiques, curseurs de taille et d'opacité.
 - **Fréquence de rafraîchissement au choix** - 30 / 60 / 90 fps, comme le réglage de qb-core.

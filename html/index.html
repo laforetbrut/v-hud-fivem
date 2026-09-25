@@ -78,6 +78,13 @@
     <!-- The minimap border. The map itself is the game's; this is only the frame around it,
          because the native one cannot be recoloured. -->
     <div class="minimap-frame" id="minimap-frame" data-shape="square" data-radar="true"></div>
+    <div class="route-distance" id="route-distance" data-radar="true" data-route="false" aria-live="off">
+        <svg class="route-distance__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14-10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM7 16h5a4 4 0 0 0 0-8h-1M11 8h6"/>
+        </svg>
+        <span class="route-distance__label" id="route-label"></span>
+        <span class="route-distance__value" id="route-value"></span>
+    </div>
 
     <div class="hud-el" id="el-status" data-element="status">
         <div class="status" id="status-list"></div>

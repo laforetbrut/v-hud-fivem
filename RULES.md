@@ -100,7 +100,7 @@ bridge/shared/hud.lua   `HUD`: merge/clamp/colour helpers, debug printer. Loads 
 bridge/shared/locale.lua`L(key)` and the locale table. English is the fallback.
 bridge/client/compat.lua`Compat`: runtime detection of everything optional (client).
 bridge/server/framework.lua `Bridge`: qb-core/qbx access, identifiers, permissions.
-shared/themes.lua       The five themes as patches. Validated on both sides.
+shared/themes.lua       The seven themes as patches. Validated on both sides.
 shared/speedometers.lua The ten clusters as data. The JS renderer is the other half.
 shared/settings.lua     THE validator: merge, coerce, clamp, enforce policy.
 client/settings.lua     `State`: boot, apply, save, NUI callbacks, exports.

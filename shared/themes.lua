@@ -234,6 +234,54 @@ Themes.modern = {
     },
 }
 
+-- A focused motorsport cockpit: amber revs, cool white speed and a dense digital cluster.
+Themes.apex = {
+    key = 'apex',
+    label = 'Apex',
+    swatch = { '#101820', '#ffb44c', '#dce8f2' },
+    patch = {
+        style = {
+            gauge = 'segment', direction = 'column', icons = true, values = true,
+            outline = true, glow = false, surface = 'solid', blur = 0,
+            corner = 5, gap = 7,
+        },
+        colours = {
+            accent = '#ffb44c', health = '#61dcb2', armor = '#79aaf7',
+            hunger = '#f2c370', thirst = '#6bcfe3', stress = '#f28589',
+            oxygen = '#6bcfe3', stamina = '#b8d981', voice = '#dce8f2',
+            speed = '#f4f7fa', fuel = '#ffb44c', rpm = '#ff675d',
+            warning = '#ff675d', background = '#101820', text = '#e7eef5',
+        },
+        minimap = { shape = 'square', borders = true },
+        speedometer = { style = 'digital' },
+        compass = { style = 'tape' },
+    },
+}
+
+-- A calm analogue dashboard with warm enamel, brass details and the classic dial.
+Themes.heritage = {
+    key = 'heritage',
+    label = 'Heritage',
+    swatch = { '#242a27', '#d6b982', '#eee8d8' },
+    patch = {
+        style = {
+            gauge = 'rounded', direction = 'column', icons = true, values = true,
+            outline = true, glow = false, surface = 'tint', blur = 0,
+            corner = 8, gap = 7,
+        },
+        colours = {
+            accent = '#d6b982', health = '#8ac5a8', armor = '#8ba8bc',
+            hunger = '#d6b982', thirst = '#82bbbf', stress = '#cc8f8b',
+            oxygen = '#82bbbf', stamina = '#b7c98b', voice = '#eee8d8',
+            speed = '#eee8d8', fuel = '#d6b982', rpm = '#b56a61',
+            warning = '#c66e63', background = '#242a27', text = '#eee8d8',
+        },
+        minimap = { shape = 'circle', borders = true },
+        speedometer = { style = 'classic' },
+        compass = { style = 'dial' },
+    },
+}
+
 -- Themes the operator added in Config.ExtraThemes. Merged in rather than replacing, so a
 -- config entry keyed 'square' customises the shipped square theme instead of shadowing it.
 for key, extra in pairs(Config.ExtraThemes or {}) do

@@ -160,6 +160,7 @@
 
             U.attr(frame, 'data-shape', data.shape || 'square');
             U.attr(frame, 'data-on', data.borders !== false);
+            U.attr(U.el('route-distance'), 'data-shape', data.shape || 'square');
         },
 
         // Whether the game is drawing a radar right now. Sent by the minimap loop, which is
@@ -169,6 +170,18 @@
         radar(data) {
             const frame = U.el('minimap-frame');
             if (frame) U.attr(frame, 'data-radar', data.on !== false);
+            U.attr(U.el('route-distance'), 'data-radar', data.on !== false);
+        },
+
+        route(data) {
+            const node = U.el('route-distance');
+            const metres = Number(data.metres);
+            const active = data.metres !== null && data.metres !== undefined
+                && Number.isFinite(metres) && metres >= 0;
+            U.attr(node, 'data-route', active);
+            if (!active) return;
+            U.text(U.el('route-label'), S.t('route.destination'));
+            U.text(U.el('route-value'), `${(metres / 1000).toFixed(metres < 1000 ? 2 : 1)} km`);
         },
 
         growl(data) {

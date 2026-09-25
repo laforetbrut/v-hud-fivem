@@ -323,4 +323,5 @@ Locales.fr = {
     ['unit.gear'] = 'RAPP',
     ['unit.rpm'] = 'TR/M',
     ['unit.alt'] = 'ALT',
+    ['route.destination'] = 'Destination',
 }

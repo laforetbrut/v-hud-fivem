@@ -4,6 +4,28 @@ All notable changes to v-hud are documented here.
 
 ---
 
+## Unreleased
+
+### Added
+
+- GPS route distance on the minimap, refreshed only when the displayed distance changes.
+- Apex and Heritage themes in the existing theme picker.
+
+### Changed
+
+- Larger, clearer minimal and digital speedometer faces with stronger instrument framing.
+
+### Ajouts
+
+- Distance de l'itinéraire GPS sur la minimap, actualisée seulement quand la valeur affichée change.
+- Thèmes Apex et Heritage dans le sélecteur existant.
+
+### Modifications
+
+- Compteurs minimal et numérique agrandis et plus lisibles, avec un cadre mieux défini.
+
+---
+
 ## [1.0.1] - 2026-08-04
 
 ### Added

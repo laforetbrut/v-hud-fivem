@@ -148,7 +148,7 @@ Config.Policy = {
     -- Themes offered in the menu. Remove one and it stops being selectable AND stops being
     -- accepted on save. The order here is the order in the menu. An empty list leaves the
     -- player on whatever `Config.Defaults.theme` says, with no picker at all.
-    themes = { 'glass', 'square', 'miami', 'neon', 'modern' },
+    themes = { 'glass', 'square', 'miami', 'neon', 'modern', 'apex', 'heritage' },
 
     -- Speedometers offered in the menu, same rules. All ten ship enabled, and every one of
     -- them is modelled on a real instrument cluster: numbered graduations, a needle on a real

@@ -320,4 +320,5 @@ Locales.en = {
     ['unit.gear'] = 'GEAR',
     ['unit.rpm'] = 'RPM',
     ['unit.alt'] = 'ALT',
+    ['route.destination'] = 'Destination',
 }

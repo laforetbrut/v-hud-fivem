@@ -199,6 +199,7 @@ HARNESS = """
         crossing: 'Prosperity Street', zone: 'Vespucci Beach',
     }, '*');
     window.postMessage({ action: 'heading', cardinal: 'N' }, '*');
+    window.postMessage({ action: 'route', metres: 3850 }, '*');
     window.postMessage({ action: 'showAccount', account: 'cash', amount: 24350, duration: 999999 }, '*');
 
     let t = 0;

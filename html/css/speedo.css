@@ -40,6 +40,13 @@
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
+/* The digital faces read as one instrument even when the road behind them is bright. */
+.spd-body[data-style="minimal"],
+.spd-body[data-style="digital"] {
+    border-color: var(--c-line-strong);
+    box-shadow: inset 0 1px 0 var(--c-accent-a18), 0 5px 18px rgba(0, 0, 0, 0.32);
+}
+
 .spd-svg {
     position: absolute;
     inset: 0;
@@ -76,7 +83,7 @@
     stroke: none;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    opacity: 0.9;
+    opacity: 1;
 }
 
 .spd-facelabel {
@@ -229,7 +236,7 @@
     font-size: 30px;
     font-weight: 800;
     line-height: 0.92;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.04em;
     color: var(--c-speed);
     font-variant-numeric: tabular-nums;
 }
@@ -249,6 +256,16 @@
     font-weight: 800;
     color: var(--c-accent);
     text-shadow: var(--glow);
+}
+
+.spd-body[data-style="minimal"] .spd-gear,
+.spd-body[data-style="digital"] .spd-gear {
+    min-width: 20px;
+    padding: 1px 4px;
+    border: 1px solid var(--c-accent-a30);
+    border-radius: 3px;
+    background: var(--c-accent-a12);
+    text-align: center;
 }
 
 .spd-range {
@@ -537,17 +554,22 @@
 .spd-body[data-style="minimal"] {
     flex-direction: column;
     justify-content: flex-end;
-    gap: 5px;
+    gap: 4px;
     width: 220px;
     height: 118px;
-    padding: 8px 16px 10px;
+    padding: 6px 15px 9px;
     background: var(--c-panel);
-    border: 1px solid var(--c-line);
+    border: 1px solid var(--c-line-strong);
+    border-top: 2px solid var(--c-accent);
     border-radius: var(--radius);
 }
 
 .spd-body[data-style="minimal"] .spd-svg { inset: -6px 0 auto 0; height: 96px; }
-.spd-body[data-style="minimal"] .spd-centre { margin-top: 30px; }
+.spd-body[data-style="minimal"] .spd-centre { margin-top: 16px; }
+.spd-body[data-style="minimal"] .spd-value { font-size: 42px; }
+.spd-body[data-style="minimal"] .spd-unit { font-size: 10px; color: var(--c-text); }
+.spd-body[data-style="minimal"] .spd-tick--major { stroke: var(--c-accent); }
+.spd-body[data-style="minimal"] .spd-arc--speed { stroke-width: 5; }
 .spd-body[data-style="minimal"] .spd-strip { width: 100%; }
 
 /* =======================================================================================
@@ -557,6 +579,7 @@
 .spd-body[data-style="classic"] { width: 168px; height: 168px; }
 
 .spd-body[data-style="classic"] .spd-bezel { stroke: url(#chromeGradient); stroke-width: 6; }
+.spd-body[data-style="classic"] .spd-svg { filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.55)); }
 .spd-body[data-style="classic"] .spd-face  { fill: #f2ece0; stroke: #2b2b2b; }
 .spd-body[data-style="classic"] .spd-scale { stroke: #6b6257; }
 .spd-body[data-style="classic"] .spd-tick  { stroke: #4a463f; }
@@ -597,18 +620,26 @@
 .spd-body[data-style="digital"] {
     flex-direction: column;
     align-items: stretch;
-    gap: 5px;
+    gap: 6px;
     width: 246px;
-    padding: 10px 14px 12px;
-    background: linear-gradient(180deg,
-        var(--c-bg-d94) 0%,
-        var(--c-bg-d76) 100%);
-    border: 1px solid var(--c-line);
+    min-height: 150px;
+    padding: 12px 14px;
+    background: var(--c-panel);
+    border: 1px solid var(--c-line-strong);
+    border-top: 2px solid var(--c-accent);
     border-radius: var(--radius);
 }
 
 .spd-body[data-style="digital"] .spd-svg { display: none; }
-.spd-body[data-style="digital"] .spd-main { margin-top: 2px; }
+.spd-body[data-style="digital"] .spd-main { flex: 1; align-items: center; }
+.spd-body[data-style="digital"] .spd-value { font-size: 48px; }
+.spd-body[data-style="digital"] .spd-unit { font-size: 10px; color: var(--c-text); }
+.spd-body[data-style="digital"] .spd-revbar { height: 9px; gap: 2px; }
+.spd-body[data-style="digital"] .spd-revbar__seg { border-radius: 2px 2px 0 0; }
+.spd-body[data-style="digital"] .spd-strips {
+    padding-top: 7px;
+    border-top: 1px solid var(--c-line);
+}
 
 /* =======================================================================================
    5. luxury - thin finely graduated ring

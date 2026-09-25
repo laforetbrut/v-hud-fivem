@@ -268,6 +268,43 @@
 .minimap-frame[data-shape="square"] { border-radius: var(--radius); }
 .minimap-frame[data-shape="circle"] { border-radius: 50%; }
 
+/* A compact readout tied to the native map rectangle, including its ultrawide correction. */
+.route-distance {
+    position: fixed;
+    left: calc(var(--map-left) + var(--map-w) - 6px);
+    top: calc(100% - var(--map-bottom) - var(--map-h) + 8px);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: var(--map-w);
+    padding: 5px 9px;
+    transform: translateX(-100%) scale(var(--hud-scale));
+    transform-origin: top right;
+    border: 1px solid var(--c-accent-a30);
+    border-radius: 5px;
+    background: linear-gradient(145deg, var(--c-panel-solid), var(--c-bg-d92));
+    box-shadow: inset 0 1px 0 var(--c-accent-a18), 0 3px 12px rgba(0, 0, 0, 0.4);
+    color: var(--c-text);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--t-mid) var(--ease);
+    pointer-events: none;
+}
+
+.hud[data-ready="true"]:not([data-hidden="true"]):not([data-faded="true"])
+    .route-distance[data-route="true"][data-radar="true"] { opacity: 1; }
+
+.route-distance__icon { width: 14px; height: 14px; flex: none; color: var(--c-accent); }
+.route-distance[data-shape="circle"] {
+    left: calc(var(--map-left) + var(--map-w) - 38px);
+    top: calc(100% - var(--map-bottom) - var(--map-h) + 35px);
+}
+.route-distance__label { min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    font-size: 10px; color: var(--c-muted); }
+.route-distance__value { flex: none; font-size: 13px; font-weight: 800;
+    letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+
 /* ---------------------------------------------------------------------------------------
    Street names
    --------------------------------------------------------------------------------------- */
