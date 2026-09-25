@@ -1,9 +1,8 @@
 /*
     js/speedo.js
 
-    Ten speedometers, all of them modelled on a real instrument cluster rather than on an
-    abstract shape. Every dial has numbered graduations, a needle that sweeps a real arc, a
-    redline where an engine has one, and a fuel gauge marked E to F.
+    Ten speedometers modelled on real instrument clusters. Analogue faces use numbered
+    graduations and needles; digital faces use scales and bars. Each face shows fuel.
 
     One builder does the dials. `dial()` takes a range, a sweep and a tick spacing and returns
     the SVG plus a setter; every face is then a few calls to it and a layout. That is what
@@ -249,38 +248,32 @@ const Speedo = (() => {
     const FACES = {
 
         /* 1. minimal
-           A modern digital readout with a real graduated speed arc over it: the number is what
-           you read, the arc is what tells you where you are on the scale. What a current
-           electric car puts in front of the driver, and the face the glass theme uses. */
+           A modern round dial with a small digital window inside the lower half.
+           Its numerals sit outside that window, and its footer remains below the rim. */
         minimal() {
             const value = digits('spd-value');
             const u = unit(), g = gear(), r = range(), o = odo();
-            const speed = arcGauge(110, 74, 62, -78, 78, 'speed');
+            const speed = dial({
+                cx: 95, cy: 95, r: 82, max: MAX_KMH, step: 10, labelEvery: 40,
+                needleClass: 'spd-needle spd-needle--thin', labelRadius: 0.9, fontSize: 9,
+            });
             const fuel = stripGauge('E', 'F', 'fuel');
-
-            // Graduations along the speed arc, unnumbered but real: every 20 km/h.
-            const ticks = [];
-            for (let v = 0; v <= MAX_KMH; v += 20) {
-                const angle = -78 + (v / MAX_KMH) * 156;
-                const a = U.polar(110, 74, 66, angle);
-                const b = U.polar(110, 74, v % 60 === 0 ? 57 : 61, angle);
-                ticks.push(U.svg('line', {
-                    class: `spd-tick${v % 60 === 0 ? ' spd-tick--major' : ''}`,
-                    x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-                }));
-            }
 
             return {
                 node: U.make('div', { class: 'spd-body', 'data-style': 'minimal' }, [
-                    U.svg('svg', { class: 'spd-svg', viewBox: '0 0 220 96' }, [...ticks, ...speed.parts]),
+                    U.svg('svg', { class: 'spd-svg', viewBox: '0 0 190 190' }, [
+                        U.svg('circle', { class: 'spd-bezel', cx: 95, cy: 95, r: 91 }),
+                        U.svg('circle', { class: 'spd-face', cx: 95, cy: 95, r: 87 }),
+                        ...speed.parts,
+                    ]),
                     U.make('div', { class: 'spd-centre' }, [
                         U.make('div', { class: 'spd-readout' }, [value, u]),
                         U.make('div', { class: 'spd-subrow' }, [g, r]),
                     ]),
-                    fuel.node, o,
+                    U.make('div', { class: 'spd-foot' }, [fuel.node, o]),
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
-                speedArc: speed.fill, fuelFill: fuel.fill, fuelStrip: fuel.strip,
+                speedDial: speed, fuelFill: fuel.fill, fuelStrip: fuel.strip,
             };
         },
 
@@ -292,7 +285,7 @@ const Speedo = (() => {
             const g = gear(), u = unit(), o = odo();
 
             const speed = dial({
-                cx: 84, cy: 84, r: 68, max: MAX_KMH, step: 10, labelEvery: 20,
+                cx: 84, cy: 84, r: 68, max: MAX_KMH, step: 10, labelEvery: 40,
                 needleClass: 'spd-needle spd-needle--classic', fontSize: 9,
             });
             const fuel = arcGauge(84, 84, 34, 150, 210, 'fuel');
@@ -310,8 +303,9 @@ const Speedo = (() => {
                         ...speed.parts,
                     ]),
                     U.make('div', { class: 'spd-centre' }, [
-                        U.make('div', { class: 'spd-readout' }, [value, u]), g, o,
+                        U.make('div', { class: 'spd-readout' }, [value, u]), g,
                     ]),
+                    o,
                 ]),
                 value, unit: u, gear: g, odo: o, speedDial: speed, fuelArc: fuel.fill,
             };
@@ -402,7 +396,7 @@ const Speedo = (() => {
 
             const speed = dial({
                 cx: 92, cy: 92, r: 78, from: -135, to: 135, max: MAX_KMH,
-                step: 5, labelEvery: 20, needleClass: 'spd-needle spd-needle--thin',
+                step: 5, labelEvery: 40, needleClass: 'spd-needle spd-needle--thin',
                 // Pushed out toward the rim so the "260" at the end of the sweep clears the
                 // readout plate below the hub.
                 labelRadius: 0.85, fontSize: 8,
@@ -418,8 +412,9 @@ const Speedo = (() => {
                     ]),
                     U.make('div', { class: 'spd-centre' }, [
                         U.make('div', { class: 'spd-readout' }, [value, u]),
-                        U.make('div', { class: 'spd-subrow' }, [g, r]), o,
+                        U.make('div', { class: 'spd-subrow' }, [g, r]),
                     ]),
+                    o,
                 ]),
                 value, unit: u, gear: g, range: r, odo: o, speedDial: speed, fuelArc: fuel.fill,
             };
@@ -622,7 +617,10 @@ const Speedo = (() => {
                 node: U.make('div', { class: 'spd-body', 'data-style': 'retro' }, [
                     U.make('div', { class: 'spd-lcd' }, [ghost, value, u]),
                     ladder, scale, revLadder,
-                    U.make('div', { class: 'spd-foot' }, [g, fuel.node, o, r]),
+                    U.make('div', { class: 'spd-foot' }, [
+                        U.make('div', { class: 'spd-foot__row' }, [g, r]),
+                        U.make('div', { class: 'spd-foot__row' }, [fuel.node, o]),
+                    ]),
                 ]),
                 value, unit: u, gear: g, range: r, odo: o,
                 speedBars: bars, revSegments: revBars, fuelFill: fuel.fill, fuelStrip: fuel.strip,

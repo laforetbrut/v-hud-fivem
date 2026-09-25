@@ -5,6 +5,31 @@ happening again. Read the relevant entries before working in the same area.
 
 ---
 
+## [2026-09-25 15:04] - Speedometer readouts crossed their scales
+
+**Context:** Reviewing browser preview captures after enlarging the digital speed readout.
+**Error:** The minimal face painted speed digits over its arc. Classic and luxury dial numbers
+were crowded, the supercar odometer sat on its upper scale, and the retro footer cramped four
+readouts into one line.
+**Root cause:** The minimal arc and digits occupied the same area, while other faces kept fixed
+instrument dimensions after their readouts grew or acquired more content.
+**Fix:** Rebuilt the minimal face as a freestanding round dial with a protected digital window, reduced analogue numeral density, moved
+round-face odometers below their dials, and split the retro footer into two rows. Updated the
+declared face sizes used by the menu previews.
+**Prevention:** Reserve a distinct area for every instrument readout. Review the live face and
+the picker card at representative three-digit speeds before increasing type size.
+
+**Contexte :** examen des captures de la prévisualisation après agrandissement de la vitesse.
+**Erreur :** chiffres sur l'échelle du compteur minimal, graduations serrées des cadrans,
+odomètre sur celui de la supercar et pied du LCD rétro trop chargé.
+**Cause :** plusieurs lectures partageaient une zone ou conservaient une taille devenue trop petite.
+**Correctif :** cadran rond avec lecture numérique protégée, graduations espacées, odomètres sous les cadrans et pied LCD sur
+deux lignes, avec tailles déclarées mises à jour pour les vignettes.
+**Prévention :** réserver une zone à chaque lecture et contrôler compteur et vignette à vitesse
+élevée avant d'agrandir les caractères.
+
+---
+
 ## [2026-07-31 — build] — Empty Lua table encodes as `{}` and breaks every JS array method
 
 **Context:** Opening the settings menu with the shipped (empty) `Config.Policy.locked` list.

@@ -8,8 +8,8 @@
     A face that cannot show a readout has that switch hidden in the menu rather than shown as
     a control that does nothing: `supports` is what the menu reads to decide.
 
-    Every one of them is modelled on a real instrument cluster. Numbered graduations, a needle
-    that sweeps a real arc, a redline where an engine has one, and a fuel gauge marked E to F.
+    Every face is modelled on a real instrument cluster. Analogue faces use numbered
+    graduations and needles; digital faces use scales and bars.
 
     Shared so that the server validates a saved style name against the same list.
 ]]
@@ -21,18 +21,18 @@ Speedometers.all = {
     {
         key = 'minimal',
         label = 'speedo.style_minimal',
-        -- The current electric-car reading: the speed as a large numeral over a graduated arc,
-        -- a fuel strip below. The face the Clear Glass theme uses.
+        -- A freestanding round dial with a digital window inside the lower half.
+        -- The face the Clear Glass theme uses.
         supports = { fuel = true, rpm = false, gear = true, engine = true, belt = true, nitro = true, harness = true, altitude = true, range = true },
-        size = { w = 220, h = 118 },
+        size = { w = 208, h = 216 },
     },
     {
         key = 'classic',
         label = 'speedo.style_classic',
-        -- One round instrument, chrome bezel, cream face, numbered every 20. A car from
+        -- One round instrument, chrome bezel, cream face, numbered every 40. A car from
         -- before there were screens.
         supports = { fuel = true, rpm = false, gear = true, engine = true, belt = true, nitro = true, harness = true, altitude = true, range = false },
-        size = { w = 168, h = 168 },
+        size = { w = 168, h = 188 },
     },
     {
         key = 'sport',
@@ -56,7 +56,7 @@ Speedometers.all = {
         -- A thin, finely graduated ring with the speed printed inside it. The restrained
         -- German saloon reading of the same instrument.
         supports = { fuel = true, rpm = false, gear = true, engine = true, belt = true, nitro = true, harness = true, altitude = true, range = true },
-        size = { w = 184, h = 184 },
+        size = { w = 184, h = 206 },
     },
     {
         key = 'jdm',
@@ -80,7 +80,7 @@ Speedometers.all = {
         -- Shift lights across the top, a central rev ring, and the speed as the only number
         -- that matters.
         supports = { fuel = true, rpm = true, gear = true, engine = true, belt = true, nitro = true, harness = true, altitude = true, range = true },
-        size = { w = 208, h = 244 },
+        size = { w = 208, h = 272 },
     },
     {
         key = 'truck',
@@ -96,7 +96,7 @@ Speedometers.all = {
         -- The 1980s answer: an LCD bar graph for speed with a numeric readout beside it, and a
         -- segmented rev ladder.
         supports = { fuel = true, rpm = true, gear = true, engine = true, belt = true, nitro = true, harness = true, altitude = true, range = true },
-        size = { w = 252, h = 150 },
+        size = { w = 252, h = 170 },
     },
 }
 

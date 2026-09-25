@@ -13,7 +13,12 @@ All notable changes to v-hud are documented here.
 
 ### Changed
 
-- Larger, clearer minimal and digital speedometer faces with stronger instrument framing.
+- Larger digital instruments and a freestanding round minimal face with a clear digital window.
+
+### Fixed
+
+- Rebuilt the minimal face as a round speed dial with a small internal readout, spaced analogue dial numbers, and
+  moved crowded odometer and retro readouts into their own rows.
 
 ### Ajouts
 
@@ -22,7 +27,12 @@ All notable changes to v-hud are documented here.
 
 ### Modifications
 
-- Compteurs minimal et numérique agrandis et plus lisibles, avec un cadre mieux défini.
+- Compteur numérique agrandi et modèle minimal repensé en cadran rond avec lecture intégrée.
+
+### Correctifs
+
+- Cadran rond avec affichage numérique dégagé, graduations espacées et lectures
+  d'odomètre et du LCD rétro replacées dans leurs propres zones.
 
 ---
 

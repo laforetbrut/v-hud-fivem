@@ -19,11 +19,12 @@ four compasses and a frosted-glass default look.
 - **Twelve gauge shapes** - square, rounded, pill, circle, ring, radial, dot, bar, segment,
   diamond, hexagon, icon-only. One click to switch, per-gauge colours, warning thresholds
   with pulse.
-- **Ten realistic speedometers** - minimal digital, classic dial, twin sport dials, digital
+- **Ten realistic speedometers** - modern hybrid dial, classic dial, twin sport dials, digital
   cluster, luxury ring, JDM tachometer, American muscle, supercar, truck cluster, retro LCD.
-  All with numbered graduations, real needles, a redline, and an E-F fuel gauge.
-- **Sharper digital instruments** - the minimal and digital faces now have larger speed
-  numerals, a clear accent edge and more legible graduations. Apex pairs the digital cluster
+  Analogue faces use numbered graduations and needles; digital faces use speed or rev scales.
+  Fuel remains marked E-F.
+- **Sharper instruments** - the minimal face is a freestanding round dial with a digital
+  readout inside; the digital face has larger numerals and clearer scales. Apex pairs the digital cluster
   with an amber motorsport palette; Heritage pairs the classic dial with warm enamel tones.
 - **Odometer** - the total distance a vehicle has covered, on every cluster. GTA does not
   keep one, so it is measured while you drive and stored against the number plate; a mileage
@@ -51,6 +52,15 @@ four compasses and a frosted-glass default look.
   follow the character between machines.
 - **Stress system** - server-authoritative, with the same events qb-hud used, so every
   stock qb resource keeps working unmodified.
+
+## Browser preview
+
+These captures show the standalone preview with a GPS route active. They are not in-game
+screenshots.
+
+| Square theme | Apex theme |
+|---|---|
+| ![Square HUD and GPS route](docs/screenshots/square-preview.png) | ![Apex HUD and GPS route](docs/screenshots/apex-preview.png) |
 
 ## Compatibility
 
@@ -217,12 +227,14 @@ pour voir ce qui a été détecté.
 - **Douze formes de jauges** - carré, arrondi, gélule, cercle, anneau, radial, pastille,
   barre, segments, losange, hexagone, icône seule. Un clic pour changer, couleur par jauge,
   seuils d'alerte avec pulsation.
-- **Dix compteurs réalistes** - numérique minimal, cadran classique, double cadran sport,
+- **Dix compteurs réalistes** - cadran hybride moderne, cadran classique, double cadran sport,
   cluster numérique, anneau luxe, compte-tours JDM, muscle américaine, supercar, cadrans
-  poids lourd, LCD rétro. Tous avec graduations chiffrées, vraies aiguilles, zone rouge et
-  jauge d'essence E-F.
-- **Compteurs numériques plus lisibles** - chiffres de vitesse agrandis, accent plus net et
-  graduations renforcées. Apex associe le compteur numérique à une palette de course ambre ;
+  poids lourd, LCD rétro. Les cadrans analogiques ont des graduations chiffrées et des
+  aiguilles ; les compteurs numériques ont une échelle de vitesse ou de régime. Le carburant
+  reste repéré de E à F.
+- **Compteurs plus lisibles** - le modèle minimal est un cadran rond autonome avec une petite
+  lecture numérique intégrée ; le compteur numérique a des chiffres agrandis et des échelles plus nettes.
+  Apex associe le compteur numérique à une palette de course ambre ;
   Heritage associe le cadran classique à des tons émaillés chauds.
 - **Boussole et noms de rue** - quatre styles de boussole (barre, ruban, cadran, texte),
   bandeau rue + rue transversale + quartier qui peut prendre la largeur de la minimap et se
@@ -241,6 +253,15 @@ pour voir ce qui a été détecté.
   réglages suivent le personnage d'une machine à l'autre.
 - **Système de stress** - décidé côté serveur, avec les mêmes événements que qb-hud, donc
   toutes les ressources qb d'origine fonctionnent sans modification.
+
+## Prévisualisation navigateur
+
+Ces captures montrent la prévisualisation autonome avec un itinéraire GPS actif. Elles ne
+proviennent pas du jeu.
+
+| Thème Square | Thème Apex |
+|---|---|
+| ![HUD Square et itinéraire GPS](docs/screenshots/square-preview.png) | ![HUD Apex et itinéraire GPS](docs/screenshots/apex-preview.png) |
 
 ## Installation
 

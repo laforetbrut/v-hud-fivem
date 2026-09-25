@@ -41,7 +41,6 @@
 }
 
 /* The digital faces read as one instrument even when the road behind them is bright. */
-.spd-body[data-style="minimal"],
 .spd-body[data-style="digital"] {
     border-color: var(--c-line-strong);
     box-shadow: inset 0 1px 0 var(--c-accent-a18), 0 5px 18px rgba(0, 0, 0, 0.32);
@@ -188,18 +187,16 @@
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
 }
 
-/* Each one is set so the plate PLUS the odometer badge hanging below it still lands inside the
-   face. Measured, not estimated: the badge is 15px and sits 5px under the plate, so the plate's
-   own height decides how far down it can start. */
-.spd-body[data-style="classic"]  .spd-centre { top: 55%; }
-.spd-body[data-style="luxury"]   .spd-centre { top: 52%; }
+/* Fixed offsets keep the readout in the dial when its body includes a footer. */
+.spd-body[data-style="classic"]  .spd-centre { top: 92px; }
+.spd-body[data-style="luxury"]   .spd-centre { top: 96px; }
 .spd-body[data-style="jdm"]      .spd-centre { top: 57%; }
-.spd-body[data-style="supercar"] .spd-centre { top: 58%; }
+.spd-body[data-style="supercar"] .spd-centre { top: 141px; }
 .spd-body[data-style="dial"]     .spd-centre { top: 55%; }
 
 /* The cream dials keep dark ink on a light face, so their plate is light too. */
 .spd-body[data-style="classic"] .spd-centre {
-    background: rgba(244, 239, 226, 0.82);
+    background: #f2ece0;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
@@ -295,7 +292,7 @@
 .spd-odo:empty { display: none; }
 
 /*
-    On a round face the odometer badge hangs UNDER the plate, not inside it.
+    On compact round faces the odometer badge hangs UNDER the plate, not inside it.
 
     Inside, the badge was the widest thing in the stack, so it set the plate's width: 99px
     across a 168px dial. The plate then covered the first and last numerals of the scale - the
@@ -304,8 +301,6 @@
 
     The badge already carries its own frame and background, so it needs no plate behind it.
 */
-.spd-body[data-style="classic"] .spd-centre .spd-odo,
-.spd-body[data-style="luxury"]  .spd-centre .spd-odo,
 .spd-body[data-style="jdm"]     .spd-centre .spd-odo,
 .spd-body[data-style="muscle"]  .spd-centre .spd-odo,
 .spd-body[data-style="dial"]    .spd-centre .spd-odo {
@@ -420,13 +415,6 @@
     max-width: 100%;
 }
 
-/* Sized to be read at a glance from a driving seat, not to be tidy.
-
-   At 24x20 with a 13px glyph these were a row of indistinct smudges: a seatbelt and a handbrake
-   tell-tale are different shapes, but not at 13px over a moving road. A real cluster's warning
-   lamps are the biggest icons on the panel for exactly this reason. The dim state also carries
-   more contrast now - an unlit lamp still has to be identifiable, or the player cannot tell
-   which one just came on. */
 /*
     Sized to be read at a glance from a driving seat, not to be tidy.
 
@@ -548,38 +536,64 @@
 }
 
 /* =======================================================================================
-   1. minimal - digital number over a graduated speed arc
+   1. minimal - freestanding round dial with a digital window
    ======================================================================================= */
 
 .spd-body[data-style="minimal"] {
     flex-direction: column;
-    justify-content: flex-end;
-    gap: 4px;
-    width: 220px;
-    height: 118px;
-    padding: 6px 15px 9px;
-    background: var(--c-panel);
-    border: 1px solid var(--c-line-strong);
-    border-top: 2px solid var(--c-accent);
-    border-radius: var(--radius);
+    justify-content: flex-start;
+    gap: 5px;
+    width: 208px;
+    height: 216px;
 }
 
-.spd-body[data-style="minimal"] .spd-svg { inset: -6px 0 auto 0; height: 96px; }
-.spd-body[data-style="minimal"] .spd-centre { margin-top: 16px; }
-.spd-body[data-style="minimal"] .spd-value { font-size: 42px; }
+.spd-body[data-style="minimal"] .spd-svg {
+    position: relative;
+    inset: auto;
+    width: 190px;
+    height: 190px;
+    flex: none;
+    filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.45));
+}
+.spd-body[data-style="minimal"] .spd-face { fill: var(--c-bg-d92); }
+.spd-body[data-style="minimal"] .spd-bezel { stroke: var(--c-accent-a55); }
+.spd-body[data-style="minimal"] .spd-tick--major { stroke: var(--c-text); }
+.spd-body[data-style="minimal"] .spd-centre {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    border: 1px solid var(--c-line-strong);
+    border-radius: 5px;
+    background: var(--c-bg-d92);
+}
+.spd-body[data-style="minimal"] .spd-readout { flex-direction: column; align-items: center; gap: 0; }
+.spd-body[data-style="minimal"] .spd-value { font-size: 34px; }
 .spd-body[data-style="minimal"] .spd-unit { font-size: 10px; color: var(--c-text); }
-.spd-body[data-style="minimal"] .spd-tick--major { stroke: var(--c-accent); }
-.spd-body[data-style="minimal"] .spd-arc--speed { stroke-width: 5; }
-.spd-body[data-style="minimal"] .spd-strip { width: 100%; }
+.spd-body[data-style="minimal"] .spd-subrow { gap: 5px; }
+.spd-body[data-style="minimal"] .spd-strip { width: 98px; }
+.spd-body[data-style="minimal"] .spd-foot { padding: 0 3px; gap: 5px; }
 
 /* =======================================================================================
    2. classic - chrome bezel, cream face, red needle
    ======================================================================================= */
 
-.spd-body[data-style="classic"] { width: 168px; height: 168px; }
+.spd-body[data-style="classic"] { width: 168px; height: 188px; }
 
 .spd-body[data-style="classic"] .spd-bezel { stroke: url(#chromeGradient); stroke-width: 6; }
-.spd-body[data-style="classic"] .spd-svg { filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.55)); }
+.spd-body[data-style="classic"] .spd-svg {
+    height: 168px;
+    filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.55));
+}
+.spd-body[data-style="classic"] > .spd-odo,
+.spd-body[data-style="luxury"] > .spd-odo,
+.spd-body[data-style="supercar"] > .spd-odo {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+}
 .spd-body[data-style="classic"] .spd-face  { fill: #f2ece0; stroke: #2b2b2b; }
 .spd-body[data-style="classic"] .spd-scale { stroke: #6b6257; }
 .spd-body[data-style="classic"] .spd-tick  { stroke: #4a463f; }
@@ -645,7 +659,8 @@
    5. luxury - thin finely graduated ring
    ======================================================================================= */
 
-.spd-body[data-style="luxury"] { width: 184px; height: 184px; }
+.spd-body[data-style="luxury"] { width: 184px; height: 206px; }
+.spd-body[data-style="luxury"] .spd-svg { height: 184px; }
 
 .spd-body[data-style="luxury"] .spd-scale { stroke: var(--c-accent-a40); }
 .spd-body[data-style="luxury"] .spd-tick { stroke-width: 0.9; }
@@ -724,7 +739,7 @@
     justify-content: flex-start;
     gap: 6px;
     width: 208px;
-    height: 244px;
+    height: 272px;
     padding-top: 4px;
 }
 
@@ -753,6 +768,12 @@
 }
 
 .spd-body[data-style="supercar"] .spd-strip { width: 140px; }
+.spd-body[data-style="supercar"] > .spd-strip {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%);
+}
 
 /* =======================================================================================
    9. truck - four instruments, everything legible from a high seat
@@ -781,6 +802,7 @@
     align-items: stretch;
     gap: 4px;
     width: 252px;
+    min-height: 170px;
     padding: 10px 14px 12px;
     background: linear-gradient(180deg, #0a1410 0%, #060d0a 100%);
     border: 1px solid var(--c-accent-a30);
@@ -834,6 +856,14 @@
 
 .spd-body[data-style="retro"] .spd-gear { color: var(--c-accent); }
 .spd-body[data-style="retro"] .spd-strip { max-width: 96px; }
+.spd-body[data-style="retro"] .spd-foot { flex-direction: column; gap: 4px; }
+.spd-body[data-style="retro"] .spd-foot__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+}
 
 /* =======================================================================================
    The menu preview reuses the same faces, scaled to fit a card
