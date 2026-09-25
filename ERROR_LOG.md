@@ -5,6 +5,27 @@ happening again. Read the relevant entries before working in the same area.
 
 ---
 
+## [2026-09-25 15:57] - Glass surface left a square behind the round dial
+
+**Context:** Reviewing the minimal speedometer in the Clear Glass browser preview.
+**Error:** A rectangular tinted panel remained behind the round dial after the face itself
+had been made transparent.
+**Root cause:** The glass surface in `themes.css` still targeted the minimal face for its
+rectangular pseudo-element wash and box shadow.
+**Fix:** Removed the minimal face from both glass panel selectors. Its circular SVG keeps its
+own shadow; digital panel faces retain their glass treatment.
+**Prevention:** When changing a face's silhouette, inspect theme-level selectors and pseudo-elements
+as well as the face's own stylesheet.
+
+**Contexte :** vérification du compteur minimal avec le thème Clear Glass.
+**Erreur :** un fond teinté rectangulaire restait derrière le cadran rond.
+**Cause :** les styles du thème ciblaient encore ce compteur pour leur pseudo-élément et leur ombre.
+**Correctif :** retrait du compteur minimal des deux sélecteurs de panneaux en verre.
+**Prévention :** vérifier aussi les styles et pseudo-éléments des thèmes quand la forme d'un
+compteur change.
+
+---
+
 ## [2026-09-25 15:04] - Speedometer readouts crossed their scales
 
 **Context:** Reviewing browser preview captures after enlarging the digital speed readout.

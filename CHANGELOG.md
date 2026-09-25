@@ -19,6 +19,7 @@ All notable changes to v-hud are documented here.
 
 - Rebuilt the minimal face as a round speed dial with a small internal readout, spaced analogue dial numbers, and
   moved crowded odometer and retro readouts into their own rows.
+- Removed the glass surface's rectangular wash and shadow from the round minimal dial.
 
 ### Ajouts
 
@@ -33,6 +34,7 @@ All notable changes to v-hud are documented here.
 
 - Cadran rond avec affichage numérique dégagé, graduations espacées et lectures
   d'odomètre et du LCD rétro replacées dans leurs propres zones.
+- Fond et ombre rectangulaires supprimés derrière le cadran rond du thème verre.
 
 ---
 

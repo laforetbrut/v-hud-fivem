@@ -116,10 +116,8 @@
 .hud[data-surface="glass"] .gauge[data-shape="diamond"],
 .hud[data-surface="glass"] .gauge[data-shape="pill"],
 .hud[data-surface="glass"] .gauge[data-shape="dot"],
-/* Only the faces that ARE a panel get the pane treatment: the minimal readout, the digital
-   cluster and the LCD. A face made of dials is an instrument, not a widget, and giving it a
-   glass plate put a translucent box behind the sport twin-dials that nobody asked for. */
-.hud[data-surface="glass"] .spd-body[data-style="minimal"],
+/* Only panel faces get the pane treatment: the digital cluster and the LCD. Round dials
+   stay freestanding, without a rectangular shadow or tinted wash behind them. */
 .hud[data-surface="glass"] .spd-body[data-style="bars"],
 .hud[data-surface="glass"] .spd-body[data-style="digital"],
 .hud[data-surface="glass"] .spd-chip {
@@ -133,12 +131,9 @@
         0 8px 26px rgba(0, 0, 0, 0.42);
 }
 
-/* A tinted accent wash across the glass, so the pink of the theme is in the pane itself and
-   not only in the gauge fills. The gradient is on a pseudo-element rather than the
-   background, because the background is what the backdrop filter reads through. */
+/* A tinted accent wash across panel faces, behind their content. Round dials do not use it. */
 .hud[data-surface="glass"] .streets::before,
 .hud[data-surface="glass"] .voice::before,
-.hud[data-surface="glass"] .spd-body[data-style="minimal"]::before,
 .hud[data-surface="glass"] .spd-body[data-style="bars"]::before,
 .hud[data-surface="glass"] .spd-body[data-style="digital"]::before {
     content: '';
